@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /verificationDocuments/{userId}/{role}/{fileName} {
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && role in ['community_manager', 'service_provider']
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches(
+          'application/pdf|image/(png|jpeg|webp)|application/msword|application/vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document'
+        );
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow update: if false;
+    }
+  }
+}

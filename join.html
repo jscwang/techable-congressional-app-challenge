@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Techable — Join a Community Center</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-lt:#E07A55;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--cream:#FAF6F0;--cream2:#F2EAE0;--cream3:#EDE3D8;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --border:rgba(180,156,136,.22);--border2:rgba(180,156,136,.38);
+  --green:#2D6A4F;--green-bg:#EBF5EF;--green-lt:#3A7D5C;
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --red:#C4302B;--red-bg:#FEF2EF;
+  --shadow-sm:0 2px 8px rgba(26,18,8,.07);
+  --r:14px;--r-sm:10px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit;outline:none}
+button{cursor:pointer;border:none}
+
+.hdr{height:64px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-name{font-family:'Fraunces',serif;font-size:18px;font-weight:400;color:var(--ink)}
+.hdr-space{flex:1}
+.back-link{font-size:13px;color:var(--ink3);text-decoration:none;padding:7px 14px;border-radius:20px;border:1px solid var(--border);transition:all .18s}
+.back-link:hover{color:var(--rust);border-color:rgba(196,85,43,.3);background:var(--rust-pale)}
+
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#1A2E42 100%);padding:44px 20px 36px;text-align:center;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(196,85,43,.18),transparent 70%);right:-80px;top:50%;transform:translateY(-50%);pointer-events:none}
+.hero-inner{position:relative;z-index:1;max-width:560px;margin:0 auto}
+.hero h1{font-family:'Fraunces',serif;font-size:clamp(26px,5vw,40px);font-weight:300;color:#fff;line-height:1.2;margin-bottom:10px;letter-spacing:-.02em}
+.hero em{font-style:italic;color:var(--rust-lt)}
+.hero p{color:rgba(255,255,255,.55);font-size:14px;line-height:1.7;font-weight:300}
+
+.page{max-width:600px;margin:0 auto;padding:28px 20px 60px}
+
+/* STEP BAR */
+.steps-bar{display:flex;align-items:center;gap:0;margin-bottom:24px;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;box-shadow:var(--shadow-sm)}
+.step-dot{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.step-dot:last-child{flex:none}
+.dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;transition:all .25s}
+.dot.done{background:var(--green);color:#fff}
+.dot.active{background:var(--rust);color:#fff;box-shadow:0 0 0 4px rgba(196,85,43,.15)}
+.dot.pending{background:var(--cream2);color:var(--ink4)}
+.step-label{font-size:11px;font-weight:500;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step-dot.active-step .step-label{color:var(--rust);font-weight:600}
+.step-connector{flex:1;height:1px;background:var(--border);margin:0 8px;min-width:10px}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow-sm);margin-bottom:14px}
+.card-title{font-family:'Fraunces',serif;font-size:18px;font-weight:400;color:var(--navy);margin-bottom:5px}
+.card-sub{font-size:13px;color:var(--ink3);margin-bottom:18px;line-height:1.55;font-weight:300}
+.section-divider{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin:20px 0 14px;padding-top:20px;border-top:1px solid var(--border)}
+
+/* FIELDS */
+.field{margin-bottom:14px}
+.field label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:6px}
+.required-star{color:var(--rust);font-size:12px}
+.field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--cream);color:var(--ink);font-size:15px;transition:all .18s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--rust);box-shadow:0 0 0 3px rgba(196,85,43,.08);background:var(--white)}
+.field input.error,.field select.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(196,48,43,.08)}
+.field input::placeholder,.field textarea::placeholder{color:var(--ink4)}
+.field-note{font-size:12px;color:var(--ink3);margin-top:5px;line-height:1.5}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* AGE NOTICE */
+.age-notice{background:var(--gold-bg);border:1px solid rgba(196,154,42,.3);border-radius:var(--r-sm);padding:12px 16px;font-size:13px;color:#7A5200;margin-bottom:16px;line-height:1.55;display:flex;gap:10px;align-items:flex-start}
+.age-notice-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* AGE CHECK BOX */
+.eligibility-box{background:var(--cream2);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:16px;margin-bottom:16px}
+.eligibility-box.valid{background:var(--green-bg);border-color:rgba(45,106,79,.3)}
+.eligibility-box.invalid{background:var(--red-bg);border-color:rgba(196,48,43,.2)}
+.elig-label{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.age-input-row{display:flex;align-items:center;gap:12px}
+.age-input-row input[type=number]{width:100px;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--white);font-size:18px;font-weight:600;color:var(--ink);text-align:center}
+.age-input-row input[type=number]:focus{border-color:var(--rust);box-shadow:0 0 0 3px rgba(196,85,43,.08)}
+.age-status{font-size:13px;font-weight:500;line-height:1.4}
+.age-status.ok{color:var(--green)}
+.age-status.fail{color:var(--red)}
+
+/* CENTRE CARDS */
+.centre-grid{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow-y:auto;margin-top:2px}
+.centre-card{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:all .18s;background:var(--white);position:relative}
+/* Visually hidden, NOT display:none — a display:none radio cannot be focused,
+   and the keyboard would have nothing to land on. */
+.centre-radio{position:absolute;width:1px;height:1px;margin:0;opacity:0}
+/* The focus ring has to live on the card, since the input it belongs to is
+   one pixel wide. */
+.centre-card:focus-within{border-color:var(--rust);box-shadow:0 0 0 3px rgba(196,85,43,.35)}
+.centre-card:hover{border-color:rgba(196,85,43,.3);background:var(--rust-pale)}
+.centre-card.selected{border-color:var(--rust);background:var(--rust-pale)}
+.centre-icon{width:40px;height:40px;border-radius:10px;background:var(--cream2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.centre-card.selected .centre-icon{background:rgba(196,85,43,.15)}
+.centre-info{flex:1;min-width:0}
+.centre-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.centre-meta{font-size:12px;color:var(--ink3);line-height:1.4}
+.centre-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s;margin-top:2px}
+.centre-card.selected .centre-check{border-color:var(--rust);background:var(--rust);color:#fff;font-size:10px;font-weight:700}
+.no-centres{text-align:center;padding:28px 16px;color:var(--ink3);font-size:13px}
+
+/* REVIEW TABLE */
+.review-block{background:var(--cream2);border-radius:var(--r-sm);padding:16px 18px;margin-bottom:14px}
+.review-block-title{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.review-row{display:flex;justify-content:space-between;align-items:flex-start;font-size:13px;padding:5px 0;border-bottom:1px solid rgba(180,156,136,.12);gap:12px}
+.review-row:last-child{border-bottom:none}
+.review-label{color:var(--ink3);flex-shrink:0;min-width:120px}
+.review-val{font-weight:500;color:var(--ink);text-align:right;word-break:break-word}
+.centre-preview{background:var(--rust-pale);border:1px solid rgba(196,85,43,.2);border-radius:var(--r-sm);padding:14px 18px;margin-bottom:14px;display:flex;gap:12px;align-items:center}
+.consent-box{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:16px;font-weight:300;padding:12px 14px;background:var(--cream2);border-radius:var(--r-sm);border:1px solid var(--border)}
+.consent-box input{width:16px;height:16px;margin-top:2px;accent-color:var(--rust);flex-shrink:0}
+.consent-box a{color:var(--rust);font-weight:600;text-decoration:none}
+.consent-box a:hover{text-decoration:underline}
+
+/* BUTTONS */
+.btn-primary{width:100%;padding:14px;border-radius:var(--r-sm);border:none;background:var(--rust);color:#fff;font-size:15px;font-weight:600;transition:all .18s;box-shadow:0 2px 10px rgba(196,85,43,.28);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary:hover:not(:disabled){background:var(--rust-lt);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-ghost{width:100%;padding:13px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;color:var(--ink2);font-size:14px;font-weight:500;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.btn-ghost:hover{border-color:var(--rust);color:var(--rust);background:var(--rust-pale)}
+
+/* MSG */
+.msg{display:none;padding:12px 14px;border-radius:var(--r-sm);font-size:13px;line-height:1.5;margin-bottom:14px}
+.msg.err{display:block;background:var(--red-bg);color:var(--red);border:1px solid rgba(196,48,43,.2)}
+.msg.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid rgba(45,106,79,.2)}
+
+/* SUCCESS */
+.success-screen{display:none;text-align:center;padding:40px 20px}
+.success-screen.show{display:block}
+
+/* SPINNER */
+.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+@media(max-width:540px){
+  .page{padding:18px 14px 50px}
+  .card{padding:18px}
+  .field-row,.field-row3{grid-template-columns:1fr}
+  .steps-bar{padding:12px 14px}
+  .step-label{display:none}
+  .review-label{min-width:90px}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <a class="logo" href="index.html">
+    <img class="brand-mark" src="assets/techable-icon.png" alt="" width="31" height="36">
+    <span class="logo-name">Techable</span>
+  </a>
+  <div class="hdr-space"></div>
+  <a class="back-link" href="login.html">Manager login →</a>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <h1>Join your <em>community center</em></h1>
+    <p>Fill out this short form to register with your local community center. No account or password is needed.</p>
+  </div>
+</section>
+
+<!-- FORM -->
+<main class="page" id="form-page">
+  <div class="steps-bar" id="steps-bar">
+    <div class="step-dot active-step" id="sdot-1"><div class="dot active" id="dot-1">1</div><span class="step-label">Your Details</span></div>
+    <div class="step-connector"></div>
+    <div class="step-dot" id="sdot-2"><div class="dot pending" id="dot-2">2</div><span class="step-label">Contact & Family</span></div>
+    <div class="step-connector"></div>
+    <div class="step-dot" id="sdot-3"><div class="dot pending" id="dot-3">3</div><span class="step-label">Choose Center</span></div>
+    <div class="step-connector"></div>
+    <div class="step-dot" id="sdot-4"><div class="dot pending" id="dot-4">4</div><span class="step-label">Confirm</span></div>
+  </div>
+
+  <!-- STEP 1: Identity -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title">Your personal details</div>
+      <div class="card-sub">All fields marked * are required. Your information is kept private and shared only with your community center manager.</div>
+
+      <!-- AGE ELIGIBILITY CHECK — self-declared first -->
+      <div class="eligibility-box" id="elig-box">
+        <div class="elig-label">Age eligibility check</div>
+        <div class="age-input-row">
+          <input type="number" id="j-age" aria-label="Your age" min="1" max="120" placeholder="—" oninput="checkAge()"/>
+          <div class="age-status" id="age-status">Enter your age to check eligibility</div>
+        </div>
+        <div class="field-note" style="margin-top:8px">This registration is for seniors aged <strong>65 and above</strong> only.</div>
+      </div>
+
+      <div class="msg" id="step1-msg"></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="j-first">First Name <span class="required-star">*</span></label>
+          <input type="text" id="j-first" placeholder="e.g. Margaret" autocomplete="given-name"/>
+        </div>
+        <div class="field">
+          <label for="j-last">Last Name <span class="required-star">*</span></label>
+          <input type="text" id="j-last" placeholder="e.g. Chen" autocomplete="family-name"/>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="j-gender">Gender <span class="required-star">*</span></label>
+          <select id="j-gender">
+            <option value="">Select…</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+            <option value="prefer_not">Prefer not to say</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="j-nationality">Nationality <span class="required-star">*</span></label>
+          <input type="text" id="j-nationality" placeholder="e.g. Indonesian"/>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="j-dob">Date of Birth</label>
+          <input type="date" id="j-dob" max=""/>
+          <div class="field-note">Optional—for center records</div>
+        </div>
+        <div class="field">
+          <label for="j-ic">ID / IC Number</label>
+          <input type="text" id="j-ic" placeholder="e.g. 123456-12-1234"/>
+          <div class="field-note">National ID or passport number</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="goStep2()">Next: Contact Details →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Contact & Emergency -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-title">Contact & emergency details</div>
+      <div class="card-sub">How can the center reach you? An emergency contact is strongly recommended.</div>
+
+      <div class="msg" id="step2-msg"></div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="j-phone">Phone Number <span class="required-star">*</span></label>
+          <input type="tel" id="j-phone" placeholder="e.g. +62 812 345 6789" autocomplete="tel"/>
+        </div>
+        <div class="field">
+          <label for="j-email">Email Address</label>
+          <input type="email" id="j-email" placeholder="optional" autocomplete="email"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="j-address">Home Address</label>
+        <input type="text" id="j-address" placeholder="Street, City, Country"/>
+      </div>
+
+      <div class="section-divider">Emergency Contact</div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="j-ec-name">Emergency Contact Name</label>
+          <input type="text" id="j-ec-name" placeholder="e.g. James Chen"/>
+        </div>
+        <div class="field">
+          <label for="j-ec-relation">Relationship</label>
+          <select id="j-ec-relation">
+            <option value="">Select…</option>
+            <option value="son">Son</option>
+            <option value="daughter">Daughter</option>
+            <option value="spouse">Spouse</option>
+            <option value="sibling">Sibling</option>
+            <option value="friend">Friend</option>
+            <option value="carer">Carer</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="j-ec-phone">Emergency Contact Phone</label>
+        <input type="tel" id="j-ec-phone" placeholder="e.g. +62 813 999 0000"/>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="goStep3()">Next: Choose Your Center →</button>
+    <button class="btn-ghost" onclick="goStep1()">← Back</button>
+  </div>
+
+  <!-- STEP 3: Choose Centre -->
+  <div id="step-3" style="display:none">
+    <div class="card">
+      <div class="card-title">Choose your community center</div>
+      <div class="card-sub">Select the community center you want to join.</div>
+
+      <div class="field" style="margin-bottom:12px">
+        <label for="centre-search">Search</label>
+        <input type="text" id="centre-search" placeholder="Search by name or city…" oninput="filterCentres()"/>
+      </div>
+
+      <div class="msg" id="step3-msg"></div>
+      <div class="centre-grid" id="centre-grid">
+        <div class="no-centres">Loading community centers…</div>
+      </div>
+    </div>
+    <button class="btn-primary" id="step3-next-btn" onclick="goStep4()" disabled>Next: Review →</button>
+    <button class="btn-ghost" onclick="goStep2()">← Back</button>
+  </div>
+
+  <!-- STEP 4: Review & Submit -->
+  <div id="step-4" style="display:none">
+    <div class="card">
+      <div class="card-title">Review your registration</div>
+      <div class="card-sub">Please check all details carefully before submitting.</div>
+
+      <div class="msg" id="step4-msg"></div>
+
+      <div class="review-block">
+        <div class="review-block-title">Personal Details</div>
+        <div class="review-row"><span class="review-label">Name</span><strong class="review-val" id="rv-name">—</strong></div>
+        <div class="review-row"><span class="review-label">Age</span><strong class="review-val" id="rv-age">—</strong></div>
+        <div class="review-row"><span class="review-label">Date of Birth</span><strong class="review-val" id="rv-dob">—</strong></div>
+        <div class="review-row"><span class="review-label">Gender</span><strong class="review-val" id="rv-gender">—</strong></div>
+        <div class="review-row"><span class="review-label">Nationality</span><strong class="review-val" id="rv-nationality">—</strong></div>
+        <div class="review-row"><span class="review-label">ID / IC</span><strong class="review-val" id="rv-ic">—</strong></div>
+      </div>
+
+      <div class="review-block">
+        <div class="review-block-title">Contact Details</div>
+        <div class="review-row"><span class="review-label">Phone</span><strong class="review-val" id="rv-phone">—</strong></div>
+        <div class="review-row"><span class="review-label">Email</span><strong class="review-val" id="rv-email">—</strong></div>
+        <div class="review-row"><span class="review-label">Address</span><strong class="review-val" id="rv-address">—</strong></div>
+      </div>
+
+      <div class="review-block">
+        <div class="review-block-title">Emergency Contact</div>
+        <div class="review-row"><span class="review-label">Name</span><strong class="review-val" id="rv-ec-name">—</strong></div>
+        <div class="review-row"><span class="review-label">Relationship</span><strong class="review-val" id="rv-ec-relation">—</strong></div>
+        <div class="review-row"><span class="review-label">Phone</span><strong class="review-val" id="rv-ec-phone">—</strong></div>
+      </div>
+
+      <div class="centre-preview">
+        <div style="font-size:24px;flex-shrink:0">🏘️</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink)" id="rv-centre-name">—</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px" id="rv-centre-addr">—</div>
+        </div>
+      </div>
+
+      <label class="consent-box">
+        <input id="privacy-consent" type="checkbox" />
+        <span>I agree to Techable's <a href="privacy.html" target="_blank" rel="noopener">Data & Privacy Policy</a> and consent to sharing the above details with my chosen community center manager.</span>
+      </label>
+
+      <button class="btn-primary" id="submit-btn" onclick="submitRegistration()">Submit Registration</button>
+      <button class="btn-ghost" onclick="goStep3()">← Back</button>
+    </div>
+  </div>
+</main>
+
+<!-- SUCCESS -->
+<div class="success-screen" id="success-screen">
+  <div style="font-size:64px;margin-bottom:18px">🎉</div>
+  <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:300;color:var(--navy);margin-bottom:12px">Registration Submitted!</div>
+  <div style="font-size:15px;color:var(--ink3);line-height:1.7;margin-bottom:24px;font-weight:300;max-width:420px;margin-left:auto;margin-right:auto">
+    Your registration has been sent to <strong id="sc-centre-name">your community center</strong>. The manager will review it and contact you soon.
+  </div>
+  <div style="background:var(--green-bg);border:1px solid rgba(45,106,79,.2);border-radius:var(--r);padding:18px;margin-bottom:24px;text-align:left;max-width:380px;margin-left:auto;margin-right:auto">
+    <div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">What happens next</div>
+    <div style="font-size:13px;color:var(--ink2);display:flex;flex-direction:column;gap:8px">
+      <div>✅ Manager reviews your registration (1–2 working days)</div>
+      <div>✅ You will be contacted by phone or email</div>
+      <div>✅ Welcome to the community center 🏘️</div>
+    </div>
+  </div>
+
+  <!-- Reported: a senior filled this in and then could not sign in anywhere.
+       Nothing on this page creates an account — the manager's Approve only
+       flips a status flag — but the screen said "you will be contacted" and
+       stopped, which reads as "you are done". Say what this form is and is
+       not, and put the account route right next to it rather than leaving
+       them to go looking for it. -->
+  <div style="background:var(--cream2);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:24px;text-align:left;max-width:380px;margin-left:auto;margin-right:auto">
+    <div style="font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Want to use the companion now?</div>
+    <div style="font-size:14px;color:var(--ink2);line-height:1.7">
+      This form asks your center to register you—it does <strong>not</strong>
+      create a sign-in. To talk to your companion today, create your own free
+      account.
+    </div>
+    <a href="senior-login.html?mode=signup" style="display:inline-block;margin-top:12px;font-size:15px;font-weight:600;color:var(--rust);text-decoration:none">Create my account →</a>
+  </div>
+  <a href="index.html" style="display:inline-block;padding:13px 28px;background:var(--rust);color:#fff;border-radius:var(--r-sm);font-weight:600;text-decoration:none;font-size:14px">Back to Home</a>
+</div>
+
+<script>
+window._cfg = (async function(){
+  try {
+    const r = await fetch('/api/config',{cache:'no-store'})
+    if(r.ok){const d=await r.json();if(d?.firebase?.apiKey){window.TECHABLE_CONFIG=d;return d}}
+  }catch(_){}
+  await new Promise(res=>{const s=document.createElement('script');s.src='config.js';s.onload=res;s.onerror=res;document.head.appendChild(s)})
+  return window.TECHABLE_CONFIG||null
+})()
+</script>
+
+<script type="module">
+await window._cfg
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js"
+import { getFirestore, collection, getDocs, addDoc, query, where, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+const cfg = window.TECHABLE_CONFIG
+if (!cfg?.firebase?.apiKey) {
+  document.getElementById('step1-msg').className='msg err'
+  document.getElementById('step1-msg').textContent='Configuration error. Please try again later.'
+  throw new Error('No config')
+}
+
+const app = getApps().length ? getApps()[0] : initializeApp(cfg.firebase)
+const db  = getFirestore(app)
+
+// Set max DOB (65+ years ago from today)
+const maxDob = new Date()
+maxDob.setFullYear(maxDob.getFullYear() - 65)
+document.getElementById('j-dob').max = maxDob.toISOString().split('T')[0]
+
+let allCentres    = []
+let selectedCentre = null
+
+// ── Load centres ──────────────────────────────────────────────
+async function loadCentres() {
+  try {
+    const snap = await getDocs(query(collection(db,'communities'), where('isPublic','==',true)))
+    allCentres = []
+    snap.forEach(d => {
+      const x = d.data()
+      // Only centres the admin has verified. Anyone can create a public
+      // community, and this form asks for an IC number and a home address;
+      // firestore.rules refuses registrations to unverified centres as well.
+      if (x.verified !== true) return
+      allCentres.push({ id:d.id, name:x.name||'Unnamed', address:x.address||'',
+        city:x.city||'', country:x.country||'', category:x.category||'community',
+        managerId: x.managerUid || x.managerId || '' })
+    })
+    allCentres.sort((a,b) => a.name.localeCompare(b.name))
+  } catch(e) { console.warn('Centres load failed:', e); allCentres = [] }
+  applyInvitedCentre()
+  renderCentres(allCentres)
+}
+
+// ── Arriving from a centre's own invite link ──────────────────
+// A manager's whole reason for sending a link is that the senior should not
+// have to find the centre in a list of every centre in the country. The link
+// has always carried ?centre=<id> and this page has always ignored every query
+// parameter, so the senior landed on a generic picker and had to search for a
+// name they may only have heard out loud.
+//
+// A centre that cannot be found is said out loud rather than silently ignored:
+// the id may be stale, or the centre may have stopped being public, and either
+// way "we could not find it, please pick from the list" is the honest thing to
+// put in front of someone who followed a link in good faith. The rules only
+// permit reading a community when isPublic is true and this page is
+// unauthenticated by design, so a direct lookup for a missing one would come
+// back permission-denied and be indistinguishable from a deletion anyway.
+const invitedCentreId = new URLSearchParams(location.search).get('centre') || ''
+
+function applyInvitedCentre() {
+  if (!invitedCentreId) return
+  const found = allCentres.find(c => c.id === invitedCentreId)
+  if (found) {
+    selectedCentre = found
+    const next = document.getElementById('step3-next-btn')
+    if (next) next.disabled = false
+    return
+  }
+  showMsg('step3-msg',
+    // Only verified centres are listed, so a new centre's own invite link lands
+    // here until the Techable team has checked it.
+    'We could not find that center. It may not be open for sign-ups yet, or it may have changed. Please choose one below, or ask the center.',
+    'err')
+}
+
+// A real radio group, not a grid of clickable divs.
+//
+// This was `<div class="centre-card" onclick=...>` with no role, no tab stop
+// and no state anyone could hear — on the one page whose entire audience is
+// elderly, where a keyboard or a screen reader is likelier than anywhere else
+// in the app. Choosing a centre was reachable by mouse or by nothing.
+//
+// Native radios do all of it for free: Tab reaches the group, the arrow keys
+// move within it, the checked state is announced, and the label element makes
+// the whole card the hit target. The radio is visually hidden rather than
+// display:none, because a display:none input is not focusable and the keyboard
+// would have nothing to land on.
+function renderCentres(list) {
+  const g = document.getElementById('centre-grid')
+  if (!list.length) { g.innerHTML='<div class="no-centres">No community centers found. Check back soon.</div>'; return }
+  const icons = {senior_living:'🏡',care_home:'🏥',activity_group:'🎨',support_group:'🤝',community:'🏘️'}
+  g.setAttribute('role','radiogroup')
+  g.setAttribute('aria-label','Choose your community center')
+  // The change is read off the radio's own value, not an
+  // onchange="selectCentre('<id>')" in the markup: the HTML parser decodes
+  // &#039; back to a quote before a handler attribute is run as JavaScript,
+  // and a centre's id is whatever its creator chose. A property, not
+  // addEventListener, so re-rendering on every search keystroke replaces it.
+  g.onchange = e => { if (e.target && e.target.name === 'centre') selectCentre(e.target.value) }
+  g.innerHTML = list.map(c => {
+    const loc = [c.address, c.city, c.country].filter(Boolean).join(', ')
+    const sel = selectedCentre?.id === c.id
+    return `<label class="centre-card${sel?' selected':''}" data-id="${esc(c.id)}">
+      <input class="centre-radio" type="radio" name="centre" value="${esc(c.id)}"${sel?' checked':''} />
+      <div class="centre-icon" aria-hidden="true">${icons[c.category]||'🏘️'}</div>
+      <div class="centre-info">
+        <div class="centre-name">${esc(c.name)}</div>
+        <div class="centre-meta">${esc(loc||'Location not listed')}</div>
+      </div>
+      <div class="centre-check" aria-hidden="true">${sel?'✓':''}</div>
+    </label>`
+  }).join('')
+}
+
+window.filterCentres = function() {
+  const q = document.getElementById('centre-search').value.toLowerCase()
+  renderCentres(q ? allCentres.filter(c => (c.name+c.city+c.country).toLowerCase().includes(q)) : allCentres)
+}
+
+// Updated in place rather than re-rendered, and that is not cosmetic: this runs
+// from the radio's own change event, so rebuilding the grid would destroy the
+// input the keyboard is currently standing on, mid-event. Arrow-key navigation
+// would then drop focus to the body after a single press.
+window.selectCentre = function(id) {
+  selectedCentre = allCentres.find(c => c.id === id) || null
+  document.querySelectorAll('#centre-grid .centre-card').forEach(card => {
+    const on = card.dataset.id === id
+    card.classList.toggle('selected', on)
+    const tick = card.querySelector('.centre-check')
+    if (tick) tick.textContent = on ? '✓' : ''
+  })
+  document.getElementById('step3-next-btn').disabled = !selectedCentre
+  showMsg('step3-msg','')
+}
+
+// ── Age eligibility check ─────────────────────────────────────
+window.checkAge = function() {
+  const age = parseInt(document.getElementById('j-age').value, 10)
+  const box  = document.getElementById('elig-box')
+  const stat = document.getElementById('age-status')
+  if (!age || isNaN(age)) {
+    box.className = 'eligibility-box'
+    stat.textContent = 'Enter your age to check eligibility'
+    stat.className = 'age-status'
+    return
+  }
+  if (age >= 65) {
+    box.className = 'eligibility-box valid'
+    stat.innerHTML = '✅ You are eligible to register (age ' + age + ')'
+    stat.className = 'age-status ok'
+  } else {
+    box.className = 'eligibility-box invalid'
+    stat.innerHTML = '❌ The minimum age is 65. You are currently ' + age + '. Please speak to your center directly.'
+    stat.className = 'age-status fail'
+  }
+}
+
+// ── Step navigation ───────────────────────────────────────────
+window.goStep1 = function() { setStep(1) }
+
+window.goStep2 = function() {
+  const first = v('j-first'), last = v('j-last'), gender = v('j-gender'), nationality = v('j-nationality')
+  const age   = parseInt(document.getElementById('j-age').value, 10)
+
+  if (!age || isNaN(age))  { highlight('j-age');         showMsg('step1-msg','Please enter your age.','err'); return }
+  if (age < 65)             { highlight('j-age');         showMsg('step1-msg','You must be 65 or older to register through this form.','err'); return }
+  if (!first)               { highlight('j-first');       showMsg('step1-msg','Please enter your first name.','err'); return }
+  if (!last)                { highlight('j-last');        showMsg('step1-msg','Please enter your last name.','err'); return }
+  if (!gender)              { highlight('j-gender');      showMsg('step1-msg','Please select your gender.','err'); return }
+  if (!nationality)         { highlight('j-nationality'); showMsg('step1-msg','Please enter your nationality.','err'); return }
+
+  showMsg('step1-msg','')
+  setStep(2)
+}
+
+window.goStep3 = function() {
+  const phone = v('j-phone')
+  if (!phone) { highlight('j-phone'); showMsg('step2-msg','Please enter a phone number.','err'); return }
+  showMsg('step2-msg','')
+  setStep(3)
+  if (!allCentres.length) loadCentres()
+}
+
+window.goStep4 = function() {
+  if (!selectedCentre) { showMsg('step3-msg','Please select a community center.','err'); return }
+  const name = [v('j-first'), v('j-last')].filter(Boolean).join(' ')
+  const age  = parseInt(document.getElementById('j-age').value, 10)
+  const genderMap = {male:'Male',female:'Female',other:'Other',prefer_not:'Prefer not to say'}
+  const relMap = {son:'Son',daughter:'Daughter',spouse:'Spouse',sibling:'Sibling',friend:'Friend',carer:'Carer',other:'Other'}
+
+  document.getElementById('rv-name').textContent       = name || '—'
+  document.getElementById('rv-age').textContent        = age + ' years old'
+  document.getElementById('rv-dob').textContent        = v('j-dob') ? formatDate(v('j-dob')) : '—'
+  document.getElementById('rv-gender').textContent     = genderMap[v('j-gender')] || '—'
+  document.getElementById('rv-nationality').textContent = v('j-nationality') || '—'
+  document.getElementById('rv-ic').textContent         = v('j-ic') || '—'
+  document.getElementById('rv-phone').textContent      = v('j-phone') || '—'
+  document.getElementById('rv-email').textContent      = v('j-email') || '—'
+  document.getElementById('rv-address').textContent    = v('j-address') || '—'
+  document.getElementById('rv-ec-name').textContent    = v('j-ec-name') || '—'
+  document.getElementById('rv-ec-relation').textContent = relMap[v('j-ec-relation')] || '—'
+  document.getElementById('rv-ec-phone').textContent   = v('j-ec-phone') || '—'
+  document.getElementById('rv-centre-name').textContent = selectedCentre.name
+  document.getElementById('rv-centre-addr').textContent = [selectedCentre.address, selectedCentre.city, selectedCentre.country].filter(Boolean).join(', ') || 'Location not listed'
+  setStep(4)
+}
+
+window.submitRegistration = async function() {
+  if (!selectedCentre) { showMsg('step4-msg','No center selected.','err'); return }
+  if (!document.getElementById('privacy-consent')?.checked) {
+    showMsg('step4-msg','Please tick the Data & Privacy Policy consent before submitting.','err')
+    document.getElementById('privacy-consent')?.focus()
+    return
+  }
+  const btn = document.getElementById('submit-btn')
+  const name = [v('j-first'), v('j-last')].filter(Boolean).join(' ')
+  const age  = parseInt(document.getElementById('j-age').value, 10)
+
+  btn.disabled = true
+  btn.innerHTML = '<div class="spin"></div>&ensp;Submitting…'
+  showMsg('step4-msg','')
+
+  try {
+    await addDoc(collection(db,'registrations'), {
+      // Centre linkage
+      centreId:      selectedCentre.managerId || selectedCentre.id,
+      communityId:   selectedCentre.id,
+      communityName: selectedCentre.name,
+      // Identity
+      name, firstName: v('j-first'), lastName: v('j-last'),
+      age, dob: v('j-dob') || '',
+      gender: v('j-gender') || '',
+      nationality: v('j-nationality') || '',
+      icNumber: v('j-ic') || '',
+      // Contact
+      phone: v('j-phone') || '',
+      email: v('j-email') || '',
+      address: v('j-address') || '',
+      // Emergency
+      emergencyName:     v('j-ec-name') || '',
+      emergencyRelation: v('j-ec-relation') || '',
+      emergencyPhone:    v('j-ec-phone') || '',
+      // Meta
+      privacyConsent: true,
+      privacyConsentAt: serverTimestamp(),
+      privacyPolicyVersion: '2026-08-07',
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    })
+    document.getElementById('sc-centre-name').textContent = selectedCentre.name
+    document.getElementById('form-page').style.display = 'none'
+    document.getElementById('success-screen').classList.add('show')
+    window.scrollTo({ top:0, behavior:'smooth' })
+  } catch(e) {
+    console.error(e)
+    showMsg('step4-msg','Could not submit. Check your connection and try again. (' + (e.code || e.message) + ')','err')
+    btn.disabled = false
+    btn.textContent = 'Submit Registration'
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function setStep(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none'
+    const dot  = document.getElementById('dot-' + i)
+    const sdot = document.getElementById('sdot-' + i)
+    if (i < n)  { dot.className='dot done'; dot.textContent='✓'; sdot.className='step-dot' }
+    if (i === n){ dot.className='dot active'; dot.textContent=i; sdot.className='step-dot active-step' }
+    if (i > n)  { dot.className='dot pending'; dot.textContent=i; sdot.className='step-dot' }
+  })
+  window.scrollTo({ top:0, behavior:'smooth' })
+}
+
+function v(id) { return (document.getElementById(id)?.value || '').trim() }
+
+function highlight(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.classList.add('error')
+  el.focus()
+  el.addEventListener('input', () => el.classList.remove('error'), { once:true })
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id)
+  if (!el) return
+  if (!text) { el.className='msg'; el.textContent=''; return }
+  el.className = 'msg ' + (type || 'err')
+  el.textContent = text
+}
+
+function formatDate(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })
+}
+
+function esc(v) {
+  return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+loadCentres()
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+import {BENEFITS,benefitRoute,officialLink} from './benefits-data.mjs'
+const $=id=>document.getElementById(id)
+function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
+function action(label,href){const safe=officialLink(href);if(!safe)return null;const a=node('a',label,'secondary');a.href=safe;if(safe.startsWith('https:')){a.target='_blank';a.rel='noopener noreferrer';a.referrerPolicy='no-referrer';a.append(node('span',' (official site, new tab)'))}return a}
+function render(focus=false){
+ const route=benefitRoute(location.hash),list=$('benefits-list'),detail=$('benefits-detail');list.hidden=Boolean(route);detail.hidden=!route;$('status').textContent=location.hash&&location.hash!=='#'&&!route?'That benefit page is unavailable. Choose a benefit below.':''
+ if(!route){list.replaceChildren();for(const [id,benefit]of Object.entries(BENEFITS)){if(!benefit.home)continue;const card=node('article',undefined,'center-card');card.append(node('h2',benefit.title,'center-name'));const body=node('div',undefined,'center-info');body.append(node('p',benefit.summary));const row=node('div',undefined,'button-row');for(const [key,s]of Object.entries(benefit.sections)){const a=action(s.label,'#'+id+'/'+key);a.setAttribute('aria-label',benefit.title+': '+s.label);row.append(a)}body.append(row);card.append(body);list.append(card)}if(focus)$('benefits-title').focus();return}
+ const benefit=BENEFITS[route.id],section=benefit.sections[route.section];$('detail-title').textContent=benefit.title;$('section-title').textContent=section.label;$('benefit-nav').replaceChildren();for(const [key,s]of Object.entries(benefit.sections)){const a=action(s.label,'#'+route.id+'/'+key);if(key===route.section)a.setAttribute('aria-current','page');$('benefit-nav').append(a)}
+ $('benefit-copy').replaceChildren(...section.paragraphs.map(text=>node('p',text)));$('benefit-links').replaceChildren();for(const item of section.links){const a=action(item.label,item.href);if(a)$('benefit-links').append(a)}if(route.id==='lifeline')$('benefit-links').append(action('← Back to Medicaid programs','#medicaid/programs'));if(focus)$('detail-title').focus()
+}
+window.TechableAuth.guardRole(['resident'],()=>{render();window.addEventListener('hashchange',()=>render(true))})

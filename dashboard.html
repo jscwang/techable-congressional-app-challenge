@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Techable — Center Dashboard</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-lt:#E07A55;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--navy2:#1A2E42;
+  --cream:#FAF6F0;--white:#FFFFFF;
+  --border:rgba(180,156,136,.18);--border2:rgba(180,156,136,.32);
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --green:#3A7D5C;--green2:#2D6A4F;--green-bg:#EBF5EF;
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --shadow-sm:0 2px 8px rgba(26,18,8,.07);
+  --r:12px;--r-lg:18px;
+}
+html,body{min-height:100%;font-family:"DM Sans",sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,textarea,select{font-family:inherit;outline:none}
+
+/* AUTH LOADING */
+#auth-loading{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:9999}
+.spin{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--green2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HEADER */
+.hdr{background:var(--navy);height:60px;display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.hdr-logo{display:flex;align-items:center;gap:9px;text-decoration:none}
+.hdr-name{font-family:"Fraunces",serif;font-size:16px;font-weight:400;color:#fff}
+.hdr-pill{background:rgba(74,222,128,.12);color:#4ADE80;font-size:10px;font-weight:500;padding:3px 10px;border-radius:20px;border:1px solid rgba(74,222,128,.2)}
+.hdr-space{flex:1}
+.hdr-cname{font-size:12px;color:rgba(255,255,255,.5);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hdr-user{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 10px 4px 4px;border-radius:20px;border:1px solid rgba(255,255,255,.12);transition:all .18s;position:relative}
+.hdr-user:hover{background:rgba(255,255,255,.08)}
+.hdr-av{width:28px;height:28px;border-radius:50%;background:var(--green2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;font-family:"Fraunces",serif;overflow:hidden;flex-shrink:0}
+.hdr-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.hdr-uname{font-size:12px;color:rgba(255,255,255,.7)}
+.hdr-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:5px;min-width:170px;z-index:200;display:none;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.hdr-menu.open{display:block}
+.hm-item{display:block;width:100%;text-align:left;padding:8px 12px;font-size:13px;color:var(--ink2);background:none;border:none;border-radius:8px;cursor:pointer;transition:background .15s;text-decoration:none;font-family:"DM Sans",sans-serif}
+.hm-item:hover{background:var(--cream)}
+.hm-item.danger{color:var(--rust)}
+.hm-item.danger:hover{background:var(--rust-pale)}
+
+/* BANNER */
+.banner{background:linear-gradient(135deg,var(--navy2),var(--navy));padding:22px 24px;overflow:hidden;position:relative}
+.banner::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(45,106,79,.2) 0%,transparent 70%);right:-40px;top:50%;transform:translateY(-50%)}
+.banner-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;position:relative;z-index:1}
+.banner-h{font-family:"Fraunces",serif;font-size:clamp(17px,2.5vw,24px);font-weight:300;color:#fff;margin-bottom:3px}
+.banner-s{font-size:12px;color:rgba(255,255,255,.45)}
+.banner-btns{display:flex;gap:8px;flex-wrap:wrap}
+.bb{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:5px;transition:all .18s}
+.bb-green{background:var(--green2);color:#fff}
+.bb-green:hover{background:var(--green)}
+.bb-ghost{background:rgba(255,255,255,.08);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.12)}
+.bb-ghost:hover{background:rgba(255,255,255,.14)}
+
+/* STATS */
+.stats-bar{background:var(--white);border-bottom:1px solid var(--border)}
+.stats-inner{max-width:1200px;margin:0 auto;display:flex;overflow-x:auto}
+.stat-item{padding:14px 24px;border-right:1px solid var(--border);flex-shrink:0;min-width:110px}
+.stat-item:last-child{border-right:none}
+.stat-n{font-family:"Fraunces",serif;font-size:24px;font-weight:300;color:var(--navy);line-height:1}
+.stat-n.g{color:var(--green2)}
+.stat-l{font-size:10px;color:var(--ink3);margin-top:3px;text-transform:uppercase;letter-spacing:.07em}
+
+/* MAIN */
+.main{max-width:1200px;margin:0 auto;padding:20px 24px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow-sm)}
+.card+.card{margin-top:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-family:"Fraunces",serif;font-size:14px;font-weight:400;color:var(--navy);display:flex;align-items:center;gap:7px}
+
+/* TABLE */
+.tbl-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.tbl-search{flex:1;min-width:140px;padding:7px 12px 7px 30px;border:1.5px solid var(--border);border-radius:20px;font-size:12px;background:var(--cream);transition:border-color .18s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238C7A6A' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:10px center}
+.tbl-search:focus{border-color:var(--green2);background-color:var(--white)}
+.tbl-cnt{font-size:12px;color:var(--ink3);white-space:nowrap}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);background:var(--cream)}
+.tbl td{padding:10px 10px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr{cursor:pointer;transition:background .15s}
+.tbl tbody tr:hover{background:#F7F2EE}
+.res-name{font-weight:500;color:var(--ink)}
+.res-pref{font-size:11px;color:var(--ink3);margin-top:1px}
+.stag{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.stag.active{background:var(--green-bg);color:var(--green2)}
+.stag.pending{background:var(--gold-bg);color:var(--gold)}
+.stag.inactive{background:var(--cream);color:var(--ink3);border:1px solid var(--border)}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sdot.active{background:#4ADE80}
+.sdot.pending{background:var(--gold)}
+.sdot.inactive{background:var(--border2)}
+.row-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.tbl tbody tr:hover .row-actions{opacity:1}
+.ra-btn{width:26px;height:26px;border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:center;background:none;transition:background .15s}
+.ra-btn:hover{background:var(--cream)}
+.ra-btn.del:hover{background:var(--rust-pale);color:var(--rust)}
+.tbl-empty{text-align:center;padding:32px;color:var(--ink3);font-size:13px}
+
+/* CENTRE FORM */
+.sf{margin-bottom:11px}
+.sf:last-of-type{margin-bottom:0}
+.sf label{display:block;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.sf input,.sf textarea,.sf select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--cream);color:var(--ink);font-size:13px;transition:border-color .18s}
+.sf input:focus,.sf textarea:focus{border-color:var(--green2);background:var(--white)}
+.sf textarea{resize:none;min-height:60px}
+.sf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.save-row{display:flex;justify-content:flex-end;gap:7px;margin-top:12px}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .18s;border:none}
+.btn-green{background:var(--green2);color:#fff}
+.btn-green:hover{background:var(--green)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-s{background:var(--cream);color:var(--ink2);border:1.5px solid var(--border)}
+.btn-s:hover{border-color:var(--green2);color:var(--green2)}
+.btn-danger{background:#FEF2EF;color:var(--rust);border:1.5px solid rgba(196,85,43,.2)}
+.btn-danger:hover{background:#FCDDD5}
+.btn-full{width:100%;justify-content:center;padding:11px}
+
+/* MSG */
+.msg{padding:9px 12px;border-radius:var(--r);font-size:12px;margin-bottom:10px;display:none}
+.msg.error{background:#FEF2EF;color:var(--rust);border:1px solid rgba(196,85,43,.2)}
+.msg.success{background:var(--green-bg);color:var(--green2);border:1px solid rgba(45,106,79,.2)}
+.msg.show{display:block}
+
+/* HINT */
+.hint{background:var(--green-bg);border:1px solid rgba(45,106,79,.2);border-radius:var(--r);padding:14px 16px;display:none;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:12px;color:var(--green2);line-height:1.6}
+
+/* DRAWER */
+#d-overlay{
+  position:fixed;inset:0;
+  background:rgba(26,18,8,.45);
+  z-index:500;
+  display:none;
+  backdrop-filter:blur(3px);
+}
+#d-overlay.open{display:block}
+
+#drawer{
+  position:fixed;top:0;right:0;bottom:0;
+  width:460px;max-width:100vw;
+  background:var(--white);
+  z-index:501;
+  display:flex;flex-direction:column;
+  transform:translateX(100%);
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:-8px 0 40px rgba(0,0,0,.15);
+}
+#drawer.open{transform:translateX(0)}
+
+.d-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--white)}
+.d-back{width:32px;height:32px;border-radius:50%;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.d-back:hover{border-color:var(--rust);color:var(--rust)}
+.d-title{font-family:"Fraunces",serif;font-size:16px;font-weight:400;color:var(--navy);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d-savebtn{padding:8px 18px;border-radius:20px;background:var(--green2);color:#fff;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .18s;flex-shrink:0}
+.d-savebtn:hover{background:var(--green)}
+.d-savebtn:disabled{opacity:.6;cursor:not-allowed}
+
+.d-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;padding:0 18px;gap:2px;background:var(--white)}
+.d-tab{padding:10px 12px;font-size:13px;color:var(--ink3);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:"DM Sans",sans-serif}
+.d-tab:hover{color:var(--ink)}
+.d-tab.active{color:var(--green2);border-bottom-color:var(--green2);font-weight:500}
+
+.d-body{flex:1;overflow-y:auto;padding:18px}
+.d-panel{display:none}
+.d-panel.active{display:block}
+
+/* DRAWER FORM FIELDS */
+.df{margin-bottom:12px}
+.df label{display:block;font-size:10px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.df input,.df textarea,.df select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--cream);color:var(--ink);font-size:13px;transition:border-color .18s;font-family:"DM Sans",sans-serif}
+.df input:focus,.df textarea:focus{border-color:var(--green2);background:var(--white)}
+.df textarea{resize:none;line-height:1.55}
+.df2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sec-lbl{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;margin-top:6px;display:block}
+
+/* MEMORIES */
+.mem-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.mem-row{display:flex;align-items:flex-start;gap:8px;background:var(--cream);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px}
+.mem-txt{flex:1;font-size:12px;color:var(--ink);line-height:1.5}
+.mem-badge{font-size:10px;padding:2px 7px;border-radius:7px;background:var(--rust-pale);color:var(--rust);font-weight:500;white-space:nowrap;flex-shrink:0;align-self:flex-start;margin-top:1px}
+.mem-del-btn{font-size:15px;color:var(--ink4);background:none;border:none;cursor:pointer;padding:0 3px;transition:color .15s}
+.mem-del-btn:hover{color:var(--rust)}
+.mem-empty{font-size:12px;color:var(--ink3);font-style:italic;padding:6px 0}
+.mem-add{display:flex;gap:7px;align-items:center}
+.mem-add input{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;background:var(--cream);transition:border-color .18s;font-family:"DM Sans",sans-serif}
+.mem-add input:focus{border-color:var(--green2);background:var(--white)}
+.mem-add select{width:90px;padding:8px 8px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;background:var(--cream);font-family:"DM Sans",sans-serif;flex-shrink:0}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);white-space:nowrap;animation:tIn .2s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ACTIVITY */
+.act-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.act-badge.high{background:var(--green-bg);color:var(--green2)}
+.act-badge.med{background:var(--gold-bg);color:var(--gold)}
+.act-badge.low{background:var(--cream);color:var(--ink3);border:1px solid var(--border)}
+.act-overview{max-width:1200px;margin:0 auto;padding:16px 24px 0}
+.act-overview-title{font-family:"Fraunces",serif;font-size:14px;color:var(--navy);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.act-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.act-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:10px}
+.act-icon{font-size:22px;flex-shrink:0}
+.act-n{font-family:"Fraunces",serif;font-size:20px;font-weight:300;color:var(--navy);line-height:1}
+.act-l{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+/* Urgent disclosures raised by a check-in. Loud on purpose: this is the one
+   thing on the page somebody has to act on, and it competes with a screen of
+   ordinary admin. */
+.esc-alert{max-width:1200px;margin:16px auto 0;padding:14px 18px;background:var(--rust-pale);
+  border:1.5px solid rgba(196,85,43,.35);border-left:5px solid var(--rust);border-radius:var(--r-lg)}
+.esc-alert-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-family:"Fraunces",serif;font-size:15px;color:var(--rust);margin-bottom:8px}
+.esc-alert-count{font-size:11px;color:var(--rust);text-transform:uppercase;letter-spacing:.06em}
+.esc-alert-row{display:flex;gap:10px;align-items:baseline;padding:7px 0;
+  border-top:1px solid rgba(196,85,43,.18);font-size:13px;line-height:1.5;color:var(--navy)}
+.esc-alert-row:first-child{border-top:0}
+.esc-alert-who{font-weight:600;flex-shrink:0}
+.esc-alert-when{font-size:11px;color:var(--ink3);margin-left:auto;flex-shrink:0;white-space:nowrap}
+.esc-alert-quote{color:var(--ink2);font-style:italic}
+.esc-alert-foot{margin-top:9px;font-size:11px;color:var(--ink3);line-height:1.5}
+/* The check-ins could not be read. This page cannot tell whether anything was
+   raised, and must not look like it can. */
+.esc-unknown{max-width:1200px;margin:16px auto 0;padding:14px 18px;background:var(--gold-bg);
+  border:1.5px solid rgba(196,154,42,.4);border-left:5px solid var(--gold);border-radius:var(--r-lg)}
+.esc-unknown-head{font-family:"Fraunces",serif;font-size:15px;color:var(--navy);margin-bottom:6px}
+.esc-unknown-body{font-size:13px;line-height:1.6;color:var(--ink2);margin-bottom:10px}
+.esc-unknown-btn{padding:9px 18px;min-height:40px;border-radius:var(--r);background:var(--navy);color:#fff;font-size:13px;font-weight:600}
+.esc-unknown-btn:hover{background:var(--navy2)}
+
+@media(max-width:900px){.main{grid-template-columns:minmax(0,1fr)}.act-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.main{padding:12px}.df2{grid-template-columns:1fr}#drawer{width:100vw}.act-grid{grid-template-columns:1fr 1fr}}
+
+/* ── REGISTRATIONS ───────────────────────── */
+.reg-section{background:var(--white);border-bottom:1px solid var(--border);padding:16px 20px 14px}
+.reg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.reg-title{font-family:'Fraunces',serif;font-size:15px;font-weight:400;color:var(--navy);display:flex;align-items:center;gap:8px}
+.reg-badge{background:var(--rust);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.reg-st{display:inline-flex;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap}
+.reg-st.pending{background:#FBF4E3;color:#92610A}
+.reg-st.approved{background:var(--green-bg);color:var(--green2)}
+.reg-st.rejected{background:#FEF2EF;color:#9B2C2C}
+.person-link{background:none;border:0;color:var(--green2,#26694f);text-decoration:underline;text-align:left;font:inherit;min-height:44px;padding:8px 0;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="auth-loading"><div class="spin"></div></div>
+
+<!-- Header -->
+<header class="hdr">
+  <a class="hdr-logo" href="index.html">
+    <img class="brand-mark" src="assets/techable-icon.png" alt="" width="28" height="32">
+    <span class="hdr-name">Techable</span>
+  </a>
+  <span class="hdr-pill">Senior Center</span>
+  <span class="hdr-cname" id="hdr-cname"></span>
+  <div class="hdr-space"></div>
+  <div class="hdr-user" id="hdr-user">
+    <div class="hdr-av" id="hdr-av">?</div>
+    <span class="hdr-uname" id="hdr-uname"></span>
+    <div class="hdr-menu" id="hdr-menu">
+      <a class="hm-item" href="profile.html">My Profile</a>
+      <a class="hm-item" href="community.html">Community</a>
+      <a class="hm-item" href="faq.html">Help &amp; FAQ</a>
+      <button class="hm-item danger" id="signout-btn">Sign Out</button>
+    </div>
+  </div>
+</header>
+
+<!-- Page content (shown after auth) -->
+<div id="page-content" style="display:none">
+
+  <div class="banner">
+    <div class="banner-inner">
+      <div>
+        <div class="banner-h" id="banner-h">Center Dashboard</div>
+        <div class="banner-s" id="banner-s">Manage your residents and AI companion program</div>
+      </div>
+      <div class="banner-btns">
+        <a class="bb bb-ghost" href="community.html">👥 Community</a>
+        <a class="bb bb-green" href="profile.html">🏘️ Center workspace</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat-item"><div class="stat-n g" id="s-total">—</div><div class="stat-l">Residents</div></div>
+      <div class="stat-item"><div class="stat-n g" id="s-active">—</div><div class="stat-l">Active</div></div>
+      <div class="stat-item"><div class="stat-n" id="s-pending">—</div><div class="stat-l">Pending</div></div>
+      <div class="stat-item"><div class="stat-n" id="s-mems">—</div><div class="stat-l">Memories</div></div>
+      <div class="stat-item"><div class="stat-n" id="s-cap">—</div><div class="stat-l">Capacity</div></div>
+      <div class="stat-item"><div class="stat-n" id="s-regs" style="color:var(--rust)">—</div><div class="stat-l">New Signups</div></div>
+    </div>
+  </div>
+
+  <!-- URGENT DISCLOSURES -->
+  <!-- A check-in that hit the safety rules stops dead and tells the senior it
+       has been written down for their care team. This is where a person on the
+       centre's side actually reads it. Before this the manager dashboard had no
+       mention of check-ins or escalations at all, so "flagged for your care
+       team" reached nobody: the record existed and nothing displayed it.
+       Hidden until there is something in it — an always-visible empty alert
+       box is one people stop seeing. -->
+  <div class="esc-alert" id="esc-alert" style="display:none" role="alert" aria-live="assertive">
+    <div class="esc-alert-head">
+      <span>⚠️ Needs a person</span>
+      <span class="esc-alert-count" id="esc-alert-count"></span>
+    </div>
+    <div class="esc-alert-body" id="esc-alert-body"></div>
+    <div class="esc-alert-foot">
+      Raised by a daily check-in in the last 7 days. Nobody is notified
+      automatically — these are seen only here.
+    </div>
+  </div>
+
+  <!-- A failed read is not an empty one (README.txt, "A FAILED READ IS NOT AN
+       EMPTY ONE"). With the alert box hidden and every resident at "🔴 Low",
+       a read that failed looked exactly like a quiet week. -->
+  <div class="esc-unknown" id="esc-unknown" style="display:none" role="alert">
+    <div class="esc-unknown-head" id="esc-unknown-head">We couldn't load the latest check-ins</div>
+    <p class="esc-unknown-body">
+      So we can't tell right now whether any resident has raised something
+      that needs a person. This does not mean there is nothing urgent. Please
+      try again before relying on this page.
+    </p>
+    <button class="esc-unknown-btn" type="button" onclick="location.reload()">Try again</button>
+  </div>
+
+  <!-- ACTIVITY OVERVIEW -->
+  <div class="act-overview">
+    <div class="act-overview-title">
+      <span>📊 Activity Overview</span>
+      <span style="font-size:11px;color:var(--ink3)">Sessions in the last 7 days</span>
+    </div>
+    <div class="act-grid">
+      <div class="act-card"><div class="act-icon">🟢</div><div><div class="act-n" id="act-high">—</div><div class="act-l">Highly Active</div></div></div>
+      <div class="act-card"><div class="act-icon">🟡</div><div><div class="act-n" id="act-med">—</div><div class="act-l">Moderate</div></div></div>
+      <div class="act-card"><div class="act-icon">🔴</div><div><div class="act-n" id="act-low">—</div><div class="act-l">Low Activity</div></div></div>
+      <div class="act-card"><div class="act-icon">💬</div><div><div class="act-n" id="act-sessions">—</div><div class="act-l">Sessions This Week</div></div></div>
+    </div>
+  </div>
+
+  <!-- REGISTRATIONS PANEL -->
+  <div class="reg-section" id="reg-section">
+    <div class="reg-header">
+      <div class="reg-title">📋 Registrations <span class="reg-badge" id="reg-badge" style="display:none">0</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="reg-filter" aria-label="Filter registrations by status" onchange="filterRegs()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--white);color:var(--ink2)">
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <button class="btn btn-sm btn-s" onclick="exportRegsCsv()">⬇ Export CSV</button>
+      </div>
+    </div>
+    <!-- Summary stats -->
+    <div id="reg-stats" style="display:none;display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="background:var(--cream2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:12px;color:var(--ink3)">Total: <strong id="rs-total" style="color:var(--ink)">0</strong></div>
+      <div style="background:#FBF4E3;border:1px solid rgba(196,154,42,.2);border-radius:10px;padding:10px 16px;font-size:12px;color:#92610A">Pending: <strong id="rs-pending">0</strong></div>
+      <div style="background:var(--green-bg);border:1px solid rgba(45,106,79,.2);border-radius:10px;padding:10px 16px;font-size:12px;color:var(--green)">Approved: <strong id="rs-approved">0</strong></div>
+      <div style="background:#FEF2EF;border:1px solid rgba(196,48,43,.15);border-radius:10px;padding:10px 16px;font-size:12px;color:#9B2C2C">Rejected: <strong id="rs-rejected">0</strong></div>
+    </div>
+    <div id="reg-loading" style="padding:18px 0;text-align:center;color:var(--ink3);font-size:13px">Loading…</div>
+    <div id="reg-table-wrap" style="display:none;overflow-x:auto">
+      <table class="tbl" style="min-width:1100px">
+        <thead><tr><th>Name</th><th>Age</th><th>Gender</th><th>Nationality</th><th>IC / ID</th><th>Phone</th><th>Email</th><th>Address</th><th>Emergency Contact</th><th>Center</th><th>Submitted</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody id="reg-tbody"></tbody>
+      </table>
+    </div>
+    <div id="reg-empty" style="display:none;padding:24px;text-align:center;color:var(--ink3);font-size:13px">No registrations yet. <a href="join.html" id="reg-open-join" target="_blank" style="color:var(--rust);font-weight:600">Open join form →</a></div>
+    <div style="margin-top:12px;padding:11px 14px;background:var(--rust-pale);border:1px solid rgba(196,85,43,.18);border-radius:var(--r);font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <strong>Senior join link:</strong>
+      <span id="reg-join-url" style="color:var(--rust)">join.html</span>
+      <button onclick="copyJoinLink()" style="font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid rgba(196,85,43,.3);background:transparent;color:var(--rust);cursor:pointer;font-family:'DM Sans',sans-serif">Copy</button>
+    </div>
+  </div>
+
+  <!-- VISIT REQUESTS PANEL -->
+  <div class="reg-section" id="visit-section">
+    <div class="reg-header">
+      <div class="reg-title">📅 Visit Requests <span class="reg-badge" id="visit-badge" style="display:none">0</span></div>
+      <select id="visit-filter" aria-label="Filter visit requests by status" onchange="filterVisits()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--white);color:var(--ink2)">
+        <option value="pending">Pending</option>
+        <option value="all">All statuses</option>
+        <option value="accepted">Accepted</option>
+        <option value="rejected">Rejected</option>
+        <option value="cancelled">Canceled</option>
+      </select>
+    </div>
+    <div id="visit-loading" style="padding:18px 0;text-align:center;color:var(--ink3);font-size:13px">Loading…</div>
+    <div id="visit-table-wrap" style="display:none;overflow-x:auto">
+      <table class="tbl" style="min-width:900px">
+        <thead><tr><th>Senior</th><th>Account</th><th>Community</th><th>Visit date</th><th>Start</th><th>End</th><th>Note</th><th>Requested</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody id="visit-tbody"></tbody>
+      </table>
+    </div>
+    <div id="visit-empty" style="display:none;padding:24px;text-align:center;color:var(--ink3);font-size:13px">No visit requests yet. Seniors can request a visit from the <a href="communities.html" target="_blank" style="color:var(--rust);font-weight:600">Communities page →</a></div>
+  </div>
+
+  <!-- AUTOMATIC ATTENDANCE PANEL -->
+  <div class="reg-section" id="attendance-section">
+    <div class="reg-header">
+      <div class="reg-title">✅ Attendance sign-ins <span class="reg-badge" id="attendance-badge" style="display:none">0 today</span></div>
+    </div>
+    <p style="margin:0 0 12px;color:var(--ink3);font-size:12px;line-height:1.55">Share this center-specific link or open it on a center device. A signed-in senior assigned to this center is recorded once per day when the link opens.</p>
+    <div style="margin-bottom:14px;padding:11px 14px;background:var(--green-bg);border:1px solid rgba(45,106,79,.18);border-radius:var(--r);font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <strong>Attendance link:</strong>
+      <span id="attendance-url" style="color:var(--green);overflow-wrap:anywhere">Create or load your center to generate the link.</span>
+      <button onclick="copyAttendanceLink(this)" style="font-size:11px;padding:3px 10px;border-radius:8px;border:1px solid rgba(45,106,79,.3);background:transparent;color:var(--green);cursor:pointer;font-family:'DM Sans',sans-serif">Copy</button>
+    </div>
+    <div id="attendance-loading" style="padding:18px 0;text-align:center;color:var(--ink3);font-size:13px">Loading…</div>
+    <div id="attendance-table-wrap" style="display:none;overflow-x:auto">
+      <table class="tbl" style="min-width:650px">
+        <thead><tr><th>Senior</th><th>Date</th><th>Time</th><th>Center</th><th>Method</th></tr></thead>
+        <tbody id="attendance-tbody"></tbody>
+      </table>
+    </div>
+    <div id="attendance-empty" style="display:none;padding:24px;text-align:center;color:var(--ink3);font-size:13px">No automatic attendance records yet.</div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: residents -->
+    <div>
+      <div class="hint" id="setup-hint">
+        <span>💡</span>
+        <span>Fill in your <strong>Center Details</strong> on the right first, then add residents here.</span>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">👴 Residents</div>
+          <button class="btn btn-green btn-sm" id="add-res-btn">+ Add Resident</button>
+        </div>
+        <div class="tbl-bar">
+          <input class="tbl-search" id="tbl-search" aria-label="Search residents by name or room" type="text" placeholder="Search name or room…"/>
+          <span class="tbl-cnt" id="tbl-cnt"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Resident</th><th>Room</th><th>Status</th>
+                <th>Activity</th><th>Last Active</th>
+                <th>Memories</th><th>Medical</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tbl-body">
+              <tr><td colspan="6" class="tbl-empty">Loading residents…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: centre details -->
+    <div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">🏥 Center Details</div></div>
+        <div class="msg" id="c-msg"></div>
+        <div class="sf"><label for="c-name">Center Name *</label><input type="text" id="c-name" placeholder="e.g. Sunrise Care Home"/></div>
+        <div class="sf"><label for="c-addr">Address</label><textarea id="c-addr" rows="2" placeholder="Full address"></textarea></div>
+        <div class="sf2">
+          <div class="sf"><label for="c-city">City</label><input type="text" id="c-city" placeholder="Petaling Jaya"/></div>
+          <div class="sf"><label for="c-country">Country</label><input type="text" id="c-country" placeholder="Malaysia"/></div>
+        </div>
+        <div class="sf2">
+          <div class="sf"><label for="c-phone">Phone</label><input type="tel" id="c-phone" placeholder="+60 3-XXXX XXXX"/></div>
+          <div class="sf"><label for="c-cap">Capacity</label><input type="number" id="c-cap" placeholder="50"/></div>
+        </div>
+        <div class="sf"><label for="c-email">Email</label><input type="email" id="c-email" placeholder="info@center.com"/></div>
+        <div class="sf"><label for="c-web">Website</label><input type="url" id="c-web" placeholder="https://yourcenter.com"/></div>
+        <div class="sf"><label for="c-desc">Description</label><textarea id="c-desc" rows="2" placeholder="Brief description…"></textarea></div>
+        <div class="save-row">
+          <button class="btn btn-s btn-sm" id="discard-btn">Discard</button>
+          <button class="btn btn-green btn-sm" id="save-centre-btn">Save Details</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head"><div class="card-title">Quick Links</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <a href="profile.html" class="hm-item" style="border:1px solid var(--border);border-radius:var(--r)">👤 My Profile &amp; Robots</a>
+          <a href="profile.html" class="hm-item" style="border:1px solid var(--border);border-radius:var(--r)">🏘️ Center workspace</a>
+          <a href="community.html" class="hm-item" style="border:1px solid var(--border);border-radius:var(--r)">👥 Community Directory</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div id="d-overlay"></div>
+
+<!-- DRAWER -->
+<div id="drawer">
+  <div class="d-hdr">
+    <button class="d-back" id="d-close">←</button>
+    <div class="d-title" id="d-title">New Resident</div>
+    <button class="d-savebtn" id="d-save">Save</button>
+  </div>
+  <div class="d-tabs">
+    <button class="d-tab active" data-panel="dp-profile">Profile</button>
+    <button class="d-tab" data-panel="dp-memories">Memory Bank</button>
+    <button class="d-tab" data-panel="dp-danger">⚙</button>
+  </div>
+  <div class="d-body">
+
+    <div class="d-panel active" id="dp-profile">
+      <div class="msg" id="d-msg"></div>
+      <span class="sec-lbl">Basic Info</span>
+      <div class="df2">
+        <div class="df"><label for="d-name">Full Name *</label><input type="text" id="d-name" placeholder="e.g. Margaret Chen"/></div>
+        <div class="df"><label for="d-pref">Preferred Name</label><input type="text" id="d-pref" placeholder="e.g. Grandma Maggie"/></div>
+      </div>
+      <div class="df2">
+        <div class="df"><label for="d-age">Age</label><input type="number" id="d-age" placeholder="81"/></div>
+        <div class="df"><label for="d-room">Room</label><input type="text" id="d-room" placeholder="Room 7"/></div>
+      </div>
+      <div class="df"><label for="d-status">Status</label>
+        <select id="d-status">
+          <option value="active">Active</option>
+          <option value="pending">Pending</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <span class="sec-lbl">Background</span>
+      <div class="df"><label for="d-bg">Personal Background</label>
+        <textarea id="d-bg" rows="3" placeholder="Hobbies, career, personality, interests…"></textarea>
+      </div>
+      <div class="df"><label for="d-family">Family</label>
+        <textarea id="d-family" rows="2" placeholder="Family members, who visits, relationships…"></textarea>
+      </div>
+      <span class="sec-lbl">Medical &amp; Care</span>
+      <div class="df"><label for="d-medical">Medical Notes</label>
+        <textarea id="d-medical" rows="2" placeholder="Conditions, communication preferences…"></textarea>
+      </div>
+      <div class="df"><label for="d-notes">Internal Notes</label>
+        <textarea id="d-notes" rows="2" placeholder="Staff notes, care instructions…"></textarea>
+      </div>
+    </div>
+
+    <div class="d-panel" id="dp-memories">
+      <p style="font-size:12px;color:var(--ink3);line-height:1.65;margin-bottom:14px;font-weight:300">
+        Add personal memories and stories. The AI uses these to hold personalized, meaningful conversations.
+      </p>
+      <div class="mem-list" id="d-mem-list">
+        <div class="mem-empty">No memories yet. Add one below.</div>
+      </div>
+      <div class="mem-add" style="margin-top:8px">
+        <input type="text" id="mem-txt" aria-label="New memory" placeholder="e.g. Won a rose competition in 1985"/>
+        <select id="mem-tag" aria-label="Memory type">
+          <option value="family">Family</option>
+          <option value="hobby">Hobby</option>
+          <option value="event">Event</option>
+          <option value="place">Place</option>
+          <option value="feeling">Feeling</option>
+          <option value="other">Other</option>
+        </select>
+        <button class="btn btn-green btn-sm" id="add-mem-btn">Add</button>
+      </div>
+    </div>
+
+    <div class="d-panel" id="dp-danger">
+      <p style="font-size:13px;color:var(--ink2);margin-bottom:14px;line-height:1.65">
+        Permanent actions. Cannot be undone.
+      </p>
+      <button class="btn btn-danger btn-full" id="del-res-btn" style="display:none">
+        🗑 Delete Resident Permanently
+      </button>
+      <p style="font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.6">
+        Removes this resident and all their memories from the database.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIG: try API (Vercel), fallback to config.js (local) -->
+<script>
+window._cfg = fetch('/api/config')
+  .then(function(r){ return r.ok ? r.json() : null })
+  .then(function(d){ if(d && d.firebase && d.firebase.apiKey) window.TECHABLE_CONFIG = d })
+  .catch(function(){})
+  .then(function(){ return new Promise(function(res){ setTimeout(function(){ res(window.TECHABLE_CONFIG) }, 80) }) })
+</script>
+<script src="config.js" onerror="void 0"></script>
+
+<!-- AUTH MODULE -->
+<script type="module" src="auth.js"></script>
+
+<!-- ============================================================
+     REGULAR SCRIPT — all UI logic, no async issues
+     Runs synchronously, all functions available immediately
+     ============================================================ -->
+<script>
+// ── STATE ────────────────────────────────────────────────────
+var _db     = null   // set by Firebase module below
+var _uid    = null   // set after auth
+var _allRes = []
+var _editId = null
+var _mems   = []
+var _cDirty = false
+var _centreId = null
+
+// ── HELPERS ──────────────────────────────────────────────────
+function ge(id){ return document.getElementById(id) }
+// Quotes too: row ids and statuses go into attribute values, where an
+// unescaped " ends the attribute and whatever follows becomes markup.
+function esc(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;') }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1) }
+
+function toast(msg){
+  var t = document.createElement('div')
+  t.className = 'toast'
+  t.textContent = msg
+  document.body.appendChild(t)
+  setTimeout(function(){ t.remove() }, 2400)
+}
+
+function showMsg(id, txt, type){
+  var el = ge(id); if(!el) return
+  el.textContent = txt
+  el.className = 'msg' + (type ? ' show ' + type : '')
+}
+
+function updateStats(list){
+  ge('s-total').textContent   = list.length
+  ge('s-active').textContent  = list.filter(function(r){ return r.status === 'active' }).length
+  ge('s-pending').textContent = list.filter(function(r){ return r.status === 'pending' }).length
+  ge('s-mems').textContent    = list.reduce(function(a,r){ return a + (r.memories ? r.memories.length : 0) }, 0)
+}
+
+// ── DRAWER ───────────────────────────────────────────────────
+function openDrawer(id){
+  console.log('[Dashboard] openDrawer called with id:', id)
+  _editId = id || null
+  _mems   = []
+
+  // Clear form
+  ge('d-name').value    = ''
+  ge('d-pref').value    = ''
+  ge('d-age').value     = ''
+  ge('d-room').value    = ''
+  ge('d-status').value  = 'active'
+  ge('d-bg').value      = ''
+  ge('d-family').value  = ''
+  ge('d-medical').value = ''
+  ge('d-notes').value   = ''
+  ge('d-title').textContent = id ? 'Edit Resident' : 'New Resident'
+  ge('del-res-btn').style.display = id ? 'flex' : 'none'
+  showMsg('d-msg', '', '')
+
+  // Populate if editing
+  if (id) {
+    var r = _allRes.find(function(x){ return x.id === id })
+    if (r) {
+      ge('d-name').value    = r.name           || ''
+      ge('d-pref').value    = r.preferredName  || ''
+      ge('d-age').value     = r.age            || ''
+      ge('d-room').value    = r.room           || ''
+      ge('d-status').value  = r.status         || 'active'
+      ge('d-bg').value      = r.background     || ''
+      ge('d-family').value  = r.family         || ''
+      ge('d-medical').value = r.medical        || ''
+      ge('d-notes').value   = r.notes          || ''
+      ge('d-title').textContent = r.preferredName || r.name || 'Edit Resident'
+      _mems = (r.memories || []).map(function(m){ return Object.assign({}, m) })
+    }
+  }
+
+  renderMems()
+  switchDTab('dp-profile')
+  ge('d-overlay').classList.add('open')
+  ge('drawer').classList.add('open')
+  console.log('[Dashboard] drawer opened, classes:', ge('drawer').className)
+}
+
+function closeDrawer(){
+  ge('d-overlay').classList.remove('open')
+  ge('drawer').classList.remove('open')
+}
+
+function switchDTab(panelId){
+  document.querySelectorAll('.d-tab').forEach(function(b){
+    b.classList.toggle('active', b.dataset.panel === panelId)
+  })
+  document.querySelectorAll('.d-panel').forEach(function(p){
+    p.classList.toggle('active', p.id === panelId)
+  })
+}
+
+// ── MEMORIES ─────────────────────────────────────────────────
+function renderMems(){
+  var el = ge('d-mem-list')
+  if (!_mems.length) {
+    el.innerHTML = '<div class="mem-empty">No memories yet. Add one below.</div>'
+    return
+  }
+  el.innerHTML = _mems.map(function(m, i){
+    return '<div class="mem-row">' +
+      '<div class="mem-txt">' + esc(m.text) + '</div>' +
+      '<div class="mem-badge">' + esc(m.tag) + '</div>' +
+      '<button class="mem-del-btn" data-idx="' + i + '">×</button>' +
+    '</div>'
+  }).join('')
+  el.querySelectorAll('.mem-del-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      _mems.splice(parseInt(btn.dataset.idx), 1)
+      renderMems()
+    })
+  })
+}
+
+function addMem(){
+  var txt = ge('mem-txt').value.trim()
+  var tag = ge('mem-tag').value
+  if (!txt) { ge('mem-txt').focus(); return }
+  _mems.push({ id: Date.now().toString(), text: txt, tag: tag })
+  ge('mem-txt').value = ''
+  renderMems()
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function relativeDate(date){
+  var diff = (Date.now() - date.getTime()) / 1000
+  if (diff < 3600)   return 'Today'
+  if (diff < 86400)  return 'Today'
+  if (diff < 172800) return 'Yesterday'
+  var days = Math.floor(diff / 86400)
+  if (days < 7)  return days + ' days ago'
+  if (days < 14) return '1 week ago'
+  return date.toLocaleDateString('en-GB', {day:'numeric',month:'short'})
+}
+
+// ── TABLE ─────────────────────────────────────────────────────
+function renderTable(list){
+  ge('tbl-cnt').textContent = list.length + ' resident' + (list.length !== 1 ? 's' : '')
+  var tb = ge('tbl-body')
+  var actMap = window._activityMap || {}
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="8" class="tbl-empty">No residents yet. Click + Add Resident to get started.</td></tr>'
+    return
+  }
+  tb.innerHTML = list.map(function(r){
+    var mc = r.memories ? r.memories.length : 0
+    var st = r.status || 'active'
+    // A status is free text on the resident document; only the three the
+    // stylesheet knows may become a class name. The label is escaped as text.
+    var stCls = ['active','pending','inactive'].indexOf(st) >= 0 ? st : 'inactive'
+    var a = actMap[r.id] || {}
+    var cnt = a.count || 0
+    // Until the sessions read has succeeded, activity is unknown — not low.
+    var actCls = !window._activityLoaded ? 'low' : cnt >= 5 ? 'high' : cnt >= 2 ? 'med' : 'low'
+    var actLbl = !window._activityLoaded ? '— Not loaded' : cnt >= 5 ? '🟢 Active' : cnt >= 2 ? '🟡 Moderate' : '🔴 Low'
+    var lastStr = a.lastDate ? relativeDate(a.lastDate) : '—'
+    return '<tr data-id="' + esc(r.id) + '">' +
+      '<td><div class="res-name">' + esc(r.name) + '</div>' +
+      (r.preferredName ? '<div class="res-pref">' + esc(r.preferredName) + '</div>' : '') +
+      '</td>' +
+      '<td style="font-size:12px;color:var(--ink3)">' + esc(r.room || '—') + '</td>' +
+      '<td><span class="stag ' + stCls + '"><span class="sdot ' + stCls + '"></span>' + esc(cap(String(st))) + '</span></td>' +
+      '<td><span class="act-badge ' + actCls + '">' + actLbl + '</span></td>' +
+      '<td style="font-size:12px;color:var(--ink3)">' + lastStr + '</td>' +
+      '<td style="font-size:12px;color:var(--ink3)"><b style="color:var(--rust)">' + mc + '</b> mem</td>' +
+      '<td style="font-size:13px">' + (r.medical ? '⚕' : '') + '</td>' +
+      '<td><div class="row-actions">' +
+        '<button class="ra-btn edit-btn" data-id="' + esc(r.id) + '" title="Edit">✏️</button>' +
+        '<button class="ra-btn del ra-del-btn" data-id="' + esc(r.id) + '" title="Delete">×</button>' +
+      '</div></td>' +
+    '</tr>'
+  }).join('')
+
+  // Row click to edit
+  tb.querySelectorAll('tr[data-id]').forEach(function(row){
+    row.addEventListener('click', function(){ openDrawer(row.dataset.id) })
+  })
+  tb.querySelectorAll('.edit-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); openDrawer(btn.dataset.id) })
+  })
+  tb.querySelectorAll('.ra-del-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){ e.stopPropagation(); deleteById(btn.dataset.id) })
+  })
+}
+
+function filterTable(val){
+  var t = val.toLowerCase()
+  renderTable(_allRes.filter(function(r){
+    return (r.name||'').toLowerCase().includes(t) ||
+           (r.room||'').toLowerCase().includes(t) ||
+           (r.preferredName||'').toLowerCase().includes(t)
+  }))
+}
+
+// Expose renderTable for the module script (used after loadActivity populates _activityMap)
+window._renderTable = function(list){ renderTable(list) }
+
+// ── ASYNC OPERATIONS (called by module below) ─────────────────
+// These are exposed on window so the module script can call them
+
+window._dash = {
+
+  setDB: function(db){ _db = db },
+  setUID: function(uid){ _uid = uid },
+
+  // One centre record, not two. This form used to read and write
+  // centres/{uid}, a collection no senior-facing page has ever read: the
+  // homepage directory, the join form's centre picker and the communities
+  // page the companion's big button leads to all read `communities`, which
+  // is the collection the centre profile on profile.html writes. So a manager
+  // filling this in was told "Centre details saved ✓" for a record that
+  // reached nobody, and a manager who had already set their centre up properly
+  // was told here, on every visit, that they had not: empty form, setup hint,
+  // and "Centre Dashboard" in the banner where their own name should be.
+  //
+  // A manager may hold more than one centre. profile.html's overview treats
+  // the alphabetically first one as theirs, so this page agrees with it
+  // rather than quietly choosing a different one.
+  findCentre: async function(){
+    var snap = await window._fs.getDocs(window._fs.query(
+      window._fs.collection(_db, 'communities'),
+      window._fs.where('managerUid', '==', _uid)
+    ))
+    var docs = snap.docs.slice()
+    docs.sort(function(a,b){ return (a.data().name||'').localeCompare(b.data().name||'') })
+    return docs[0] || null
+  },
+
+  loadCentre: async function(){
+    if (!_db || !_uid) return
+    try {
+      var snap = await window._dash.findCentre()
+      if (!snap) { _centreId = null; ge('setup-hint').style.display = 'flex'; return }
+      _centreId = snap.id
+      var d = snap.data()
+      ge('c-name').value    = d.name         || ''
+      ge('c-addr').value    = d.address      || ''
+      ge('c-city').value    = d.city         || ''
+      ge('c-country').value = d.country      || ''
+      ge('c-phone').value   = d.phone        || ''
+      ge('c-cap').value     = d.capacity     || ''
+      ge('c-email').value   = d.contactEmail || ''
+      ge('c-web').value     = d.website      || ''
+      ge('c-desc').value    = d.details      || ''
+      ge('setup-hint').style.display = 'none'
+      ge('hdr-cname').textContent = d.name || ''
+      ge('banner-h').textContent  = d.name ? d.name + ' — Dashboard' : 'Center Dashboard'
+      ge('banner-s').textContent  = [d.city,d.country].filter(Boolean).join(', ') || 'Manage your residents'
+      ge('s-cap').textContent     = d.capacity || '—'
+      _cDirty = false
+    } catch(e){ console.error('loadCentre:', e) }
+  },
+
+  saveCentre: async function(){
+    if (!_db || !_uid) { toast('Not connected yet.'); return }
+    var name = ge('c-name').value.trim()
+    if (!name) { showMsg('c-msg','Center name is required.','error'); return }
+    try {
+      var data = {
+        managerUid: _uid, name: name,
+        address: ge('c-addr').value.trim(),
+        city: ge('c-city').value.trim(), country: ge('c-country').value.trim(),
+        phone: ge('c-phone').value.trim(), capacity: parseInt(ge('c-cap').value)||0,
+        contactEmail: ge('c-email').value.trim(), website: ge('c-web').value.trim(),
+        details: ge('c-desc').value.trim(), updatedAt: window._fs.serverTimestamp()
+      }
+      // The lookup is repeated here because a save can arrive before the load
+      // has finished, or after it failed, and giving a manager who already has
+      // a centre a second one is the fault this is fixing.
+      if (!_centreId) {
+        var found = await window._dash.findCentre()
+        _centreId = found ? found.id : null
+      }
+      // Only the fields this form owns are written. Programmes, opening hours,
+      // the map link and the logo belong to the same record and are edited on
+      // the centre profile, so a merged write leaves them where they are
+      // instead of blanking them from a form that cannot show them.
+      if (_centreId) {
+        await window._fs.setDoc(window._fs.doc(_db,'communities',_centreId), data, {merge:true})
+      } else {
+        // A centre nobody can find is the whole of this fault, so one made
+        // here starts public and categorised. Both are changeable on the
+        // centre profile afterwards.
+        var u = window.TechableAuth && window.TechableAuth.currentUser
+        data.managerName = (u && (u.displayName || (u.email||'').split('@')[0])) || 'Manager'
+        data.category  = 'community'
+        data.isPublic  = true
+        data.createdAt = window._fs.serverTimestamp()
+        var ref = await window._fs.addDoc(window._fs.collection(_db,'communities'), data)
+        _centreId = ref.id
+      }
+      await window._fs.setDoc(window._fs.doc(_db,'users',_uid), {
+        scName: name, scLocation: data.city, updatedAt: window._fs.serverTimestamp()
+      }, {merge:true})
+      ge('hdr-cname').textContent = name
+      ge('banner-h').textContent  = name + ' — Dashboard'
+      ge('s-cap').textContent     = data.capacity || '—'
+      ge('setup-hint').style.display = 'none'
+      // A first-ever centre only gets its id here, and the join link was built
+      // before it existed — so without this the manager would go on copying a
+      // link with no centre in it until they happened to reload.
+      setJoinLink()
+      _cDirty = false
+      showMsg('c-msg','Center details saved ✓','success')
+      setTimeout(function(){ showMsg('c-msg','','') }, 2500)
+    } catch(e){ showMsg('c-msg','Save failed: '+e.message,'error'); console.error(e) }
+  },
+
+  loadResidents: async function(){
+    if (!_db || !_uid) return
+    try {
+      var q    = window._fs.query(window._fs.collection(_db,'residents'), window._fs.where('centreId','==',_uid))
+      var snap = await window._fs.getDocs(q)
+      _allRes  = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()) })
+      _allRes.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'') })
+      window._allRes = _allRes   // expose for activity module
+      window._residentsFailed = false
+      renderTable(_allRes)
+      updateStats(_allRes)
+    } catch(e){
+      ge('tbl-body').innerHTML = '<tr><td colspan="6" class="tbl-empty">Could not load residents. Check Firestore rules.</td></tr>'
+      console.error('loadResidents:', e)
+      // Unknown, not zero. And with no residents to look up, loadActivity()
+      // never reads a check-in, so say so rather than hide the alert box.
+      ;['s-total','s-active','s-pending','s-mems'].forEach(function(id){ ge(id).textContent = '—' })
+      window._residentsFailed = true
+    }
+  },
+
+  saveResident: async function(){
+    if (!_db || !_uid) { toast('Not connected yet.'); return }
+    var name = ge('d-name').value.trim()
+    if (!name) { showMsg('d-msg','Name is required.','error'); switchDTab('dp-profile'); ge('d-name').focus(); return }
+    var btn = ge('d-save'); btn.disabled = true; btn.textContent = 'Saving…'
+    var data = {
+      centreId: _uid, name: name,
+      preferredName: ge('d-pref').value.trim(),
+      age: parseInt(ge('d-age').value)||null, room: ge('d-room').value.trim(),
+      status: ge('d-status').value, background: ge('d-bg').value.trim(),
+      family: ge('d-family').value.trim(), medical: ge('d-medical').value.trim(),
+      notes: ge('d-notes').value.trim(), memories: _mems.slice(),
+      updatedAt: window._fs.serverTimestamp()
+    }
+    try {
+      if (_editId) {
+        await window._fs.updateDoc(window._fs.doc(_db,'residents',_editId), data)
+        var i = _allRes.findIndex(function(r){ return r.id === _editId })
+        if (i >= 0) _allRes[i] = Object.assign({id:_editId}, data, {memories:_mems.slice()})
+        toast('Resident updated ✓')
+      } else {
+        data.createdAt = window._fs.serverTimestamp()
+        var ref = await window._fs.addDoc(window._fs.collection(_db,'residents'), data)
+        _allRes.push(Object.assign({id:ref.id}, data, {memories:_mems.slice()}))
+        toast('Resident added ✓')
+      }
+      _allRes.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'') })
+      renderTable(_allRes); updateStats(_allRes); closeDrawer()
+    } catch(e){
+      showMsg('d-msg','Save failed: '+e.message,'error'); console.error(e)
+    } finally { btn.disabled = false; btn.textContent = 'Save' }
+  },
+
+  deleteResident: async function(){
+    if (!_editId || !_db) return
+    var r = _allRes.find(function(x){ return x.id === _editId })
+    var owned = seniorOwned(_editId)
+    if (!confirm(owned
+      ? 'Remove ' + (r && r.name ? r.name : 'this resident') + ' from your members? Their own account, memories and life story stay theirs.'
+      : 'Permanently delete ' + (r && r.name ? r.name : 'this resident') + ' and all memories?')) return
+    try {
+      await deleteResidentAndAssignments(_editId)
+      _allRes = _allRes.filter(function(x){ return x.id !== _editId })
+      renderTable(_allRes); updateStats(_allRes); closeDrawer(); toast(owned ? 'Removed from your members' : 'Resident deleted')
+    } catch(e){ alert('Delete failed: '+e.message) }
+  }
+}
+
+// A senior who joined the centre with their own login owns their record;
+// the centre lets them go instead of deleting it (the rules allow nothing
+// else). Records the centre created are deleted as before.
+function seniorOwned(id){
+  var r = _allRes.find(function(x){ return x.id === id })
+  return !!(r && r.ownerUid && r.ownerUid !== _uid)
+}
+
+// A provider assignment outlives its resident otherwise, and the provider
+// keeps reading that resident's saved sessions. Assignments go first, so a
+// failure leaves the resident in place to retry.
+async function deleteResidentAndAssignments(id){
+  var f = window._fs
+  var snap = await f.getDocs(f.query(f.collection(_db,'provider_assignments'),
+    f.where('managerUid','==',_uid), f.where('residentId','==',id)))
+  for (var i = 0; i < snap.docs.length; i++) await f.deleteDoc(snap.docs[i].ref)
+  if (seniorOwned(id)) {
+    await f.setDoc(f.doc(_db,'residents',id),
+      { centreId:'', communityId:'', communityName:'', updatedAt:f.serverTimestamp() }, { merge:true })
+  } else {
+    await f.deleteDoc(f.doc(_db,'residents',id))
+  }
+}
+
+// Helper exposed for delete-by-id from table
+function deleteById(id){
+  var r = _allRes.find(function(x){ return x.id === id })
+  var owned = seniorOwned(id)
+  if (!r || !confirm(owned
+    ? 'Remove ' + r.name + ' from your members? Their own account and records stay theirs.'
+    : 'Delete ' + r.name + '? Cannot be undone.')) return
+  deleteResidentAndAssignments(id).then(function(){
+    _allRes = _allRes.filter(function(x){ return x.id !== id })
+    renderTable(_allRes); updateStats(_allRes); toast(owned ? 'Removed from your members' : 'Resident deleted')
+  }).catch(function(e){ alert('Delete failed: '+e.message) })
+}
+
+// ── BIND ALL EVENTS ON DOM READY ─────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  console.log('[Dashboard] DOM ready, binding events')
+
+  ge('add-res-btn').addEventListener('click', function(){
+    console.log('[Dashboard] + Add Resident clicked')
+    openDrawer(null)
+  })
+
+  ge('d-close').addEventListener('click', closeDrawer)
+  ge('d-overlay').addEventListener('click', closeDrawer)
+
+  ge('d-save').addEventListener('click', function(){
+    window._dash.saveResident()
+  })
+
+  ge('del-res-btn').addEventListener('click', function(){
+    window._dash.deleteResident()
+  })
+
+  ge('add-mem-btn').addEventListener('click', addMem)
+  ge('mem-txt').addEventListener('keydown', function(e){ if(e.key==='Enter') addMem() })
+
+  ge('save-centre-btn').addEventListener('click', function(){ window._dash.saveCentre() })
+  ge('discard-btn').addEventListener('click', function(){ window._dash.loadCentre() })
+
+  ge('tbl-search').addEventListener('input', function(){ filterTable(this.value) })
+
+  document.querySelectorAll('.d-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){ switchDTab(btn.dataset.panel) })
+  })
+
+  ge('hdr-user').addEventListener('click', function(){
+    ge('hdr-menu').classList.toggle('open')
+  })
+  document.addEventListener('click', function(e){
+    if (!ge('hdr-user').contains(e.target)) ge('hdr-menu').classList.remove('open')
+  })
+
+  ge('signout-btn').addEventListener('click', function(){
+    if (window.TechableAuth) window.TechableAuth.signOut()
+  })
+
+  window.addEventListener('beforeunload', function(e){
+    if (_cDirty) { e.preventDefault(); e.returnValue = '' }
+  })
+
+  console.log('[Dashboard] All events bound successfully')
+})
+
+// Update header when auth state changes
+document.addEventListener('auth:stateChanged', function(e){
+  var user = e.detail; if (!user) return
+  var av   = ge('hdr-av')
+  var init = (user.displayName||user.email||'?').split(/[\s@]/).map(function(w){ return w[0] }).slice(0,2).join('').toUpperCase()
+  if (user.photoURL) {
+    av.innerHTML = '<img src="' + esc(user.photoURL) + '" alt="av" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>'
+  } else {
+    av.textContent = init
+  }
+  ge('hdr-uname').textContent = user.displayName || user.email || ''
+})
+</script>
+
+<!-- FIREBASE MODULE — initializes DB and exposes on window._fs / window._db -->
+<script type="module">
+import { initializeApp, getApps }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js"
+import {
+  getFirestore, doc, getDoc, setDoc,
+  addDoc, updateDoc, deleteDoc,
+  collection, query, where, orderBy,
+  getDocs, serverTimestamp, limit
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+// Expose Firestore functions for the regular script
+window._fs = {
+  doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
+  collection, query, where, getDocs, serverTimestamp
+}
+
+// Wait for config then init Firestore
+await window._cfg
+const cfg = window.TECHABLE_CONFIG
+if (!cfg?.firebase?.apiKey) {
+  console.error('[Dashboard] No Firebase config found')
+} else {
+  const app = getApps().length ? getApps()[0] : initializeApp(cfg.firebase)
+  const db  = getFirestore(app)
+  window._db = db          // expose for registrations + other modules
+  window._dash.setDB(db)
+  console.log('[Dashboard] Firestore ready')
+}
+
+// ── REGISTRATIONS ──────────────────────────────────────────
+var _allRegs = []
+var _regDb   = null
+var _regUid  = null
+
+async function loadRegistrations(uid) {
+  _regUid = uid
+  _regDb  = window._db || (window.TechableAuth && window.TechableAuth.db)
+
+  if (!_regDb) { ge('reg-loading').textContent = 'Database not available.'; return }
+
+  // Import Firestore dynamically (same pattern as dashboard)
+  var fs
+  try {
+    fs = await import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js')
+  } catch(e) {
+    ge('reg-loading').textContent = 'Could not load database module.'
+    return
+  }
+
+  ge('reg-loading').style.display = 'block'
+  ge('reg-table-wrap').style.display = 'none'
+  ge('reg-empty').style.display = 'none'
+
+  try {
+    var q = fs.query(
+      fs.collection(_regDb, 'registrations'),
+      fs.where('centreId', '==', uid)
+    )
+    var snap = await fs.getDocs(q)
+    _allRegs = []
+    snap.forEach(function(d) {
+      _allRegs.push(Object.assign({ _id: d.id }, d.data()))
+    })
+    _allRegs.sort(function(a,b) {
+      var ta = a.createdAt?.toDate?.() || new Date(0)
+      var tb = b.createdAt?.toDate?.() || new Date(0)
+      return tb - ta
+    })
+
+    // Update stat counter
+    var pending = _allRegs.filter(function(r){ return r.status === 'pending' }).length
+    ge('s-regs').textContent = pending || _allRegs.length
+    if (pending > 0) {
+      ge('reg-badge').textContent = pending + ' pending'
+      ge('reg-badge').style.display = 'inline-flex'
+    }
+
+    setJoinLink()
+
+    filterRegs()
+  } catch(e) {
+    console.error('Registrations load error:', e)
+    ge('reg-loading').textContent = 'Could not load registrations. Check Firestore rules allow centreId access.'
+  }
+}
+
+window.filterRegs = function() {
+  var filter = ge('reg-filter').value
+  var list = filter === 'all' ? _allRegs : _allRegs.filter(function(r){ return r.status === filter })
+  renderRegs(list)
+}
+
+function renderRegs(list) {
+  ge('reg-loading').style.display = 'none'
+  if (!list.length) {
+    ge('reg-table-wrap').style.display = 'none'
+    ge('reg-empty').style.display = 'block'
+    return
+  }
+  ge('reg-empty').style.display = 'none'
+  ge('reg-table-wrap').style.display = 'block'
+
+  // Update stats
+  var total = _allRegs.length
+  var pending  = _allRegs.filter(function(r){return r.status==='pending'}).length
+  var approved = _allRegs.filter(function(r){return r.status==='approved'}).length
+  var rejected = _allRegs.filter(function(r){return r.status==='rejected'}).length
+  if (ge('rs-total'))    ge('rs-total').textContent    = total
+  if (ge('rs-pending'))  ge('rs-pending').textContent  = pending
+  if (ge('rs-approved')) ge('rs-approved').textContent = approved
+  if (ge('rs-rejected')) ge('rs-rejected').textContent = rejected
+  if (ge('reg-stats'))   ge('reg-stats').style.display = 'flex'
+
+  ge('reg-tbody').innerHTML = list.map(function(r) {
+    var date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : (r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—')
+    var statusCls = r.status === 'approved' ? 'approved' : r.status === 'rejected' ? 'rejected' : 'pending'
+    var statusLabel = r.status === 'approved' ? 'Approved' : r.status === 'rejected' ? 'Rejected' : 'Pending'
+    var gMap = {male:'Male',female:'Female',other:'Other',prefer_not:'Prefer not to say'}
+    var ecInfo = [r.emergencyName, r.emergencyRelation, r.emergencyPhone].filter(Boolean).join(' · ') || '—'
+    return '<tr>' +
+      '<td><button type="button" class="person-link" data-view-reg="' + esc(r._id) + '">' + esc(r.name || '—') + '</button></td>' +
+      '<td>' + esc(r.age || '—') + '</td>' +
+      '<td>' + esc(gMap[r.gender] || r.gender || '—') + '</td>' +
+      '<td>' + esc(r.nationality || '—') + '</td>' +
+      '<td>' + esc(r.icNumber || '—') + '</td>' +
+      '<td>' + esc(r.phone || '—') + '</td>' +
+      '<td>' + esc(r.email || '—') + '</td>' +
+      '<td>' + esc(r.address || '—') + '</td>' +
+      '<td style="max-width:160px;white-space:normal">' + esc(ecInfo) + '</td>' +
+      '<td>' + esc(r.communityName || '—') + '</td>' +
+      '<td>' + date + '</td>' +
+      '<td><span class="reg-st ' + statusCls + '">' + statusLabel + '</span></td>' +
+      '<td style="text-align:right;white-space:nowrap">' +
+        // The id rides in a data attribute and the click is read back by the
+        // one listener below. It used to be onclick="updateRegStatus('<id>')",
+        // unescaped — and a registration's id is whatever its author chose, so
+        // x');alert(1);// ran in the manager's session. Escaping would not have
+        // saved it: the HTML parser decodes &#039; before the handler is parsed.
+        (r.status === 'pending' ? '<button class="btn btn-sm btn-green" data-reg-id="' + esc(r._id) + '" data-status="approved" style="font-size:11px;padding:4px 10px;margin-right:4px">Approve</button>' : '') +
+        (r.status === 'pending' ? '<button class="btn btn-sm btn-s" data-reg-id="' + esc(r._id) + '" data-status="rejected" style="font-size:11px;padding:4px 10px">Reject</button>' : '') +
+        // Approved before approval created a roster resident: add it once.
+        (r.status === 'approved' && !r.residentId ? '<button class="btn btn-sm btn-green" data-reg-id="' + esc(r._id) + '" data-status="roster" style="font-size:11px;padding:4px 10px">Add to roster</button>' : '') +
+      '</td>' +
+    '</tr>'
+  }).join('')
+}
+
+var registrationDetailView = null
+window.showRegistrationDetails = async function(regId, opener) {
+  try {
+    var module = await import('./person-details.mjs')
+    var fs = await import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js')
+    if (!registrationDetailView) registrationDetailView = module.createPersonDetails()
+    await registrationDetailView.open({kind:'registration',managerUid:_regUid,opener:opener,
+      fallback:function(){return ge('reg-filter')},
+      load:function(){return module.loadPersonRecord({fs:fs,db:_regDb,collection:'registrations',id:regId})},
+      review:async function(row,decision){
+        var cached = _allRegs.find(function(r){return r._id===regId})
+        if (!cached) throw Error('Unavailable')
+        Object.assign(cached,row)
+        if (!await window.updateRegStatus(regId,decision==='declined'?'rejected':'approved')) throw Error('Unconfirmed')
+      }
+    })
+  } catch (_) { alert('Details could not be opened. Refresh and try again.') }
+}
+
+window.updateRegStatus = async function(regId, status) {
+  if (!_regDb) return
+  var fs
+  try { fs = await import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js') }
+  catch(e) { return }
+  try {
+    var reg = _allRegs.find(function(r){ return r._id === regId })
+    if (!reg) return
+    var adding = status === 'roster'
+    if (adding ? (reg.status !== 'approved' || reg.residentId)
+               : (reg.status !== 'pending' || !['approved','rejected'].includes(status))) return
+
+    var batch = fs.writeBatch(_regDb)
+    // "Add to roster" leaves the decision as it was and only links the resident.
+    var update = adding ? { updatedAt: fs.serverTimestamp() } : { status: status, updatedAt: fs.serverTimestamp() }
+    if (status === 'approved' || adding) {
+      // Deterministic means a retry cannot create a duplicate member. The
+      // resident and the registration decision commit together: approval can
+      // no longer succeed while leaving the roster unchanged.
+      var residentId = 'registration_' + regId
+      update.residentId = residentId
+      var residentRef = fs.doc(fs.collection(_regDb, 'residents'), residentId)
+      batch.set(residentRef, {
+        name: reg.name || [reg.firstName, reg.lastName].filter(Boolean).join(' '),
+        preferredName: reg.firstName || '',
+        age: Number.isFinite(Number(reg.age)) ? Number(reg.age) : null,
+        room: '', status: 'active',
+        communityId: reg.communityId || '', communityName: reg.communityName || '',
+        background: '', family: '', medical: '', notes: '', language: 'en',
+        avatarSeed: reg.name || residentId, avatarStyle: 'lorelei-neutral', memories: [],
+        wellnessForm: null, benefitDraft: null,
+        myDetails: {
+          fullName: String(reg.name || '').slice(0,120), dob: reg.dob || '', phone: reg.phone || '',
+          email: String(reg.email || '').slice(0,120), address: String(reg.address || '').slice(0,300),
+          emergencyName: ([reg.emergencyName, reg.emergencyRelation].filter(Boolean).join(' (') + (reg.emergencyName && reg.emergencyRelation ? ')' : '')).slice(0,120),
+          emergencyPhone: reg.emergencyPhone || '', medicare: '', medicaid: '', livesAlone: ''
+        },
+        ownerUid: '', centreId: _regUid, createdBy: _regUid,
+        createdAt: fs.serverTimestamp(), updatedAt: fs.serverTimestamp()
+      })
+    }
+    batch.update(fs.doc(_regDb, 'registrations', regId), update)
+    await batch.commit()
+    if (update.residentId) {
+      reg.residentId = update.residentId
+      // The new member belongs in the residents table on this page too.
+      if (window._dash && window._dash.loadResidents) window._dash.loadResidents()
+    }
+    if (!adding) reg.status = status
+    filterRegs()
+    // Re-count pending
+    var pending = _allRegs.filter(function(r){ return r.status === 'pending' }).length
+    ge('s-regs').textContent = pending || _allRegs.length
+    ge('reg-badge').textContent = pending ? pending + ' pending' : ''
+    ge('reg-badge').style.display = pending ? 'inline-flex' : 'none'
+    return true
+  } catch(e) {
+    alert('Could not update: ' + e.message)
+    return false
+  }
+}
+
+// ── VISIT REQUESTS ─────────────────────────────────────────
+// Seniors hold standalone accounts and ask to visit a centre from
+// communities.html. The manager decides here. Requests are matched on
+// managerUid (this manager's own uid), which is what the senior copied off
+// the community document when they submitted.
+var _allVisits = []
+
+async function loadVisitRequests(uid) {
+  if (!_regDb) _regDb = window._db || (window.TechableAuth && window.TechableAuth.db)
+  if (!_regDb) { ge('visit-loading').textContent = 'Database not available.'; return }
+
+  var fs
+  try { fs = await import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js') }
+  catch(e) { ge('visit-loading').textContent = 'Could not load database module.'; return }
+
+  try {
+    var snap = await fs.getDocs(fs.query(
+      fs.collection(_regDb, 'visit_requests'),
+      fs.where('managerUid', '==', uid)
+    ))
+    _allVisits = []
+    snap.forEach(function(d) { _allVisits.push(Object.assign({ _id: d.id }, d.data())) })
+    // Soonest visit first — a manager cares about what is coming up, not
+    // about when the request happened to be filed.
+    _allVisits.sort(function(a,b) {
+      var ta = a.startAt?.toDate?.() || new Date(0)
+      var tb = b.startAt?.toDate?.() || new Date(0)
+      return ta - tb
+    })
+    refreshVisitBadge()
+    filterVisits()
+  } catch(e) {
+    console.error('Visit requests load error:', e)
+    ge('visit-loading').textContent = 'Could not load visit requests. Check Firestore rules allow managerUid access.'
+  }
+}
+
+// ── AUTOMATIC ATTENDANCE ──────────────────────────────────
+var _allAttendance = []
+
+async function loadAttendance(uid) {
+  if (!_regDb) _regDb = window._db || (window.TechableAuth && window.TechableAuth.db)
+  if (!_regDb) { ge('attendance-loading').textContent = 'Database not available.'; return }
+
+  var fs
+  try { fs = await import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js') }
+  catch(e) { ge('attendance-loading').textContent = 'Could not load database module.'; return }
+
+  try {
+    var snap = await fs.getDocs(fs.query(
+      fs.collection(_regDb, 'attendance'),
+      fs.where('managerUid', '==', uid)
+    ))
+    _allAttendance = []
+    snap.forEach(function(d) { _allAttendance.push(Object.assign({ _id:d.id }, d.data())) })
+    _allAttendance.sort(function(a,b) {
+      var ta = a.checkedInAt?.toDate?.() || new Date(a.checkedInAt || 0)
+      var tb = b.checkedInAt?.toDate?.() || new Date(b.checkedInAt || 0)
+      return tb - ta
+    })
+    renderAttendance()
+  } catch(e) {
+    console.error('Attendance load error:', e)
+    ge('attendance-loading').textContent = 'Could not load attendance. Check Firestore rules allow manager access.'
+  }
+}
+
+function renderAttendance() {
+  var loading = ge('attendance-loading')
+  var wrap = ge('attendance-table-wrap')
+  var empty = ge('attendance-empty')
+  if (loading) loading.style.display = 'none'
+
+  var now = new Date()
+  var today = [now.getFullYear(), String(now.getMonth()+1).padStart(2,'0'), String(now.getDate()).padStart(2,'0')].join('-')
+  var todayCount = _allAttendance.filter(function(a){ return a.day === today }).length
+  var badge = ge('attendance-badge')
+  if (badge) {
+    badge.textContent = todayCount + ' today'
+    badge.style.display = todayCount ? 'inline-flex' : 'none'
+  }
+
+  if (!_allAttendance.length) {
+    if (wrap) wrap.style.display = 'none'
+    if (empty) empty.style.display = 'block'
+    return
+  }
+  if (empty) empty.style.display = 'none'
+  if (wrap) wrap.style.display = 'block'
+  ge('attendance-tbody').innerHTML = _allAttendance.map(function(a) {
+    var checked = a.checkedInAt?.toDate?.() || (a.checkedInAt ? new Date(a.checkedInAt) : null)
+    var date = a.day || (checked && !isNaN(checked) ? checked.toLocaleDateString() : '—')
+    var time = checked && !isNaN(checked) ? checked.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'}) : '—'
+    return '<tr>' +
+      '<td><strong>' + esc(a.residentName || 'Unnamed senior') + '</strong></td>' +
+      '<td>' + esc(date) + '</td>' +
+      '<td>' + esc(time) + '</td>' +
+      '<td>' + esc(a.communityName || '—') + '</td>' +
+      '<td>' + esc(({centre_button:'On-screen sign-in',centre_voice:'Voice sign-in',centre_link:'Center link'})[a.method] || 'Sign-in') + '</td>' +
+    '</tr>'
+  }).join('')
+}
+
+function refreshVisitBadge() {
+  var pending = _allVisits.filter(function(v){ return v.status === 'pending' }).length
+  var badge = ge('visit-badge')
+  if (!badge) return
+  badge.textContent = pending + ' pending'
+  badge.style.display = pending ? 'inline-flex' : 'none'
+}
+
+window.filterVisits = function() {
+  var filter = ge('visit-filter').value
+  renderVisits(filter === 'all' ? _allVisits : _allVisits.filter(function(v){ return v.status === filter }))
+}
+
+function fmtTime(ts) {
+  var d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null)
+  if (!d || isNaN(d)) return '—'
+  return d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' })
+}
+
+function fmtDay(ts, fallback) {
+  var d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null)
+  if (!d || isNaN(d)) return fallback || '—'
+  return d.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short', year:'numeric' })
+}
+
+function renderVisits(list) {
+  ge('visit-loading').style.display = 'none'
+  if (!list.length) {
+    ge('visit-table-wrap').style.display = 'none'
+    ge('visit-empty').style.display = 'block'
+    return
+  }
+  ge('visit-empty').style.display = 'none'
+  ge('visit-table-wrap').style.display = 'block'
+
+  ge('visit-tbody').innerHTML = list.map(function(v) {
+    var statusCls = v.status === 'accepted' ? 'approved' : (v.status === 'rejected' || v.status === 'cancelled') ? 'rejected' : 'pending'
+    var statusLabel = { accepted:'Accepted', rejected:'Rejected', cancelled:'Canceled' }[v.status] || 'Pending'
+    var acts = ''
+    if (v.status === 'pending') {
+      acts = '<button class="btn btn-sm btn-green" data-visit-id="' + esc(v._id) + '" data-status="accepted" style="font-size:11px;padding:4px 10px;margin-right:4px">Accept</button>' +
+             '<button class="btn btn-sm btn-s" data-visit-id="' + esc(v._id) + '" data-status="rejected" style="font-size:11px;padding:4px 10px">Reject</button>'
+    } else {
+      acts = '<span style="font-size:11px;color:var(--ink3)">—</span>'
+    }
+    return '<tr>' +
+      '<td><strong>' + esc(v.residentName || 'Senior') + '</strong></td>' +
+      '<td style="font-size:12px">' + esc(v.residentEmail || '—') +
+        '<div style="color:var(--ink3);font-size:10px;font-family:monospace">' + esc(v.residentUid || '') + '</div></td>' +
+      '<td>' + esc(v.communityName || '—') + '</td>' +
+      '<td>' + esc(fmtDay(v.startAt, v.visitDate)) + '</td>' +
+      '<td>' + fmtTime(v.startAt) + '</td>' +
+      '<td>' + fmtTime(v.endAt) + '</td>' +
+      '<td style="max-width:200px;white-space:normal">' + esc(v.note || '—') + '</td>' +
+      '<td>' + fmtDay(v.createdAt) + '</td>' +
+      '<td><span class="reg-st ' + statusCls + '">' + statusLabel + '</span></td>' +
+      '<td style="text-align:right;white-space:nowrap">' + acts + '</td>' +
+    '</tr>'
+  }).join('')
+}
+
+window.updateVisitStatus = async function(visitId, status) {
+  if (!_regDb) return
+  var fs
+  try { fs = await import('https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js') }
+  catch(e) { return }
+  try {
+    await fs.updateDoc(fs.doc(_regDb, 'visit_requests', visitId), {
+      status: status,
+      decidedAt: fs.serverTimestamp(),
+      updatedAt: fs.serverTimestamp()
+    })
+    var v = _allVisits.find(function(x){ return x._id === visitId })
+    if (v) v.status = status
+    refreshVisitBadge()
+    filterVisits()
+  } catch(e) {
+    alert('Could not update the visit request: ' + e.message)
+  }
+}
+
+// One listener for every Approve/Reject/Accept button in both tables. The
+// document id is read from a data attribute, where it is only ever a string —
+// never parsed as JavaScript the way an onclick="fn('<id>')" was.
+document.addEventListener('click', function(e) {
+  var detail = e.target && e.target.closest && e.target.closest('button[data-view-reg]')
+  if (detail) { void showRegistrationDetails(detail.dataset.viewReg,detail); return }
+  var btn = e.target && e.target.closest && e.target.closest('button[data-reg-id], button[data-visit-id]')
+  if (!btn) return
+  if (btn.hasAttribute('data-reg-id')) updateRegStatus(btn.dataset.regId, btn.dataset.status)
+  else updateVisitStatus(btn.dataset.visitId, btn.dataset.status)
+})
+
+window.exportRegsCsv = function() {
+  var filter = ge('reg-filter').value
+  var list = filter === 'all' ? _allRegs : _allRegs.filter(function(r){ return r.status === filter })
+  if (!list.length) { alert('No registrations to export.'); return }
+  var rows = [['Name','Age','DOB','Gender','Nationality','IC/ID','Phone','Email','Address','Emergency Name','Emergency Relation','Emergency Phone','Community Center','Submitted','Status']]
+  list.forEach(function(r) {
+    var date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : '—'
+    rows.push([r.name||'',r.age||'',r.dob||'',r.gender||'',r.nationality||'',r.icNumber||'',r.phone||'',r.email||'',r.address||'',r.emergencyName||'',r.emergencyRelation||'',r.emergencyPhone||'',r.communityName||'',date,r.status||''])
+  })
+  var csv = rows.map(function(row){
+    return row.map(function(cell){ return '"'+String(cell).replace(/"/g,'""')+'"' }).join(',')
+  }).join('\n')
+  var blob = new Blob([csv], { type: 'text/csv' })
+  var url  = URL.createObjectURL(blob)
+  var a    = document.createElement('a')
+  a.href = url; a.download = 'registrations.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// The link a manager hands to a senior, and the one the Copy button copies.
+//
+// It used to be a bare join.html, so the senior arrived at a list of every
+// centre in the country and had to find the right one by a name they may only
+// ever have heard said out loud. join.html reads ?centre= and preselects it.
+//
+// Called from loadRegistrations AND from saveCentre, and that second call is
+// the half easy to miss: a manager creating their first-ever centre only gets
+// _centreId assigned during the save, so without a refresh here they would keep
+// copying a link with no centre in it until they happened to reload the page.
+// profile.html documents and solves the same trap.
+window.setJoinLink = function() {
+  var baseUrl = window.location.origin + window.location.pathname.replace('dashboard.html','')
+  var joinUrl = baseUrl + 'join.html' + (_centreId ? '?centre=' + encodeURIComponent(_centreId) : '')
+  var attendanceUrl = _centreId ? baseUrl + 'app.html?centreCheckIn=' + encodeURIComponent(_centreId) : ''
+  var label = ge('reg-join-url')
+  if (label) label.textContent = joinUrl
+  var open = ge('reg-open-join')
+  if (open) open.setAttribute('href', joinUrl)
+  var attendanceLabel = ge('attendance-url')
+  if (attendanceLabel) attendanceLabel.textContent = attendanceUrl || 'Create or load your center to generate the link.'
+}
+
+window.copyJoinLink = function(btn) {
+  var url = ge('reg-join-url').textContent
+  navigator.clipboard.writeText(url).then(function(){
+    btn = btn || document.activeElement
+    var old = btn.textContent
+    btn.textContent = 'Copied!'
+    setTimeout(function(){ btn.textContent = old }, 1500)
+  }).catch(function(){ alert('Join link: ' + url) })
+}
+
+window.copyAttendanceLink = function(btn) {
+  var label = ge('attendance-url')
+  var url = label ? label.textContent : ''
+  if (!/^https?:/.test(url)) { alert('Create or load your center first.'); return }
+  navigator.clipboard.writeText(url).then(function(){
+    var old = btn.textContent
+    btn.textContent = 'Copied!'
+    setTimeout(function(){ btn.textContent = old }, 1500)
+  }).catch(function(){ alert('Attendance link: ' + url) })
+}
+
+// Quotes too: this output goes into attribute values (data-reg-id, …) as well
+// as text, and an unescaped " ends the attribute it is in.
+function esc(v){
+  return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+}
+
+// ── URGENT DISCLOSURES ─────────────────────────────────────
+// A check-in that trips the safety rules stops and tells the senior it has
+// been written down for their care team. Nothing sent it anywhere: this is the
+// centre's side of that promise, and until now it did not exist.
+//
+// Emergencies first, then most recent. A manager scanning this reads the top
+// line and stops, so the top line has to be the one that matters most.
+function renderEscalations(list) {
+  const box = document.getElementById('esc-alert')
+  if (!box) return
+
+  if (!list.length) { box.style.display = 'none'; return }
+
+  const nameOf = id =>
+    (window._allRes || []).find(r => r.id === id)?.name || 'A resident'
+
+  const sorted = list.slice().sort((a, b) => {
+    if ((a.level === 'emergency') !== (b.level === 'emergency')) return a.level === 'emergency' ? -1 : 1
+    return (b.date?.getTime() || 0) - (a.date?.getTime() || 0)
+  })
+
+  const when = d => {
+    if (!d) return ''
+    const mins = Math.round((Date.now() - d.getTime()) / 60000)
+    if (mins < 60) return mins <= 1 ? 'just now' : mins + ' min ago'
+    const hrs = Math.round(mins / 60)
+    if (hrs < 24) return hrs + 'h ago'
+    return Math.round(hrs / 24) + 'd ago'
+  }
+
+  const urgent = sorted.filter(e => e.level === 'emergency').length
+  document.getElementById('esc-alert-count').textContent =
+    sorted.length + (sorted.length === 1 ? ' disclosure' : ' disclosures') +
+    (urgent ? ' · ' + urgent + ' urgent' : '')
+
+  // The senior's own words are quoted rather than summarised. A category
+  // ("discomfort") is not what a person needs to decide whether to ring them.
+  document.getElementById('esc-alert-body').innerHTML = sorted.slice(0, 8).map(e => `
+    <div class="esc-alert-row">
+      <span class="esc-alert-who">${esc(nameOf(e.residentId))}</span>
+      <span class="esc-alert-quote">${e.quote ? '“' + esc(String(e.quote ?? '').slice(0, 160)) + '”' : esc(e.flags.join(', ') || 'flagged')}</span>
+      <span class="esc-alert-when">${esc(when(e.date))}</span>
+    </div>`).join('')
+
+  box.style.display = 'block'
+}
+
+// A read failed, so the page cannot say whether anything was raised. Shown in
+// place of the all-clear: the alert box alone stays hidden when it has nothing,
+// which is indistinguishable from a quiet week.
+function showCouldNotCheck() {
+  const box = document.getElementById('esc-unknown')
+  if (box) box.style.display = 'block'
+}
+
+// ── ACTIVITY OVERVIEW ──────────────────────────────────────
+async function loadActivity() {
+  const db = window._db
+  if (!db || !window._dash._uid) return
+  // No resident list means no check-ins were looked at — unknown, not none.
+  if (window._residentsFailed) { showCouldNotCheck(); return }
+  const residentIds = (window._allRes || []).map(r => r.id)
+  if (!residentIds.length) return
+
+  const weekAgo = new Date(Date.now() - 7 * 86400000)
+  window._activityMap = {}
+  const escalations = []
+
+  try {
+    // Firestore `in` supports up to 10 values; process in chunks
+    const chunks = []
+    for (let i = 0; i < residentIds.length; i += 10) chunks.push(residentIds.slice(i, i + 10))
+
+    for (const chunk of chunks) {
+      const q = query(
+        collection(db, 'sessions'),
+        // The rules authorize managers by the session's centreId. A resident
+        // filter alone cannot prove this scope, even for a managed resident.
+        where('centreId', '==', window._dash._uid),
+        where('residentId', 'in', chunk),
+        orderBy('savedAt', 'desc'),
+        limit(60)
+      )
+      const snap = await getDocs(q)
+      snap.forEach(d => {
+        const data = d.data()
+        const rid = data.residentId
+        if (!window._activityMap[rid]) window._activityMap[rid] = { count: 0, lastDate: null }
+        const date = data.savedAt?.toDate?.()
+        if (date) {
+          if (!window._activityMap[rid].lastDate || date > window._activityMap[rid].lastDate)
+            window._activityMap[rid].lastDate = date
+          if (date >= weekAgo) window._activityMap[rid].count++
+        }
+
+        // The whole point of the safety rules. Same query, same rows — this
+        // data was already arriving and was being counted and thrown away.
+        // Not named `esc` — that is the HTML escaper two functions up, and
+        // shadowing it inside a block that renders is how an escape silently
+        // stops happening.
+        const flagged = data.checkIn?.escalation
+        if (flagged && (!date || date >= weekAgo)) {
+          escalations.push({
+            residentId: rid, date,
+            level: flagged.level, flags: flagged.flags || [], quote: flagged.quote || ''
+          })
+        }
+      })
+    }
+
+    renderEscalations(escalations)
+
+    // Summary counters
+    let high = 0, med = 0, low = 0, total = 0
+    residentIds.forEach(id => {
+      const a = window._activityMap[id] || {}
+      const cnt = a.count || 0
+      total += cnt
+      if (cnt >= 5) high++; else if (cnt >= 2) med++; else low++
+    })
+    const ge = id => document.getElementById(id)
+    if (ge('act-high'))     ge('act-high').textContent     = high
+    if (ge('act-med'))      ge('act-med').textContent      = med
+    if (ge('act-low'))      ge('act-low').textContent      = low
+    if (ge('act-sessions')) ge('act-sessions').textContent = total
+
+    // Re-render table now that activity data is ready
+    window._activityLoaded = true
+    if (window._renderTable && window._allRes) window._renderTable(window._allRes)
+  } catch(e) {
+    console.error('loadActivity:', e)
+    // Not a quiet week: nothing (or not everything) could be read. Any
+    // disclosure an earlier chunk did return is still shown — a known one is
+    // never hidden — but next to the notice that the list may be incomplete.
+    window._activityLoaded = false
+    renderEscalations(escalations)
+    showCouldNotCheck()
+    ;['act-high', 'act-med', 'act-low', 'act-sessions'].forEach(id => {
+      const el = document.getElementById(id)
+      if (el) el.textContent = '—'
+    })
+    if (window._renderTable && window._allRes) window._renderTable(window._allRes)
+  }
+}
+
+// Auth guard
+function waitForAuth() {
+  if (window.TechableAuth?.ready !== undefined) {
+    window.TechableAuth.guardRole(['centre'], async user => {
+      window._dash.setUID(user.uid)
+      window._dash._uid = user.uid
+      await window._dash.loadCentre()
+      await window._dash.loadResidents()
+      // Load activity data after residents are in _allRes
+      await loadActivity()
+      await loadRegistrations(user.uid)
+      await loadVisitRequests(user.uid)
+      await loadAttendance(user.uid)
+    })
+  } else { setTimeout(waitForAuth, 50) }
+}
+waitForAuth()
+</script>
+
+</body>
+</html>

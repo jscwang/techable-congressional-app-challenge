@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="robots" content="noindex">
+<title>Page not found - Techable</title>
+<!-- Vercel serves this page for any address that does not exist, at that
+     address (/old/link too), so every link and asset below starts with "/". -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="stylesheet" href="/assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-dk:#A8441F;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--cream:#FAF6F0;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#7A6858;
+  --border:rgba(180,156,136,.24);--shadow:0 2px 14px rgba(26,18,8,.07)
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;min-height:100vh}
+.hdr{height:64px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:14px;box-shadow:var(--shadow)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;min-height:44px}
+.logo-name{font-family:'Fraunces',serif;font-size:20px;font-weight:400;color:var(--ink)}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px 64px}
+.card{max-width:560px;width:100%;background:var(--white);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:40px 32px;text-align:center}
+.card .brand-mark{--brand-h:56px;margin:0 auto 20px}
+h1{font-family:'Fraunces',serif;font-size:clamp(30px,6vw,40px);font-weight:400;color:var(--navy);line-height:1.2;margin-bottom:14px}
+p{font-size:18px;line-height:1.65;color:var(--ink2);margin-bottom:12px}
+.actions{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:26px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:10px 28px;border-radius:14px;text-align:center;line-height:1.3;font-size:18px;font-weight:600;text-decoration:none}
+.btn-primary{background:var(--rust-dk);color:#fff}
+.btn-primary:hover{background:#8F3818}
+.btn-quiet{color:var(--rust-dk);font-size:17px;min-height:44px}
+.btn-quiet:hover{text-decoration:underline}
+.btn:focus-visible,.logo:focus-visible{outline:3px solid var(--rust);outline-offset:3px}
+.foot{text-align:center;font-size:14px;color:var(--ink3);padding:0 20px 28px}
+@media(max-width:560px){.hdr{padding:0 16px}.card{padding:32px 22px}p{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <a class="logo" href="/">
+    <img class="brand-mark" src="/assets/techable-icon.png" alt="" width="31" height="36">
+    <span class="logo-name">Techable</span>
+  </a>
+</header>
+
+<main class="page">
+  <div class="card">
+    <img class="brand-mark" src="/assets/techable-icon.png" alt="" width="48" height="56">
+    <h1>Sorry, we can't find that page</h1>
+    <p>The link may be old, or there may be a small typing mistake in the address.</p>
+    <p>Nothing is wrong with your account. Let's take you back to the start.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/">Go to the home page</a>
+      <a class="btn btn-quiet" href="/faq.html">Read the questions and answers</a>
+    </div>
+  </div>
+</main>
+
+<p class="foot">Techable &middot; a friendly companion for older adults and the people who care for them</p>
+</body>
+</html>

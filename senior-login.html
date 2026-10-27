@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Senior Sign In</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#2D6A4F;--accent-lt:#52A57A;--accent-pale:#E6F4ED;
+  --accent-rgb:45,106,79;
+  --navy:#0D1B2A;--cream:#FAF6F0;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --border:rgba(180,156,136,.22);--border2:rgba(180,156,136,.38);
+  --rust:#C4552B;--rust-pale:#FDF0EB;
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --r:12px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input{font-family:inherit}
+button{cursor:pointer;border:none;outline:none}
+input{outline:none}
+
+/* Keyboard focus must always be visible. The two blanket `outline:none`
+   declarations above took the ring off the Google button, the Sign In /
+   Create Account button, "Forgot your password?", the account toggle and the
+   privacy consent box — a 17px checkbox a senior has to tick before an
+   account can be created at all. Tabbing through the form, which is how
+   anyone who cannot hold a mouse steady fills one in, gave no clue where you
+   were. :focus-visible restores it for the keyboard only, so it never appears
+   on a mouse click. */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:2px;
+}
+.page{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+
+/* ── Panel entrance animations ── */
+@media (prefers-reduced-motion: no-preference) {
+  .left{
+    animation: slideInLeft 0.65s cubic-bezier(0.22,1,0.36,1) 0ms both;
+  }
+  .right{
+    animation: fadeUp 0.65s cubic-bezier(0.22,1,0.36,1) 80ms both;
+  }
+  @keyframes slideInLeft{
+    from{opacity:0;transform:translateX(-30px)}
+    to{opacity:1;transform:translateX(0)}
+  }
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* ── Orb pulse ── */
+  .left::after{
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.15)}
+  }
+
+  /* ── Shimmer keyframe ── */
+  @keyframes shimmer{
+    from{background-position:200% center}
+    to{background-position:-200% center}
+  }
+}
+
+.left{background:var(--navy);padding:48px 52px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.left::after{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(45,106,79,.22),transparent 70%);right:-130px;bottom:-130px;pointer-events:none}
+.logo{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+
+
+.left-body{position:relative;z-index:1}
+.left-body h1{font-family:'Fraunces',serif;font-size:clamp(30px,3.2vw,44px);font-weight:300;color:#fff;line-height:1.15;margin-bottom:18px;letter-spacing:-.02em}
+.left-body em{font-style:italic;color:var(--accent-lt)}
+.left-body p{color:rgba(255,255,255,.5);line-height:1.75;max-width:380px;font-size:14px;font-weight:300}
+.left-note{margin-top:32px;padding:20px;background:rgba(45,106,79,.15);border:1px solid rgba(45,106,79,.3);border-radius:12px;position:relative;z-index:1}
+.left-note p{color:rgba(255,255,255,.6);font-size:13px;line-height:1.65;font-weight:300}
+.left-note strong{color:rgba(255,255,255,.85);font-weight:500}
+.left-note a{color:var(--accent-lt);text-decoration:none;font-weight:500}
+.left-note a:hover{text-decoration:underline}
+.left-foot{position:relative;z-index:1;color:rgba(255,255,255,.2);font-size:11px}
+.right{display:flex;align-items:center;justify-content:center;padding:40px 36px;background:var(--cream)}
+.box{width:100%;max-width:400px}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3);text-decoration:none;margin-bottom:22px;font-weight:500;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+.form-title{font-family:'Fraunces',serif;font-size:26px;color:var(--navy);font-weight:400;margin-bottom:6px;letter-spacing:-.01em}
+.form-sub{font-size:14px;color:var(--ink3);margin-bottom:26px;line-height:1.55;font-weight:300}
+
+/* ── Google button with accent left-border on hover ── */
+.google-btn{
+  width:100%;height:52px;border-radius:var(--r);
+  border:1.5px solid var(--border2);
+  border-left:1.5px solid var(--border2);
+  background:var(--white);color:var(--ink);font-size:15px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .18s, border-left .18s;
+  margin-bottom:18px;box-shadow:0 1px 4px rgba(26,18,8,.06)
+}
+.google-btn:hover:not(:disabled){
+  border-color:rgba(45,106,79,.4);
+  border-left:3px solid var(--accent);
+  box-shadow:0 3px 12px rgba(26,18,8,.09);
+  transform:translateY(-1px)
+}
+.google-btn:disabled{opacity:.65;cursor:not-allowed}
+.google-icon{width:20px;height:20px;flex-shrink:0}
+#google-btn-text{flex:1;text-align:center}
+.divider{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-txt{font-size:11px;color:var(--ink4);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.field{margin-bottom:16px}
+/* 11px of #8C7A6A on the cream ground is 3.8:1, under the 4.5:1 AA floor, on
+   the one page a low-vision senior has to get through unaided. And an input
+   under 16px makes iOS Safari zoom the whole page in the moment the field is
+   focused, which shoves the rest of the form — the consent tick and the
+   Create Account button with it — off the screen mid-typing. */
+.field label{display:block;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);margin-bottom:7px}
+.field input{
+  width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--r);
+  background:var(--white);font-size:16px;color:var(--ink);transition:all .18s
+}
+/* ── Input focus ring ── */
+.field input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3.5px rgba(var(--accent-rgb), 0.12);
+  outline:none;
+}
+/* #C4B4A4 on white is 2:1 — the hint that the password needs six characters
+   was, for practical purposes, not on the page. */
+.field input::placeholder{color:var(--ink3)}
+
+/* ── Show / hide password ──
+   Labelled "Show"/"Hide" rather than a bare eye icon — a lone glyph is the kind
+   of thing a senior has to guess at, and guessing wrong on a password field is
+   exactly what we are trying to spare them. Always starts hidden: the state is
+   never remembered across loads or between the sign-in and sign-up forms. */
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:98px}
+.pw-toggle{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:6px;
+  height:38px;padding:0 11px;border:none;border-radius:8px;
+  background:none;color:var(--ink3);
+  font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .18s
+}
+.pw-toggle:hover{color:var(--accent);background:var(--accent-pale)}
+.pw-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.pw-toggle svg{width:17px;height:17px;flex-shrink:0}
+
+/* ── Submit button shimmer ── */
+.submit-btn{
+  width:100%;height:52px;border-radius:var(--r);border:none;
+  background:var(--accent);color:#fff;font-size:15px;font-weight:600;
+  transition:all .18s;
+  box-shadow:0 2px 10px rgba(45,106,79,.28);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background-size:200%;
+}
+.submit-btn:hover:not(:disabled){
+  background-color:var(--accent-lt);
+  background-image:linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  background-size:200%;
+  animation:shimmer 0.55s ease forwards;
+  transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(45,106,79,.36)
+}
+.submit-btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
+
+.msg{display:none;margin:0 0 16px;padding:13px 15px;border-radius:var(--r);font-size:14px;line-height:1.55}
+.msg.err{display:block;background:#FEF2EF;color:#9B2C2C;border:1px solid rgba(196,85,43,.2)}
+.msg.ok{display:block;background:var(--accent-pale);color:var(--accent);border:1px solid rgba(45,106,79,.2)}
+.msg.info{display:block;background:var(--gold-bg);color:#92610A;border:1px solid rgba(196,154,42,.2)}
+.reset-link{text-align:center;margin-top:14px}
+.reset-link button{background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;font-family:inherit}
+.reset-link button:hover{color:var(--accent)}
+.new-senior{margin-top:24px;padding-top:20px;border-top:1px solid var(--border);text-align:center}
+.new-senior p{font-size:13px;color:var(--ink3);margin-bottom:10px;font-weight:300}
+.new-senior-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;padding:9px 18px;border-radius:var(--r);border:1.5px solid rgba(45,106,79,.3);background:var(--accent-pale);transition:all .18s}
+.new-senior-link:hover{border-color:var(--accent);transform:translateY(-1px)}
+.new-senior .new-senior-note{margin:12px 0 0;font-size:12.5px;color:var(--ink2);line-height:1.6}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.consent-check{display:flex;align-items:flex-start;gap:10px;margin:0 0 18px;font-size:12.5px;color:var(--ink3);line-height:1.6;font-weight:300;cursor:pointer}
+.consent-check input{width:17px;height:17px;margin-top:1px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}
+.consent-check a{color:var(--accent);font-weight:600}
+.toggle-line{text-align:center;margin-top:18px;font-size:13px;color:var(--ink3);font-weight:300}
+.toggle-btn{background:none;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;padding:0 0 0 4px}
+.toggle-btn:hover{text-decoration:underline}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.spinner-sm{width:14px;height:14px;border:2px solid rgba(26,18,8,.15);border-top-color:var(--ink2);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Already-signed-in / wrong-role card ──
+   Shown instead of silently bouncing the visitor somewhere they did not ask
+   to go. Every route out of here is a button they can read. */
+.acct-card{border:1.5px solid var(--border2);border-radius:var(--r);background:var(--white);padding:20px;box-shadow:0 2px 12px rgba(26,18,8,.06)}
+.acct-who{display:flex;align-items:center;gap:13px;margin-bottom:14px}
+.acct-av{width:44px;height:44px;border-radius:50%;background:var(--accent-pale);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;flex-shrink:0}
+.acct-name{font-size:15px;font-weight:600;color:var(--ink);word-break:break-all;line-height:1.35}
+.acct-role{font-size:12px;color:var(--ink3);margin-top:2px}
+.acct-note{font-size:13.5px;color:var(--ink2);line-height:1.65;margin-bottom:16px;font-weight:300}
+.acct-btns{display:flex;flex-direction:column;gap:9px}
+.acct-btn{width:100%;padding:13px 16px;border-radius:var(--r);font-size:14px;font-weight:600;font-family:inherit;border:1.5px solid transparent;transition:all .18s;text-align:center}
+.acct-btn.primary{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(45,106,79,.28)}
+.acct-btn.primary:hover:not(:disabled){background:var(--accent-lt);transform:translateY(-1px)}
+.acct-btn.ghost{background:var(--white);color:var(--ink2);border-color:var(--border2)}
+.acct-btn.ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.acct-btn.danger{background:#FEF2EF;color:#9B2C2C;border-color:rgba(196,85,43,.25)}
+.acct-btn.danger:hover:not(:disabled){background:#9B2C2C;color:#fff;border-color:#9B2C2C}
+.acct-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.acct-warn{font-size:12.5px;color:var(--ink3);line-height:1.6;background:var(--gold-bg);border:1px solid rgba(196,154,42,.22);border-radius:10px;padding:11px 13px;margin-bottom:14px;font-weight:300}
+.acct-warn strong{color:#92610A;font-weight:600}
+@media(max-width:820px){.page{grid-template-columns:1fr}.left{display:none}.right{padding:32px 20px 48px;align-items:flex-start;padding-top:40px}}
+
+/* ── Reduced motion: disable all animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .left,.right{animation:none !important;opacity:1 !important;transform:none !important}
+  .left::after{animation:none !important}
+  .submit-btn:hover:not(:disabled){animation:none !important}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="left">
+    <div class="logo">
+      <img class="brand-logo" src="assets/techable-logo.png" alt="Techable for Elderly" width="120" height="111">
+    </div>
+    <div class="left-body">
+      <h1>Welcome back.<br/>Your companion<br/>is <em>ready</em> for you.</h1>
+      <p>Your AI companion remembers your stories and is always here to listen, chat, and share a moment with you.</p>
+      <div class="left-note">
+        <p><strong>First time here?</strong> Create your own account below. It takes about a minute, and the account belongs to you. You can link it to a community center later at <a href="join.html">join a center →</a></p>
+      </div>
+    </div>
+    <div class="left-foot">Techable © 2025 · Your companion, always here</div>
+  </section>
+
+  <section class="right">
+    <div class="box">
+      <a id="back-link" href="index.html#signin" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M13 7H1M6 2L1 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to sign in options
+      </a>
+      <div class="form-title" id="form-title">Welcome Back</div>
+      <div class="form-sub" id="form-sub">Sign in to continue with your companion.</div>
+      <!-- role="alert" because this box sits above the Google button, the name
+           row, both fields and the consent tick: on a phone it is off the top
+           of the screen by the time anything is written into it, and until it
+           was announced a senior who tapped Create Account with the consent
+           box unticked had nothing at all to go on. -->
+      <div class="msg" id="msg" role="alert"></div>
+      <button id="profile-retry" type="button" hidden onclick="retrySeniorProfile()" style="width:100%;min-height:48px;margin:0 0 18px;padding:12px;font:inherit;border:1px solid var(--ink);border-radius:10px;background:var(--ink);color:white;cursor:pointer">Try loading my profile again</button>
+
+      <!-- Shown when someone arrives here already signed in, or signs in with
+           an account that is not a senior account. It never navigates on its
+           own — the visitor picks. -->
+      <div class="acct-card" id="acct-card" style="display:none">
+        <div class="acct-who">
+          <div class="acct-av" id="acct-av">?</div>
+          <div>
+            <div class="acct-name" id="acct-name"></div>
+            <div class="acct-role" id="acct-role"></div>
+          </div>
+        </div>
+        <div class="acct-note" id="acct-note"></div>
+        <div id="acct-extra"></div>
+        <div class="acct-btns" id="acct-btns"></div>
+      </div>
+
+      <div id="login-forms">
+      <!-- Both buttons ship disabled and say "Loading…". googleLogin() and
+           doSubmit() do not exist until the module at the foot of this file
+           has run, and until it has, a tap on Google was a silent no-op — no
+           spinner, no message, nothing. They are enabled at the end of that
+           module. -->
+      <button class="google-btn" id="google-btn" onclick="googleLogin()" type="button" disabled>
+        <svg class="google-icon" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        <span id="google-btn-text">Loading…</span>
+      </button>
+      <div class="divider"><div class="divider-line"></div><span class="divider-txt">or</span><div class="divider-line"></div></div>
+      <div class="form-row" id="name-row" style="display:none">
+        <div class="field" style="margin-bottom:0"><label for="first-name">First Name</label><input id="first-name" autocomplete="given-name" placeholder="Mary" /></div>
+        <div class="field" style="margin-bottom:0"><label for="last-name">Last Name</label><input id="last-name" autocomplete="family-name" placeholder="Lim" /></div>
+      </div>
+      <form onsubmit="formSubmit(event)" novalidate>
+        <div id="registration-voice" style="display:none">
+          <p>Voice-assisted registration: speak one field at a time and review the words. Type your password and choose privacy consent yourself.</p>
+          <div class="form-row"><button class="toggle-btn" type="button" data-dictate="first-name">Speak your first name</button><button class="toggle-btn" type="button" data-dictate="last-name">Speak your last name</button></div>
+          <button class="toggle-btn" type="button" data-dictate="email">Speak your email</button>
+          <p id="registration-voice-status" role="status" aria-live="polite"></p>
+        </div>
+        <div class="field"><label for="email">Email</label><input id="email" type="email" required autocomplete="email" placeholder="your@email.com" /></div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="pw-wrap">
+            <input id="password" type="password" required autocomplete="current-password" placeholder="Your password" />
+            <button type="button" class="pw-toggle" id="pw-toggle" onclick="togglePw()" aria-controls="password" aria-pressed="false">
+              <svg id="pw-eye" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1 8s2.5-4.6 7-4.6S15 8 15 8s-2.5 4.6-7 4.6S1 8 1 8Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.9" stroke="currentColor" stroke-width="1.4"/></svg>
+              <svg id="pw-eye-off" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="display:none"><path d="M6.6 3.5A6.9 6.9 0 0 1 8 3.4c4.5 0 7 4.6 7 4.6a13 13 0 0 1-2.3 2.9M4.1 4.5A12.9 12.9 0 0 0 1 8s2.5 4.6 7 4.6c1.3 0 2.4-.4 3.4-.9M1.6 1.6l12.8 12.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span id="pw-toggle-text">Show</span>
+            </button>
+          </div>
+        </div>
+        <label class="consent-check" id="consent-row" style="display:none">
+          <input id="privacy-consent" type="checkbox" />
+          <span>I agree to Techable's <a href="privacy.html" target="_blank" rel="noopener">Data &amp; Privacy Policy</a> and consent to my information being used to create and manage my account.</span>
+        </label>
+        <button class="submit-btn" id="submit-btn" type="submit" disabled><span id="btn-label">Loading…</span></button>
+      </form>
+      <div class="reset-link" id="reset-row">
+        <button onclick="doReset()">Forgot your password?</button>
+      </div>
+      <div class="toggle-line"><a class="toggle-btn" href="faq.html">Help &amp; FAQ</a></div>
+      <div class="toggle-line">
+        <span id="toggle-text">New here?</span>
+        <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">Create an account</button>
+      </div>
+      <!-- The note is here, next to the link, and not only in the panel on the
+           left: @media(max-width:820px) hides that panel altogether, so on a
+           phone this link was the most prominent new-user guidance on the page
+           — and it leads to a form that asks the centre to register you and
+           creates no sign-in at all. Seniors filled in four steps of personal
+           details, reached "Registration Submitted!" and still had no account
+           to sign in with. -->
+      <div class="new-senior">
+        <p>Registering through your community center?</p>
+        <a href="join.html" class="new-senior-link">Join a Community Center →</a>
+        <p class="new-senior-note">That form asks your center to register you—it does not create a
+          sign-in on its own. To start using your companion today, create your account above.</p>
+      </div>
+      </div><!-- /#login-forms -->
+    </div>
+  </section>
+</div>
+
+<script>
+// Both waits below are bounded now. This promise used to be able to stay
+// pending for ever — a request to /api/config that is answered by nobody, or a
+// config.js whose script tag never fires load or error — and the module at the
+// foot of this file cannot run a single line until it settles. That is not a
+// slow page, it is a permanently dead one: no doSubmit(), no googleLogin(),
+// and not even the "Firebase config not found" message, because that branch
+// sits past the same await. A senior taps Create Account and nothing happens,
+// for ever, with nothing on screen to explain it.
+window._cfg = (async function(){
+  const ctl = new AbortController()
+  let bell
+  try {
+    // Include response.json(): headers can arrive while the body never does.
+    const d = await Promise.race([
+      (async () => {
+        const res = await fetch('/api/config', { cache: 'no-store', signal: ctl.signal })
+        return res.ok ? await res.json() : null
+      })(),
+      new Promise((_, reject) => {
+        bell = setTimeout(() => { ctl.abort(); reject(new Error('Config timed out')) }, 6000)
+      })
+    ])
+    if (d?.firebase?.apiKey) { window.TECHABLE_CONFIG = d; return d }
+  } catch (_) {} finally { clearTimeout(bell) }
+  await new Promise(res => {
+    const s = document.createElement('script'); s.src = 'config.js'
+    const finish = () => { clearTimeout(timer); s.onload = s.onerror = null; res() }
+    const timer = setTimeout(() => { s.remove(); finish() }, 6000)
+    s.onload = finish; s.onerror = finish
+    document.head.appendChild(s)
+  })
+  return window.TECHABLE_CONFIG || null
+})()
+
+// ── The form is not live until the module below is ───────────────
+// `onsubmit="doSubmit(event)"` threw ReferenceError for as long as the module
+// was still loading, so the default action was never prevented and the browser
+// submitted the form for real. None of the inputs carry a name attribute, so
+// that is a plain GET back to this page: everything typed is wiped and
+// ?mode=signup goes with it, leaving a first-time senior looking at an empty
+// "Welcome Back" form. preventDefault() happens here, unconditionally, so a
+// handler that does not exist yet can never navigate.
+window.authReady = false
+window.formSubmit = function(e) {
+  e.preventDefault()
+  if (typeof window.doSubmit === 'function') window.doSubmit(e)
+}
+
+// If the module never arrives — the Firebase modules come from gstatic, which
+// an ad blocker or a blocked network can swallow whole — nothing above ever
+// reports it. Say so instead of leaving the buttons reading "Loading…" until
+// the visitor gives up. Cleared by the module the moment it starts.
+window._loadTimer = setTimeout(function() {
+  const el = document.getElementById('msg')
+  if (!el) return
+  window.authFailed = true   // keep toggleMode() from wiping this or relabelling the buttons
+  // The buttons are still disabled; do not leave them saying "Loading…" beside
+  // a message that says the page could not finish loading.
+  for (const id of ['btn-label', 'google-btn-text']) {
+    const b = document.getElementById(id)
+    if (b) b.textContent = 'Unavailable'
+  }
+  el.className = 'msg err'
+  el.textContent = 'This page could not finish loading. Please check your internet connection and reload the page.'
+}, 15000)
+
+// ── Sign in / sign up: which form is showing ─────────────────────
+// Deliberately out here rather than in the module below, which waits on the
+// config and throws if it is missing. This is pure DOM — no Firebase — and it
+// decides which form a visitor lands on. The homepage's main button points at
+// senior-login.html?mode=signup, so a config hiccup used to drop someone who
+// clicked "Create Your Free Account" onto a sign-IN form with no way to tell
+// what had gone wrong.
+window.isSignUp = false
+
+// ── Show / hide the password ─────────────────────────────────────
+// Out here alongside toggleMode for the same reason: it is pure DOM, so it
+// keeps working even when the config below never resolves. Swapping an input's
+// type drops the caret to the end in Chrome, so put it back where it was —
+// otherwise anyone who reveals a half-typed password mid-word carries on
+// typing at the wrong end of it.
+// refocus=false is for callers other than the button itself (toggleMode
+// re-hides on the way past), which should not drag the cursor into the field.
+window.togglePw = function(refocus = true) {
+  const pw  = document.getElementById('password')
+  const btn = document.getElementById('pw-toggle')
+  if (!pw || !btn) return
+
+  const reveal = pw.type === 'password'
+  const start = pw.selectionStart, end = pw.selectionEnd
+
+  pw.type = reveal ? 'text' : 'password'
+  btn.setAttribute('aria-pressed', String(reveal))
+  btn.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password')
+
+  const set  = (id, prop, value) => { const el = document.getElementById(id); if (el) el[prop] = value }
+  const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none' }
+  set('pw-toggle-text', 'textContent', reveal ? 'Hide' : 'Show')
+  show('pw-eye', !reveal)
+  show('pw-eye-off', reveal)
+
+  if (refocus) {
+    pw.focus()
+    try { pw.setSelectionRange(start, end) } catch (_) {}
+  }
+}
+
+window.toggleMode = function() {
+  window.isSignUp = !window.isSignUp
+  const on = window.isSignUp
+  const set = (id, prop, value) => { const el = document.getElementById(id); if (el) el[prop] = value }
+
+  // Switching form while the module is still loading must not relabel two
+  // disabled buttons as though they were ready to be pressed.
+  const ready = window.authReady === true
+
+  set('form-title', 'textContent', on ? 'Create Your Account' : 'Welcome Back')
+  set('form-sub', 'textContent', on
+    ? 'Set up your own account — your companion will be ready right away.'
+    : 'Sign in to continue with your companion.')
+  set('btn-label', 'textContent', ready ? (on ? 'Create Account' : 'Sign In') : (window.authFailed === true ? 'Unavailable' : 'Loading…'))
+  set('toggle-text', 'textContent', on ? 'Already have an account?' : 'New here?')
+  set('toggle-btn', 'textContent', on ? 'Sign in' : 'Create an account')
+  set('google-btn-text', 'textContent', ready ? (on ? 'Sign up with Google' : 'Continue with Google') : (window.authFailed === true ? 'Unavailable' : 'Loading…'))
+
+  const show = (id, value) => { const el = document.getElementById(id); if (el) el.style.display = value }
+  show('name-row', on ? 'grid' : 'none')
+  show('registration-voice', on ? 'block' : 'none')
+  show('consent-row', on ? 'flex' : 'none')
+  show('reset-row', on ? 'none' : 'block')
+
+  const pw = document.getElementById('password')
+  if (pw) {
+    pw.setAttribute('autocomplete', on ? 'new-password' : 'current-password')
+    pw.placeholder = on ? 'At least 6 characters' : 'Your password'
+    // Re-hide on the way through: a revealed password should not ride along
+    // into a form the visitor has just switched to.
+    if (pw.type === 'text') window.togglePw(false)
+  }
+
+  // Back goes to the homepage cards for the mode the visitor is in, so someone
+  // who chose "Sign up as ..." and backs out is not shown the sign-in wording.
+  set('back-link', 'href', on ? 'index.html#signup' : 'index.html#signin')
+
+  const msg = document.getElementById('msg')
+  if (msg && window.authFailed !== true) { msg.className = 'msg'; msg.textContent = '' }
+}
+
+// Open straight into the sign-up form when the link asked for it. Runs on
+// DOMContentLoaded because this script sits above the markup it touches.
+if (new URLSearchParams(location.search).get('mode') === 'signup') {
+  document.addEventListener('DOMContentLoaded', () => window.toggleMode())
+}
+</script>
+
+<script type="module">
+await window._cfg
+
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js"
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signInWithPopup, signInWithRedirect, getRedirectResult,
+  GoogleAuthProvider, sendPasswordResetEmail, updateProfile,
+  deleteUser, signOut
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js"
+import {
+  getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp,
+  collection, query, where, getDocs, getDocsFromServer, getDocFromServer, writeBatch
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+// This module is running, so the "could not finish loading" warning armed in
+// the script above has nothing left to warn about — including on the way into
+// the config failure just below, which has a message of its own.
+clearTimeout(window._loadTimer)
+
+const cfg = window.TECHABLE_CONFIG
+if (!cfg?.firebase?.apiKey) {
+  // Read by toggleMode() in the script above. Without it, opening the page with
+  // ?mode=signup ran toggleMode() on DOMContentLoaded, which blanked the message
+  // below and relabelled the dead buttons "Loading…" — a form that never worked
+  // and never said why, which is what a visitor met when the config was missing.
+  window.authFailed = true
+  console.error('Firebase config not found. Check /api/config or config.js.')
+  showMsg('Sign-in is not available right now. Please try again in a few minutes.', 'err')
+  document.getElementById('google-btn').disabled = true
+  document.getElementById('submit-btn').disabled = true
+  for (const id of ['btn-label', 'google-btn-text']) {
+    const el = document.getElementById(id)
+    if (el) el.textContent = 'Unavailable'
+  }
+  throw new Error('No config')
+}
+
+const app  = getApps().length ? getApps()[0] : initializeApp(cfg.firebase)
+const auth = getAuth(app)
+const db   = getFirestore(app)
+const gp   = new GoogleAuthProvider()
+gp.setCustomParameters({ prompt: 'select_account' })
+
+let manualFlow = false
+let profileRetryUser = null
+const GOOGLE_REDIRECT_PENDING = 'techable_google_redirect_pending'
+let googleRedirectPendingAtLoad = false
+try { googleRedirectPendingAtLoad = Boolean(sessionStorage.getItem(GOOGLE_REDIRECT_PENDING)) } catch (_) {}
+// Owned by the pre-config script above, which defines toggleMode(). Read as a
+// plain identifier throughout this module; assignments go through window so
+// both scripts see the same value.
+const isSignUpNow = () => window.isSignUp === true
+
+// Create the users/{uid} doc for a senior if it doesn't exist yet. Role is
+// always 'resident' — a senior account is standalone, not owned by a centre.
+//
+// This write used to end in .catch(() => {}), and then returned 'resident' as
+// though it had worked. A senior whose account was created but whose profile
+// document was not would be sent into app.html half-provisioned: the security
+// rules read the role off that document, so hasProfile() is false, role() is
+// empty, and things quietly refuse for reasons nothing on screen explains.
+// Better to fail the sign-up visibly — the caller shows the message and they
+// can try again — than to admit them to an account that does not entirely
+// exist. The other three login pages already let this propagate.
+async function ensureSeniorDoc(user, nameOverride) {
+  const name = nameOverride || user.displayName || ''
+  const ref  = doc(db, 'users', user.uid)
+  const snap = await getDoc(ref).catch(() => null)
+  if (snap?.exists()) return snap.data()?.role || 'resident'
+  await setDoc(ref, {
+    uid: user.uid, role: 'resident',
+    displayName: name, displayNameLower: name.toLowerCase(),
+    email: user.email || '', emailLower: (user.email || '').toLowerCase(),
+    photoURL: user.photoURL || '', avatarSeed: user.uid,
+    isPublic: false, communitySetup: false,
+    privacyConsent: true,
+    privacyConsentAt: serverTimestamp(),
+    privacyPolicyVersion: '2026-08-07',
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+  }, { merge: true })
+  return 'resident'
+}
+
+const ROLE_LABEL = {
+  community_manager: 'Community Center Manager',
+  family:            'Family & Friends',
+  service_provider:  'Service Provider',
+  resident:          'Senior'
+}
+const ROLE_HOME = {
+  community_manager: 'profile.html',
+  family:            'family-dashboard.html',
+  service_provider:  'provider-dashboard.html',
+  resident:          'app.html'
+}
+
+function normRole(r) {
+  if (r === 'centre')  return 'community_manager'
+  if (r === 'elderly' || r === 'builder') return 'resident'
+  if (r === 'provider') return 'service_provider'
+  return ROLE_LABEL[r] ? r : 'resident'
+}
+
+// Reads the account's role. `exists:false` means the auth user has no profile
+// doc yet — a brand new sign-in, which this page finishes as a senior.
+async function roleOf(user) {
+  let timer
+  try {
+    // Offline Firestore reads may stay pending. A timeout is a failed read,
+    // never evidence that this person has no profile.
+    const snap = await Promise.race([
+      getDoc(doc(db, 'users', user.uid)),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Profile read timed out')), 10000)
+      })
+    ])
+    if (!snap.exists()) return { exists: false, role: 'resident' }
+    return { exists: true, role: normRole(snap.data()?.role) }
+  } catch (err) {
+    // A denied or offline read must not silently promote them into the app —
+    // say so rather than guessing a role.
+    console.warn('[senior-login] role lookup failed:', err?.code || err?.message)
+    return { exists: true, role: null, error: err }
+  } finally { clearTimeout(timer) }
+}
+
+// THE single place a successful sign-in is resolved. Every entry point (email,
+// Google popup, Google redirect, existing session) funnels through here.
+//
+// This used to be homeForUser(), which returned a URL that the *caller* was
+// responsible for navigating to — and the email/password caller never did, so
+// signing in appeared to do nothing at all. It also silently redirected a
+// manager who had deliberately walked through the Senior door, which read as
+// "the senior login is broken". Now the navigation happens here, and a role
+// mismatch stops and asks instead of bouncing.
+async function afterSignIn(user, createdName) {
+  const retry = el('profile-retry')
+  if (retry) retry.hidden = true
+  profileRetryUser = null
+  const { exists, role, error } = await roleOf(user)
+
+  if (error) {
+    showMsg('Signed in, but your profile could not be read. Check your connection and try again.', 'err')
+    resetSubmit()
+    profileRetryUser = user
+    if (retry) { retry.hidden = false; retry.disabled = false }
+    return
+  }
+
+  if (!exists) {
+    // First-time senior sign-in: persist the standalone resident account.
+    //
+    // Handled here rather than left to propagate. afterSignIn() is also called
+    // from the onAuthStateChanged observer, which has no try/catch of its own —
+    // a throw there would be an unhandled rejection that leaves `manualFlow`
+    // stuck true, and a stuck manualFlow is exactly the spinner-forever bug the
+    // comment further down this file describes.
+    try {
+      await ensureSeniorDoc(user, createdName)
+    } catch (err) {
+      console.warn('[senior-login] could not create profile document:', err)
+      showMsg('Your account was created, but we could not finish setting up your profile. ' +
+              'Check your connection and sign in again.', 'err')
+      resetSubmit()
+      return
+    }
+    go('app.html')
+    return
+  }
+
+  if (role === 'resident') { go('app.html'); return }
+
+  // Right person, wrong door. Show them what is going on.
+  showAccountCard(user, role)
+}
+
+window.retrySeniorProfile = async function() {
+  const user = auth.currentUser
+  if (!user || user.uid !== profileRetryUser?.uid) {
+    showMsg('Please sign in again to continue.', 'err')
+    return
+  }
+  manualFlow = true
+  showMsg('Checking your profile…', 'info')
+  try { await afterSignIn(user) }
+  finally { manualFlow = false }
+}
+
+function go(url) {
+  manualFlow = true
+  showMsg('Taking you to your companion…', 'ok')
+  window.location.href = url
+}
+
+// ── Already-signed-in / wrong-role card ──────────────────────────
+function el(id) { return document.getElementById(id) }
+
+function showForms(show) {
+  const f = el('login-forms')
+  const c = el('acct-card')
+  if (f) f.style.display = show ? '' : 'none'
+  if (c) c.style.display = show ? 'none' : 'block'
+  el('form-title').textContent = show ? (isSignUpNow() ? 'Create Your Account' : 'Welcome Back') : 'You are already signed in'
+  el('form-sub').textContent   = show
+    ? (isSignUpNow() ? 'Set up your own account — your companion will be ready right away.' : 'Sign in to continue with your companion.')
+    : 'This account is not a senior account.'
+
+  // Whichever surface is showing, no button may be left mid-spinner.
+  resetSubmit()
+  const gb = el('google-btn'), gt = el('google-btn-text')
+  if (gb) gb.disabled = false
+  if (gt) gt.textContent = isSignUpNow() ? 'Sign up with Google' : 'Continue with Google'
+}
+
+function showAccountCard(user, role) {
+  const label = ROLE_LABEL[role] || 'Account'
+  const name  = user.displayName || user.email || 'Your account'
+
+  el('acct-av').textContent   = (name.match(/[A-Za-z0-9]/g) || ['?'])[0].toUpperCase()
+  el('acct-name').textContent = user.email || name
+  el('acct-role').textContent = 'Signed in as ' + label
+
+  el('acct-note').innerHTML = role === 'resident'
+    ? 'You are already signed in. Continue to your companion, or use a different account.'
+    : `This email is registered as a <strong>${label}</strong>, not a senior. An account&rsquo;s role is fixed when it is created, so it cannot be switched over — to use this email as a senior you have to delete the account and sign up again.`
+
+  el('acct-extra').innerHTML = ''
+
+  const btns = el('acct-btns')
+  btns.innerHTML = ''
+
+  addBtn(btns, 'primary', `Continue as ${label}`, () => go(ROLE_HOME[role] || 'app.html'))
+  addBtn(btns, 'ghost', 'Use a different account', async () => {
+    manualFlow = true
+    await signOutAndClear()
+    manualFlow = false
+    showMsg('')
+    showForms(true)
+  })
+
+  if (role !== 'resident') {
+    addBtn(btns, 'danger', 'Delete this account and start again as a Senior',
+      () => confirmDelete(user, role))
+  }
+
+  showForms(false)
+}
+
+function addBtn(parent, variant, label, onClick) {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.className = 'acct-btn ' + variant
+  b.textContent = label
+  b.addEventListener('click', () => onClick(b))
+  parent.appendChild(b)
+  return b
+}
+
+// ── Delete this account for real ─────────────────────────────────
+// Usually runs straight after a fresh sign-in. When the card was reached from
+// an older session, the shared cascade notices before deleting anything and
+// runDelete asks for a fresh sign-in (auth/requires-recent-login).
+function confirmDelete(user, role) {
+  el('acct-extra').innerHTML = `
+    <div class="acct-warn">
+      <strong>This cannot be undone.</strong> It permanently deletes the sign-in
+      for ${escapeHtml(user.email || 'this account')}, its profile, and what
+      belongs to it: centres and the registrations sent to them, resident
+      workspaces, saved chats and check-ins, attendance records, visit
+      requests you made, family connections you added, and messages and care
+      notes you wrote. If anything cannot be removed, the account is kept so
+      you can try again. Identity documents uploaded when you registered are
+      not yet removed automatically — contact Techable to have them erased.
+      You can then sign up again with the same email as a senior.
+    </div>`
+
+  const btns = el('acct-btns')
+  btns.innerHTML = ''
+  const del = addBtn(btns, 'danger', 'Yes, delete it permanently', b => runDelete(user, b))
+  addBtn(btns, 'ghost', 'Cancel', () => showAccountCard(user, role))
+  del.focus()
+}
+
+async function runDelete(user, btn) {
+  btn.disabled = true
+  btn.textContent = 'Deleting…'
+  showMsg('')
+
+  // The cascade is shared with auth.js (profile.html) in account-deletion.js.
+  // It deletes the sign-in last, and only when every record is gone: a
+  // partial failure keeps the account so this button can be pressed again.
+  // manualFlow stops the auth observer reacting to the sign-in disappearing.
+  //
+  // Loaded here rather than imported at the top, so that if the file cannot
+  // be fetched the login page itself still works.
+  manualFlow = true
+  let result
+  try {
+    const { deleteAccountAndData } = await import('./account-deletion.js')
+    result = await deleteAccountAndData({
+      user: auth.currentUser || user, db, deleteUser,
+      fs: { collection, query, where, getDocs, getDocsFromServer, doc, getDoc, getDocFromServer,
+            setDoc, deleteDoc, writeBatch, serverTimestamp }
+    })
+  } catch (err) {
+    console.warn('[senior-login] could not load account-deletion.js:', err?.message)
+    result = { ok: false, reason: 'load-failed',
+      message: 'Account deletion could not start. Please check your connection and try again. Nothing has been deleted.' }
+  }
+
+  if (!result.ok) {
+    manualFlow = false
+    btn.disabled = false
+    btn.textContent = 'Yes, delete it permanently'
+    showMsg(result.message, 'err')
+    if (result.reason === 'recent-login') {
+      // Firebase only deletes a sign-in made in the last few minutes. Sign
+      // them out so the next sign-in is a fresh one, then they press delete.
+      await signOutAndClear()
+      showForms(true)
+    }
+    return
+  }
+
+  showForms(true)
+  window.isSignUp = false
+  // window.toggleMode, not the bare name: this is the module, and toggleMode is
+  // defined in the plain script above it. The bare call resolves today only
+  // because a function assigned to window happens to be reachable as a global —
+  // which stops being true the moment either script is wrapped in a scope, and
+  // this is the one place the module reaches back by name.
+  window.toggleMode()   // open straight into the sign-up form
+  document.getElementById('email').value = user.email || ''
+  showMsg('Account deleted. You can now create a senior account with the same email.', 'ok')
+  manualFlow = false
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
+// Resolve a returning redirect before the ordinary auth observer routes it.
+// A missing session must be visible, not a fresh-looking login form.
+const googleRedirectCompletion = (async () => {
+  let handling = false
+  try {
+    const result = await getRedirectResult(auth)
+    if (googleRedirectPendingAtLoad && typeof auth.authStateReady === 'function') await auth.authStateReady()
+    const returnedUser = result?.user || (googleRedirectPendingAtLoad ? auth.currentUser : null)
+    if (returnedUser) {
+      if (arrivedAfterSignOut) return false
+      manualFlow = true
+      handling = true
+      showMsg('Signing you in…', 'info')
+      await afterSignIn(returnedUser)
+      return true
+    }
+    if (googleRedirectPendingAtLoad) {
+      showMsg('Google sign-in did not finish. Please try Continue with Google again. If you opened this link inside another app, open it directly in Chrome or Safari.', 'err')
+    }
+  } catch (err) {
+    if (err.code && err.code !== 'auth/null-user') showMsg(friendlyError(err.code, 'google'), 'err')
+  } finally {
+    if (handling) manualFlow = false
+    if (googleRedirectPendingAtLoad) {
+      try { sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING) } catch (_) {}
+    }
+  }
+  return false
+})()
+
+// Already signed in? Skip straight through — except immediately after a sign-out.
+//
+// That exception is the whole of "I can't log out. It keeps me logged in": if
+// the sign-out did not fully take, this shortcut carried the user back into the
+// app before they could see the login page at all, and pressing Log out again
+// just repeated the loop. Landing here right after logging out means showing
+// them the account and letting them choose, never deciding for them.
+//
+// Every sign-out on this page goes through here (F06). This page runs its own
+// Firebase, so it does not get TechableAuth.signOut()'s sweep: without this the
+// person signed out here left their transcripts and check-ins in localStorage
+// for whoever uses the tablet next. Device preferences are kept; the list lives
+// in account-deletion.js, loaded on demand so a failed fetch cannot break the
+// page. Cleared only once nobody is signed in — a sign-out that did not take
+// leaves the same person here, and their data is theirs.
+async function signOutAndClear() {
+  try { await signOut(auth) } catch (_) {}
+  if (auth.currentUser) return
+  try {
+    const { clearPersonalLocalData } = await import('./account-deletion.js')
+    clearPersonalLocalData()
+  } catch (_) {
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith('techable_')).forEach(k => localStorage.removeItem(k))
+    } catch (_) {}
+  }
+}
+
+// Read once, here, as the page loads — not inside the callback below. A
+// sign-out that worked leaves no user, so the callback never runs, and a flag
+// read only in there would sit in sessionStorage for the rest of the tab's
+// life: sign in again, press Back onto this page, and it would sign the user
+// straight back out. It belongs to this page load and nothing after it.
+const arrivedAfterSignOut = (() => {
+  try {
+    const flag = sessionStorage.getItem('techable_just_signed_out')
+    if (flag) sessionStorage.removeItem('techable_just_signed_out')
+    return Boolean(flag)
+  } catch (_) { return false }
+})()
+
+onAuthStateChanged(auth, async user => {
+  if (!user || manualFlow) return
+  if (await googleRedirectCompletion || manualFlow) return
+
+  if (arrivedAfterSignOut) {
+    manualFlow = true
+    // One more attempt now that this page's Firebase instance is running: it is
+    // usually all that was needed, and it leaves them properly signed out.
+    await signOutAndClear()
+    manualFlow = false
+    if (!auth.currentUser) { showForms(true); return }
+    const { role } = await roleOf(user)
+    showAccountCard(user, role || 'resident')
+    return
+  }
+
+  manualFlow = true
+  await afterSignIn(user)
+  manualFlow = false
+})
+
+window.googleLogin = async function() {
+  if (isSignUpNow() && !hasPrivacyConsent()) return
+  const btn = document.getElementById('google-btn')
+  const txt = document.getElementById('google-btn-text')
+  showMsg('')
+  btn.disabled = true
+  txt.innerHTML = '<span class="spinner-sm"></span>&ensp;Connecting…'
+  try {
+    manualFlow = true
+    const cred = await signInWithPopup(auth, gp)
+    await afterSignIn(cred.user)
+    // afterSignIn either navigated or put the account card up; either way the
+    // button must not stay stuck on "Connecting…".
+    btn.disabled = false
+    txt.textContent = isSignUpNow() ? 'Sign up with Google' : 'Continue with Google'
+    manualFlow = false
+  } catch (err) {
+    // Cross-domain redirect helpers lose state in storage-restricting browsers.
+    // Only use redirect with the same-origin auth proxy configured. Closing a
+    // popup is cancellation, not permission to start another login flow.
+    const sameOriginAuth = cfg.firebase.authDomain === window.location.hostname
+    if (err.code === 'auth/popup-blocked' && sameOriginAuth) {
+      txt.innerHTML = '<span class="spinner-sm"></span>&ensp;Redirecting…'
+      try {
+        sessionStorage.setItem(GOOGLE_REDIRECT_PENDING, String(Date.now()))
+        await signInWithRedirect(auth, gp)
+      } catch (e) {
+        try { sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING) } catch (_) {}
+        manualFlow = false
+        showMsg(e.code ? friendlyError(e.code, 'google') : 'This browser could not keep your sign-in state. Open the link directly in Chrome or Safari and try again.', 'err')
+        btn.disabled = false
+        txt.textContent = 'Continue with Google'
+      }
+    } else {
+      manualFlow = false; showMsg(friendlyError(err.code, 'google'), 'err'); btn.disabled = false; txt.textContent = 'Continue with Google'
+    }
+  }
+}
+
+window.doSubmit = async function(e) {
+  e.preventDefault()
+  const email = document.getElementById('email').value.trim()
+  const pass  = document.getElementById('password').value
+  const btn   = document.getElementById('submit-btn')
+  const lbl   = document.getElementById('btn-label')
+  if (!email) { highlightField('email'); return }
+  if (!pass)  { highlightField('password'); return }
+  if (isSignUpNow()) {
+    if (pass.length < 6) { showMsg('Password must be at least 6 characters.', 'err'); highlightField('password'); return }
+    if (!hasPrivacyConsent()) return
+  }
+  btn.disabled = true
+  lbl.innerHTML = '<div class="spinner"></div>'
+  showMsg('')
+  try {
+    manualFlow = true
+    if (isSignUpNow()) {
+      const name = [
+        document.getElementById('first-name').value.trim(),
+        document.getElementById('last-name').value.trim()
+      ].filter(Boolean).join(' ')
+      const cred = await createUserWithEmailAndPassword(auth, email, pass)
+      if (name) await updateProfile(cred.user, { displayName: name })
+      await ensureSeniorDoc(cred.user, name)
+      go('app.html')
+    } else {
+      // FIX: this used to stop here. The redirect was left to
+      // onAuthStateChanged, which bails on `manualFlow` — set true two lines
+      // above — so signing in with an email and password did nothing at all:
+      // the button span forever and the visitor eventually walked back to the
+      // portal. afterSignIn() now owns the outcome.
+      const cred = await signInWithEmailAndPassword(auth, email, pass)
+      await afterSignIn(cred.user)
+      manualFlow = false
+    }
+  } catch (err) {
+    manualFlow = false; showMsg(friendlyError(err.code, 'password'), 'err'); btn.disabled = false
+    lbl.textContent = isSignUpNow() ? 'Create Account' : 'Sign In'
+  }
+}
+
+// afterSignIn() can end on the account card rather than a navigation, so the
+// submit button has to be put back the way it was.
+function resetSubmit() {
+  const btn = document.getElementById('submit-btn')
+  const lbl = document.getElementById('btn-label')
+  if (btn) btn.disabled = false
+  if (lbl) lbl.textContent = isSignUpNow() ? 'Create Account' : 'Sign In'
+}
+
+// toggleMode() and the mode=signup handling live in the plain script above,
+// so which form a visitor lands on never depends on Firebase being reachable.
+
+function hasPrivacyConsent() {
+  const el = document.getElementById('privacy-consent')
+  if (!el?.checked) {
+    showMsg('Please tick the Data & Privacy Policy consent before creating an account.', 'err')
+    el?.focus()
+    return false
+  }
+  return true
+}
+
+window.doReset = async function() {
+  const email = document.getElementById('email').value.trim()
+  if (!email) { showMsg('Enter your email address above first.', 'err'); highlightField('email'); return }
+  try {
+    await sendPasswordResetEmail(auth, email)
+    showMsg('Password reset email sent! Check your inbox.', 'ok')
+  } catch (err) {
+    showMsg(friendlyError(err.code, 'password'), 'err')
+  }
+}
+
+function showMsg(text, type) {
+  const retry = document.getElementById('profile-retry')
+  if (retry) retry.hidden = true
+  const el = document.getElementById('msg')
+  if (!text) { el.className = 'msg'; el.textContent = ''; return }
+  el.className = 'msg ' + (type || 'err'); el.textContent = text
+  // The box is above everything else on the page, so on a phone the sign-up
+  // form scrolls it out of sight: "Please tick the Data & Privacy Policy
+  // consent" was painted somewhere off the top of the screen and the Create
+  // Account button simply looked dead. Bring the message to the person.
+  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }) } catch (_) {}
+}
+
+function highlightField(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.style.borderColor = '#C4302B'; el.focus()
+  el.addEventListener('input', () => { el.style.borderColor = '' }, { once: true })
+}
+
+// `provider` says which route the visitor took: 'google' for the button,
+// 'password' for the email form. It only matters for auth/operation-not-allowed,
+// which Firebase throws for BOTH a disabled Google provider and a disabled
+// Email/Password provider. Naming the wrong one sends people hunting the wrong
+// setting — a disabled Email/Password provider used to report itself as
+// "Google sign-in is not enabled".
+function friendlyError(code, provider) {
+  const notEnabled = {
+    google:   'Google sign-in is not enabled. Please contact your center.',
+    password: 'Email and password sign-in is not enabled. Please use the Google button above or contact your center.',
+  }[provider] || 'That sign-in method is not enabled. Please contact your center.'
+  const map = {
+    'auth/invalid-email':          'Please enter a valid email address.',
+    // An account created with the Google button has no password on this site,
+    // so signing in with the same Gmail address and a made-up password fails
+    // here — and Firebase reports it as a plain credential mismatch, which
+    // sent people round in circles retyping a password that never existed.
+    'auth/invalid-credential':     'That email and password did not match. If you joined using the Google button, please sign in with that button instead — a Google account has no separate password here.',
+    'auth/user-not-found':         'No account found with that email.',
+    'auth/email-already-in-use':   'That email already has an account. Try signing in instead.',
+    'auth/weak-password':          'Password must be at least 6 characters.',
+    'auth/wrong-password':         'Incorrect password.',
+    'auth/network-request-failed': 'Network error — check your internet connection.',
+    'auth/too-many-requests':      'Too many attempts. Wait a moment and try again.',
+    'auth/unauthorized-domain':    'This domain is not authorized for Google sign-in.',
+    'auth/popup-closed-by-user':   'The Google sign-in window was closed. Select Continue with Google to try again.',
+    'auth/cancelled-popup-request': 'Google sign-in was cancelled. Select Continue with Google to try again.',
+    'auth/popup-blocked':          'Your browser blocked the Google sign-in popup. Allow this site to open its sign-in popup and try again, or open the link directly in Chrome or Safari.',
+    'auth/operation-not-supported-in-this-environment': 'Google sign-in is not supported in this browser window. Open the link directly in Chrome or Safari and try again.',
+    'auth/web-storage-unsupported': 'This browser could not keep your Google sign-in state. Open the link directly in Chrome or Safari and try again.',
+    'auth/operation-not-allowed':  notEnabled,
+  }
+  return map[code] || ('Sign-in error (' + (code || 'unknown') + '). Please try again.')
+}
+
+// ── The buttons come alive here, and nowhere earlier ─────────────
+// Last thing in the module, so nothing above can be tapped before the handler
+// that answers it exists. Everything up to this point has been reached, so
+// the "could not finish loading" warning is cleared with it.
+showMsg('')
+window.authReady = true
+window.authFailed = false
+const gbtn = document.getElementById('google-btn')
+const gtxt = document.getElementById('google-btn-text')
+if (gbtn) gbtn.disabled = false
+if (gtxt) gtxt.textContent = isSignUpNow() ? 'Sign up with Google' : 'Continue with Google'
+resetSubmit()
+</script>
+<script type="module" src="field-dictation.mjs"></script>
+</body>
+</html>

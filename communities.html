@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Communities</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --rust:#C4552B;
+  --rust-lt:#E07A55;
+  --rust-pale:#FDF0EB;
+  --navy:#0D1B2A;
+  --cream:#FAF6F0;
+  --cream2:#F2EAE0;
+  --white:#fff;
+  --border:rgba(180,156,136,.2);
+  --ink:#1A1208;
+  --ink2:#4A3828;
+  --ink3:#8C7A6A;
+  --green:#2D6A4F;
+  --green-bg:#EBF5EF;
+  --gold:#C49A2A;
+  --gold-bg:#FBF4E3;
+  --shadow:0 4px 20px rgba(26,18,8,.08);
+  --font-d:'Fraunces',serif;
+  --font:'DM Sans',sans-serif;
+}
+
+html,body{
+  min-height:100%;
+  font-family:var(--font);
+  background:var(--cream);
+  color:var(--ink);
+}
+
+button,input,select{
+  font-family:inherit;
+}
+
+button{
+  cursor:pointer;
+  border:none;
+}
+
+#auth-loading{
+  position:fixed;
+  inset:0;
+  background:var(--cream);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+
+.spin{
+  width:36px;
+  height:36px;
+  border:3px solid rgba(180,156,136,.35);
+  border-top-color:var(--rust);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.hdr{
+  height:60px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  padding:0 24px;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:20;
+  box-shadow:0 1px 3px rgba(26,18,8,.04);
+}
+
+.hdr a{
+  text-decoration:none;
+  color:var(--ink2);
+  font-size:13px;
+  border:1px solid var(--border);
+  padding:7px 12px;
+  border-radius:20px;
+  transition:all .18s;
+}
+
+.hdr a:hover{
+  color:var(--rust);
+  background:var(--rust-pale);
+  border-color:rgba(196,85,43,.3);
+}
+
+.logo{
+  font-family:var(--font-d);
+  font-size:17px;
+  color:var(--navy);
+  border:none!important;
+  padding:0!important;
+}
+
+.space{
+  flex:1;
+}
+
+.hero{
+  background:var(--navy);
+  padding:52px 20px 44px;
+  text-align:center;
+  color:#fff;
+  position:relative;
+  overflow:hidden;
+}
+
+.hero::before{
+  content:"";
+  position:absolute;
+  width:460px;
+  height:460px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(196,85,43,.18),transparent 70%);
+  right:-100px;
+  top:50%;
+  transform:translateY(-50%);
+}
+
+.hero-inner{
+  position:relative;
+  z-index:1;
+}
+
+.hero h1{
+  font-family:var(--font-d);
+  font-size:clamp(32px,5vw,48px);
+  font-weight:300;
+  margin-bottom:10px;
+}
+
+.hero em{
+  font-style:italic;
+  color:var(--rust-lt);
+}
+
+.hero p{
+  color:rgba(255,255,255,.58);
+  font-size:14px;
+  line-height:1.7;
+  max-width:600px;
+  margin:0 auto 24px;
+}
+
+.search-row{
+  max-width:720px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1fr 180px;
+  gap:10px;
+}
+
+.search-row input,
+.search-row select{
+  border:1.5px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.1);
+  color:#fff;
+  border-radius:24px;
+  padding:13px 16px;
+  font-size:14px;
+  outline:none;
+}
+
+.search-row input::placeholder{
+  color:rgba(255,255,255,.45);
+}
+
+.search-row select option{
+  color:var(--ink);
+}
+
+.stats{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+}
+
+.stats-inner{
+  max-width:1120px;
+  margin:0 auto;
+  display:flex;
+  gap:0;
+  overflow:auto;
+}
+
+.stat{
+  flex:1;
+  min-width:0;
+  max-width:220px;
+  padding:16px 24px;
+  border-right:1px solid var(--border);
+}
+
+.stat-num{
+  font-family:var(--font-d);
+  font-size:26px;
+  color:var(--navy);
+}
+
+.stat-label{
+  font-size:10px;
+  color:var(--ink3);
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  margin-top:3px;
+}
+
+.page{
+  max-width:1120px;
+  margin:0 auto;
+  padding:24px 20px 70px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:16px;
+}
+
+.card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  min-height:250px;
+}
+
+.card-head{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  margin-bottom:12px;
+}
+
+.icon{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  background:var(--green-bg);
+  color:var(--green);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  flex-shrink:0;
+}
+
+.c-title{
+  font-size:16px;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.3;
+}
+
+/* Marks the card the senior was sent here for. Green rather than the accent so
+   it does not read as another category chip beside it. */
+.c-yours{
+  display:inline-flex;
+  margin-top:6px;
+  margin-left:6px;
+  font-size:10px;
+  color:var(--green);
+  background:var(--green-bg);
+  padding:3px 8px;
+  border-radius:10px;
+  font-weight:700;
+}
+
+.c-category{
+  display:inline-flex;
+  margin-top:6px;
+  font-size:10px;
+  color:var(--rust);
+  background:var(--rust-pale);
+  padding:3px 8px;
+  border-radius:10px;
+  font-weight:700;
+}
+
+.c-details{
+  font-size:13px;
+  color:var(--ink2);
+  line-height:1.65;
+  margin-bottom:12px;
+  flex:1;
+}
+
+.c-meta{
+  font-size:12px;
+  color:var(--ink3);
+  line-height:1.5;
+  margin-bottom:10px;
+}
+
+.c-manager{
+  font-size:11px;
+  color:var(--ink3);
+  background:var(--cream);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:7px 9px;
+  margin-bottom:12px;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:auto;
+}
+
+.actions a{
+  font-size:12px;
+  text-decoration:none;
+  border-radius:10px;
+  padding:8px 11px;
+  border:1px solid var(--border);
+  background:var(--cream);
+  color:var(--ink2);
+  transition:all .18s;
+}
+
+.actions a:hover{
+  color:var(--rust);
+  background:var(--rust-pale);
+  border-color:rgba(196,85,43,.3);
+}
+
+.empty{
+  grid-column:1/-1;
+  text-align:center;
+  color:var(--ink3);
+  padding:48px 20px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:18px;
+}
+
+.toast{
+  position:fixed;
+  bottom:22px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--ink);
+  color:#fff;
+  border-radius:20px;
+  padding:10px 18px;
+  font-size:13px;
+  z-index:999;
+}
+
+@media(max-width:720px){
+  .hdr{
+    padding:0 14px;
+  }
+
+  .hdr a{
+    padding:6px 10px;
+  }
+
+  .logo{
+    font-size:15px;
+  }
+
+  .search-row{
+    grid-template-columns:1fr;
+  }
+
+  .hero{
+    padding:40px 16px 34px;
+  }
+
+  .page{
+    padding:18px 14px 60px;
+  }
+}
+
+/* F28: on a phone the wordmark, three nav pills and the stat strip were
+   wider than the screen (426px at 375). Drop the wordmark text (the icon
+   stays, and the page heading names the page), tighten the gaps and keep
+   every link a 44px target. */
+@media(max-width:560px){
+  .hdr{
+    padding:0 10px;
+    gap:6px;
+  }
+
+  .hdr a{
+    display:inline-flex;
+    align-items:center;
+    min-height:44px;
+    padding:0 11px;
+    font-size:14px;
+    white-space:nowrap;
+  }
+
+  .logo-text{
+    display:none;
+  }
+
+  .stat{
+    padding:12px 10px;
+  }
+
+  .stat-num{
+    font-size:22px;
+  }
+}
+
+@media(max-width:360px){
+  .hdr{
+    padding:0 8px;
+    gap:4px;
+  }
+
+  .hdr a{
+    padding:0 9px;
+  }
+}
+
+/* Join link banner for managers */
+.join-banner{background:var(--rust-pale);border-bottom:1px solid rgba(196,85,43,.18);padding:12px 20px;display:none}
+.join-banner.show{display:block}
+.join-banner-inner{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.join-banner-label{font-size:13px;font-weight:500;color:var(--ink2)}
+.join-url{font-size:13px;color:var(--rust);font-family:monospace;word-break:break-all;flex:1}
+.join-copy-btn{padding:6px 14px;border-radius:20px;border:1.5px solid rgba(196,85,43,.35);background:transparent;color:var(--rust);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .18s}
+.join-copy-btn:hover{background:var(--rust);color:#fff}
+
+/* ── Visit request ──────────────────────────────────────── */
+/* News & events (F42). Seniors read this, so the type is large. */
+.news{max-width:1200px;margin:0 auto;padding:28px 24px 4px}
+.news-head h2{font-family:'Fraunces',serif;font-size:clamp(24px,3vw,30px);font-weight:400;color:var(--navy);margin:0}
+.news-head p{font-size:16px;color:var(--ink2);line-height:1.6;margin:6px 0 16px;max-width:720px}
+.follow-btn{font-size:15px;font-weight:600;border-radius:10px;min-height:44px;padding:8px 14px;border:1.5px solid rgba(196,85,43,.35);background:var(--rust-pale,#FDF0EB);color:var(--rust,#C4552B);cursor:pointer}
+.follow-btn.on{border-color:rgba(45,106,79,.35);background:var(--green-bg);color:var(--green)}
+.follow-btn:focus-visible{outline:3px solid var(--rust,#C4552B);outline-offset:2px}
+.follow-btn:disabled{opacity:.6;cursor:wait}
+@media(max-width:600px){.news{padding:22px 16px 4px}}
+.visit-btn{font-size:12px;font-weight:600;border-radius:10px;padding:8px 13px;border:1px solid rgba(45,106,79,.32);background:var(--green-bg);color:var(--green);cursor:pointer;transition:all .18s}
+.visit-btn:hover:not(:disabled){background:var(--green);color:#fff;border-color:var(--green)}
+.visit-btn:disabled{opacity:.55;cursor:default}
+.visit-status{font-size:11px;font-weight:600;padding:5px 10px;border-radius:9px;display:inline-flex;align-items:center}
+.visit-status.pending{background:var(--gold-bg);color:#92610A}
+.visit-status.accepted{background:var(--green-bg);color:var(--green)}
+.visit-status.rejected{background:#FEF2EF;color:#9B2C2C}
+.visit-status.cancelled{background:var(--cream2);color:var(--ink3)}
+
+.modal{position:fixed;inset:0;background:rgba(13,27,42,.5);display:none;align-items:center;justify-content:center;z-index:800;padding:18px}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:18px;width:100%;max-width:440px;padding:24px;box-shadow:0 20px 60px rgba(26,18,8,.28);max-height:92vh;overflow-y:auto}
+.modal-title{font-family:var(--font-d);font-size:21px;font-weight:400;color:var(--navy);margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:20px}
+.mf{margin-bottom:14px}
+.mf label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:6px}
+.mf input,.mf textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:14px;color:var(--ink);background:var(--cream);outline:none;transition:all .18s}
+.mf input:focus,.mf textarea:focus{border-color:var(--green);background:#fff}
+.mf textarea{resize:vertical;min-height:66px;font-family:inherit}
+.mf-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-msg{display:none;margin-bottom:14px;padding:11px 13px;border-radius:11px;font-size:13px;line-height:1.5}
+.modal-msg.err{display:block;background:#FEF2EF;color:#9B2C2C;border:1px solid rgba(196,48,43,.18)}
+.modal-msg.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid rgba(45,106,79,.2)}
+.modal-acts{display:flex;gap:10px;margin-top:20px}
+.modal-acts button{flex:1;padding:12px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s}
+.btn-cancel{background:var(--cream2);color:var(--ink2);border:1px solid var(--border)}
+.btn-cancel:hover{background:var(--border)}
+.btn-confirm{background:var(--green);color:#fff;border:none}
+.btn-confirm:hover:not(:disabled){background:#245840}
+.btn-confirm:disabled{opacity:.6;cursor:not-allowed}
+.visit-recap{background:var(--cream);border:1px solid var(--border);border-radius:11px;padding:11px 13px;font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:16px}
+
+/* ── Programmes, hours and logo ──────────────────────────── */
+/* A manager fills these in on their centre profile and only the logged-out
+   homepage ever showed them. The senior arriving here from the companion's
+   "See What's Going on at Your Senior Center" button is the one person most
+   likely to want to know what the centre actually runs and when. */
+.c-line{display:flex;gap:6px;margin-top:5px}
+.c-progs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.c-prog{font-size:11px;padding:3px 9px;border-radius:8px;background:var(--cream);border:1px solid var(--border);color:var(--ink2)}
+.c-upcoming{margin:0 0 14px;padding:12px;background:#F5FAF7;border:1px solid rgba(45,106,79,.18);border-radius:11px}
+.c-upcoming-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.c-event{font-size:12px;color:var(--ink2);line-height:1.5;padding:7px 0;border-top:1px solid rgba(45,106,79,.12)}
+.c-event:first-of-type{border-top:0;padding-top:0}
+.c-event-date{font-weight:700;color:var(--ink)}
+/* The logo sits over the category emoji rather than replacing it, so a URL
+   that has stopped resolving leaves the icon it was covering rather than an
+   empty square. */
+.icon{position:relative}
+.icon img{position:absolute;inset:0;width:100%;height:100%;border-radius:14px;object-fit:cover}
+</style>
+</head>
+
+<body>
+<div id="auth-loading">
+  <div class="spin"></div>
+</div>
+
+<header class="hdr">
+  <a href="app.html">← App</a>
+  <div class="logo" style="display:flex;align-items:center;gap:9px"><img class="brand-mark" src="assets/techable-icon.png" alt="" width="24" height="28"><span class="logo-text">Techable Communities</span></div>
+  <div class="space"></div>
+  <a href="faq.html">FAQ</a>
+  <a href="community.html">Friends</a>
+  <a href="profile.html">Profile</a>
+</header>
+
+<!-- Manager join-link banner (shown only for community_manager) -->
+<div class="join-banner" id="join-banner">
+  <div class="join-banner-inner">
+    <span class="join-banner-label">🔗 Your senior join link:</span>
+    <span class="join-url" id="join-url-display"></span>
+    <button class="join-copy-btn" onclick="copyJoinLink()">Copy Link</button>
+    <a href="join.html" id="join-preview-link" target="_blank" style="font-size:12px;color:var(--rust);font-weight:600;text-decoration:none;white-space:nowrap">Preview →</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="hero-inner">
+    <h1>Explore <em>communities</em></h1>
+    <p>Browse public communities created by community managers. Tap <strong>Get news &amp; events</strong> on a centre and what it posts appears at the top of this page.</p>
+
+    <div class="search-row">
+      <input id="search" aria-label="Search communities" placeholder="Search by name, city, address, details…" oninput="renderCommunities()" />
+      <select id="category" aria-label="Filter by category" onchange="renderCommunities()">
+        <option value="all">All categories</option>
+        <option value="senior_living">Senior Living</option>
+        <option value="care_home">Care Home</option>
+        <option value="activity_group">Activity Group</option>
+        <option value="support_group">Support Group</option>
+        <option value="community">Community</option>
+      </select>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stats-inner">
+    <div class="stat">
+      <div class="stat-num" id="stat-total">0</div>
+      <div class="stat-label">Communities</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-num" id="stat-managers">0</div>
+      <div class="stat-label">Managers</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-num" id="stat-cities">0</div>
+      <div class="stat-label">Cities</div>
+    </div>
+  </div>
+</section>
+
+<!-- News & events: posts from the centres this senior follows, plus
+     programmes from verified service providers (announcements.js). -->
+<section class="news" id="news-section" aria-labelledby="news-title" hidden>
+  <div class="news-head">
+    <h2 id="news-title">Your news &amp; events</h2>
+    <p>From the centres you follow, and programmes from service providers checked by the Techable team.</p>
+  </div>
+  <div id="news-feed" aria-live="polite"></div>
+</section>
+
+<main class="page">
+  <div class="grid" id="grid"></div>
+</main>
+
+<!-- Visit request modal (seniors only) -->
+<div class="modal" id="visit-modal">
+  <div class="modal-box">
+    <div class="modal-title">Request a visit</div>
+    <div class="modal-sub" id="visit-modal-sub">Pick when you would like to visit. The community manager will accept or decline your request.</div>
+
+    <div class="visit-recap" id="visit-recap"></div>
+    <div class="modal-msg" id="visit-msg"></div>
+
+    <div class="mf">
+      <label for="visit-date">Date of visit</label>
+      <input id="visit-date" type="date" />
+    </div>
+
+    <div class="mf-row">
+      <div class="mf">
+        <label for="visit-start">Start time</label>
+        <input id="visit-start" type="time" value="10:00" />
+      </div>
+      <div class="mf">
+        <label for="visit-end">End time</label>
+        <input id="visit-end" type="time" value="12:00" />
+      </div>
+    </div>
+
+    <div class="mf">
+      <label for="visit-note">Note for the manager <span style="text-transform:none;font-weight:400">(optional)</span></label>
+      <textarea id="visit-note" maxlength="1000" placeholder="Anything they should know — mobility needs, who you're coming with…"></textarea>
+    </div>
+
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeVisitModal()">Cancel</button>
+      <button class="btn-confirm" id="visit-submit" onclick="submitVisitRequest()">Send request</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window._cfg = (async function loadConfig(){
+  try {
+    const res = await fetch('/api/config', { cache:'no-store' })
+
+    if (res.ok) {
+      const data = await res.json()
+
+      if (data?.firebase?.apiKey) {
+        window.TECHABLE_CONFIG = data
+        return data
+      }
+    }
+  } catch (_) {}
+
+  await new Promise(resolve => {
+    const s = document.createElement('script')
+    s.src = 'config.js'
+    s.onload = resolve
+    s.onerror = resolve
+    document.head.appendChild(s)
+  })
+
+  return window.TECHABLE_CONFIG || null
+})()
+</script>
+
+<script type="module" src="auth.js"></script>
+
+<script type="module">
+import {
+  collection,
+  doc,
+  addDoc,
+  setDoc,
+  deleteDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  Timestamp,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+import * as news from "./announcements.js"
+
+// The Firestore calls announcements.js makes on this page's behalf.
+const fsApi = { collection, doc, setDoc, deleteDoc, getDocs, addDoc, query, where, orderBy, limit, serverTimestamp }
+let followed = new Set() // communityIds this senior gets news from
+let followsKnown = false // false means unreadable/not loaded; it never means "follows nobody"
+
+// Read once. Set by app.html's centre button, which knows the senior's own
+// centre; empty for anyone arriving from the nav, and everything below degrades
+// to the plain alphabetical list when it is.
+const invitedCentreId = new URLSearchParams(location.search).get('centre') || ''
+
+let db = null
+let communities = []
+let currentUser = null
+let currentRole = null
+let myVisits = {}      // communityId → latest visit request for this senior
+let visitTarget = null // community being requested in the open modal
+
+function $(id) {
+  return document.getElementById(id)
+}
+
+function esc(v) {
+  return String(v ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;')
+}
+
+// A mailto: link is built only from something shaped like a plain address.
+// The field is free text, and esc() does not help here: it turns & into &amp;,
+// which the HTML parser decodes straight back, so an "address" of
+// victim@x.org?cc=…&body=… pre-composed a mail the reader never wrote. The
+// shape check admits no ? & % or quotes, so nothing needs encoding; anything
+// else gets no link (the address is still shown as text).
+function safeMailto(raw) {
+  const s = String(raw ?? '').trim()
+  if (s.length > 254 || !/^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(s)) return ''
+  return 'mailto:' + s
+}
+
+// A centre's website and map link are free text typed by its manager, and
+// they land in an href on the page every signed-in senior is sent to by the
+// companion's biggest button. Escaping the value does nothing about its
+// scheme, so `javascript:` there ran on tap, in that senior's own session,
+// alongside their check-ins. Only http(s) is let through, and a bare
+// "example.org" is read as the web address it was meant to be rather than
+// resolved against this origin. Deliberately the same guard as
+// profile.html's, so the two pages cannot drift apart.
+function safeUrl(raw) {
+  const s = String(raw ?? '').trim()
+  if (!s) return ''
+  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : 'https://' + s
+  try {
+    const u = new URL(withScheme)
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : ''
+  } catch (_) { return '' }
+}
+
+// Programmes are written as one comma-separated line, which is how the
+// homepage reads them too.
+function programmeChips(programmes) {
+  const list = String(programmes || '').split(',').map(p => p.trim()).filter(Boolean)
+  if (!list.length) return ''
+  return '<div class="c-progs">' +
+    list.map(p => `<span class="c-prog">${esc(p)}</span>`).join('') +
+    '</div>'
+}
+
+function upcomingList(raw) {
+  const rows = String(raw || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 8)
+  if (!rows.length) return ''
+  return '<div class="c-upcoming"><div class="c-upcoming-title">Upcoming at this center</div>' +
+    rows.map(row => {
+      const parts = row.split('|').map(s => s.trim()).filter(Boolean)
+      const date = parts.shift() || ''
+      const rest = parts.join(' · ')
+      return `<div class="c-event"><span class="c-event-date">${esc(date)}</span>${rest ? ` · ${esc(rest)}` : ''}</div>`
+    }).join('') + '</div>'
+}
+
+function labelCategory(category) {
+  return {
+    senior_living: 'Senior Living',
+    care_home: 'Care Home',
+    activity_group: 'Activity Group',
+    support_group: 'Support Group',
+    community: 'Community'
+  }[category] || 'Community'
+}
+
+function iconCategory(category) {
+  return {
+    senior_living: '🏡',
+    care_home: '🏥',
+    activity_group: '🎨',
+    support_group: '🤝',
+    community: '🏘️'
+  }[category] || '🏘️'
+}
+
+function normalizeCommunity(id, d) {
+  return {
+    id,
+    name: d.name || '',
+    details: d.details || '',
+    address: d.address || '',
+    city: d.city || '',
+    country: d.country || '',
+    // Sanitised here rather than where they are rendered, so a second
+    // reader of these fields cannot be written without the guard.
+    mapUrl: safeUrl(d.mapUrl),
+    website: safeUrl(d.website),
+    logoUrl: safeUrl(d.logoUrl),
+    contactPersonName: typeof d.contactPersonName==='string'?d.contactPersonName.slice(0,120):'',
+    contactPersonTitle: typeof d.contactPersonTitle==='string'?d.contactPersonTitle.slice(0,80):'',
+    contactEmail: d.contactEmail || '',
+    phone: d.phone || '',
+    category: d.category || 'community',
+    // Dropped on the floor until now: the manager types all three and the
+    // card showed a name, a paragraph and an address.
+    programmes: d.programmes || '',
+    upcomingActivities: d.upcomingActivities || '',
+    openingHours: d.openingHours || '',
+    capacity: d.capacity || null,
+    managerUid: d.managerUid || '',
+    managerName: d.managerName || '',
+    isPublic: d.isPublic !== false
+  }
+}
+
+function renderStats(list) {
+  const managers = new Set(list.map(c => c.managerUid).filter(Boolean))
+  const cities = new Set(list.map(c => c.city || c.address).filter(Boolean))
+
+  $('stat-total').textContent = list.length
+  $('stat-managers').textContent = managers.size
+  $('stat-cities').textContent = cities.size
+}
+
+window.renderCommunities = function() {
+  const q = $('search').value.toLowerCase().trim()
+  const category = $('category').value
+  const grid = $('grid')
+
+  const filtered = communities.filter(c => {
+    const catOk = category === 'all' || c.category === category
+    const hay = [
+      c.name,
+      c.details,
+      c.address,
+      c.city,
+      c.country,
+      c.managerName,
+      c.upcomingActivities,
+      c.category
+    ].join(' ').toLowerCase()
+
+    return catOk && (!q || hay.includes(q))
+  })
+
+  // Their own centre first, when the link that brought them here named one.
+  //
+  // app.html's big "See What's Going on at Your Senior Center" button now sends
+  // ?centre=<id>, because that page already holds the resident record and can
+  // name the centre for free. Without it a senior arrived at every public centre
+  // in the country and had to find theirs by a name they may only have heard
+  // said out loud.
+  //
+  // Sorting rather than filtering is deliberate: this page is also how somebody
+  // discovers a centre they are not yet part of, and hiding the rest would take
+  // that away. Sorting is stable in every engine this runs on, so the
+  // alphabetical order of everything else is untouched.
+  if (invitedCentreId) {
+    filtered.sort((a, b) => (b.id === invitedCentreId) - (a.id === invitedCentreId))
+  }
+
+  renderStats(filtered)
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty">No communities found.</div>'
+    return
+  }
+
+  grid.innerHTML = filtered.map(c => `
+    <article class="card">
+      <div class="card-head">
+        <div class="icon">${iconCategory(c.category)}${c.logoUrl ? `<img src="${esc(c.logoUrl)}" alt="" onerror="this.remove()"/>` : ''}</div>
+        <div>
+          <div class="c-title">${esc(c.name || 'Unnamed Community')}</div>
+          <div class="c-category">${esc(labelCategory(c.category))}</div>
+          ${c.id === invitedCentreId ? '<div class="c-yours">Your senior center</div>' : ''}
+        </div>
+      </div>
+
+      <div class="c-details">${esc(c.details || 'No community details added yet.')}</div>
+
+      <div class="c-meta">
+        ${esc([c.address, c.city, c.country].filter(Boolean).join(' · ') || 'No location provided')}
+        ${c.openingHours ? `<div class="c-line"><span>🕐</span><span>${esc(c.openingHours)}</span></div>` : ''}
+        ${c.capacity ? `<div class="c-line"><span>👥</span><span>Up to ${esc(c.capacity)} members</span></div>` : ''}
+      </div>
+
+      ${programmeChips(c.programmes)}
+      ${upcomingList(c.upcomingActivities)}
+
+      <div class="c-manager">
+        Managed by ${esc(c.managerName || 'Community Manager')}
+        ${c.contactPersonName||c.contactPersonTitle?`<div>Contact: ${esc(c.contactPersonName)}${c.contactPersonTitle?' · '+esc(c.contactPersonTitle):''}</div>`:''}
+      </div>
+
+      <div class="actions">
+        ${followControl(c)}
+        ${visitControl(c)}
+        ${c.website ? `<a href="${esc(c.website)}" target="_blank" rel="noopener">Website</a>` : ''}
+        ${c.mapUrl ? `<a href="${esc(c.mapUrl)}" target="_blank" rel="noopener">Map</a>` : ''}
+        ${safeMailto(c.contactEmail) ? `<a href="${esc(safeMailto(c.contactEmail))}">Email</a>` : ''}
+        ${c.phone ? `<a href="tel:${esc(c.phone)}">Call</a>` : ''}
+      </div>
+    </article>
+  `).join('')
+}
+
+// ── News & events (senior side) ─────────────────────────────
+function followControl(c) {
+  if (currentRole !== 'resident') return ''
+  if (!followsKnown) return '<button class="follow-btn" type="button" disabled aria-disabled="true">News status unavailable</button>'
+  const on = followed.has(c.id)
+  // The id travels as data, never inside an inline handler: a centre id is
+  // chosen by whoever creates the centre, and the browser decodes &#039; back
+  // into a quote inside an onclick before the script runs.
+  return `<button class="follow-btn${on ? ' on' : ''}" aria-pressed="${on}" data-follow="${esc(c.id)}">${on ? '✓ Getting news · Stop' : '🔔 Get news &amp; events'}</button>`
+}
+
+// Follow buttons carry the centre id as data (visit buttons have their own
+// listener below, from the X2 fix).
+$('grid').addEventListener('click', e => {
+  const follow = e.target.closest('[data-follow]')
+  if (follow) toggleFollow(follow.dataset.follow, follow)
+})
+
+window.toggleFollow = async function(communityId, btn) {
+  if (!followsKnown) {
+    if (btn) btn.disabled = true
+    toast('We could not check your news subscriptions. Reload the page before changing them.')
+    return
+  }
+  const c = communities.find(x => x.id === communityId)
+  if (!c || !db || !currentUser) return
+  if (btn) btn.disabled = true
+  try {
+    if (followed.has(c.id)) {
+      await news.unfollow(fsApi, db, currentUser.uid, c.id)
+      followed.delete(c.id)
+      toast('You will no longer see news from ' + (c.name || 'this centre') + '.')
+    } else {
+      await news.follow(fsApi, db, currentUser.uid, c)
+      followed.add(c.id)
+      toast('News and events from ' + (c.name || 'this centre') + ' will show at the top of this page.')
+    }
+    renderCommunities()
+    loadNews()
+  } catch (err) {
+    console.error('[communities] follow failed:', err)
+    if (btn) btn.disabled = false
+    toast('That did not work (' + (err.code || err.message) + '). Please try again.')
+  }
+}
+
+async function loadNews() {
+  if (currentRole !== 'resident' || !db) return
+  const section = $('news-section')
+  const feed = $('news-feed')
+  section.hidden = false
+  if (!followsKnown) {
+    feed.textContent = 'We could not check which centres you follow. Reload the page to try again.'
+    return
+  }
+  try {
+    const items = await news.loadFeed(fsApi, db, [...followed])
+    news.renderFeed(feed, items, followed.size
+      ? 'The centres you follow have not posted anything yet.'
+      : 'You are not following any centres yet. Tap “Get news & events” on a centre below.')
+  } catch (err) {
+    console.warn('[communities] news failed:', err.code || err.message)
+    feed.textContent = 'News could not be loaded right now.'
+  }
+}
+
+// ── Visit requests (senior side) ────────────────────────────
+function fmtRange(v) {
+  const s = v.startAt?.toDate?.() || (v.startAt ? new Date(v.startAt) : null)
+  const e = v.endAt?.toDate?.()   || (v.endAt   ? new Date(v.endAt)   : null)
+  if (!s) return ''
+  const day  = s.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short', year:'numeric' })
+  const t = d => d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' })
+  return day + ', ' + t(s) + (e ? ' – ' + t(e) : '')
+}
+
+// Renders either the "Request visit" button or the status of the senior's
+// existing request. Only residents see this — a manager browsing the same
+// page gets the plain contact links.
+function visitControl(c) {
+  if (currentRole !== 'resident') return ''
+  if (!c.managerUid) return ''
+
+  const v = myVisits[c.id]
+  if (v && v.status !== 'cancelled' && v.status !== 'rejected') {
+    const label = v.status === 'accepted' ? '✓ Visit accepted' : '⏳ Visit requested'
+    return `<span class="visit-status ${esc(v.status)}" title="${esc(fmtRange(v))}">${label} · ${esc(fmtRange(v))}</span>`
+  }
+
+  const again = v ? 'Request visit again' : '📅 Request visit'
+  return `<button class="visit-btn" data-community-id="${esc(c.id)}">${again}</button>`
+}
+
+// Request visit is bound here, not as onclick="openVisitModal('<id>')": the
+// HTML parser turns esc()'s &#039; back into a quote before a handler
+// attribute is parsed as JavaScript, and a centre's id is its creator's choice.
+document.addEventListener('click', e => {
+  const btn = e.target?.closest?.('button.visit-btn[data-community-id]')
+  if (btn) openVisitModal(btn.dataset.communityId)
+})
+
+window.openVisitModal = function(communityId) {
+  const c = communities.find(x => x.id === communityId)
+  if (!c) return
+  visitTarget = c
+
+  $('visit-recap').innerHTML =
+    '<strong>' + esc(c.name || 'Community') + '</strong><br/>' +
+    esc([c.address, c.city, c.country].filter(Boolean).join(', ') || 'Location not listed') +
+    '<br/>Managed by ' + esc(c.managerName || 'Community Manager')
+
+  // Default to tomorrow — a same-day request rarely gives the centre notice.
+  const t = new Date()
+  t.setDate(t.getDate() + 1)
+  const iso = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0')
+  $('visit-date').value = iso
+  $('visit-date').min   = new Date().toISOString().slice(0,10)
+  $('visit-start').value = '10:00'
+  $('visit-end').value   = '12:00'
+  $('visit-note').value  = ''
+  showVisitMsg('')
+  $('visit-submit').disabled = false
+  $('visit-submit').textContent = 'Send request'
+  $('visit-modal').classList.add('open')
+}
+
+window.closeVisitModal = function() {
+  $('visit-modal').classList.remove('open')
+  visitTarget = null
+}
+
+function showVisitMsg(text, type) {
+  const el = $('visit-msg')
+  if (!text) { el.className = 'modal-msg'; el.textContent = ''; return }
+  el.className = 'modal-msg ' + (type || 'err')
+  el.textContent = text
+}
+
+window.submitVisitRequest = async function() {
+  if (!visitTarget || !db || !currentUser) return
+
+  const date  = $('visit-date').value
+  const start = $('visit-start').value
+  const end   = $('visit-end').value
+
+  if (!date)  { showVisitMsg('Please choose a date for your visit.'); return }
+  if (!start || !end) { showVisitMsg('Please choose both a start and an end time.'); return }
+
+  const startAt = new Date(date + 'T' + start)
+  const endAt   = new Date(date + 'T' + end)
+  if (isNaN(startAt) || isNaN(endAt)) { showVisitMsg('That date or time is not valid.'); return }
+  if (endAt <= startAt) { showVisitMsg('The end time must be after the start time.'); return }
+  if (startAt < new Date()) { showVisitMsg('That time is in the past — please pick a future slot.'); return }
+
+  const btn = $('visit-submit')
+  btn.disabled = true
+  btn.textContent = 'Sending…'
+  showVisitMsg('')
+
+  try {
+    const payload = {
+      // Who is visiting — the senior's own standalone account.
+      residentUid:   currentUser.uid,
+      // Trimmed to what firestore.rules allows, so a long name cannot make
+      // every request fail.
+      residentName:  (currentUser.displayName || currentUser.email?.split('@')[0] || 'Senior').slice(0, 120),
+      residentEmail: currentUser.email || '',
+      // Where, and who decides.
+      communityId:   visitTarget.id,
+      communityName: (visitTarget.name || '').slice(0, 200),
+      managerUid:    visitTarget.managerUid,
+      managerName:   (visitTarget.managerName || '').slice(0, 120),
+      // When.
+      visitDate: date,
+      startAt:   Timestamp.fromDate(startAt),
+      endAt:     Timestamp.fromDate(endAt),
+      note:      $('visit-note').value.trim(),
+      status:    'pending',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }
+    const ref = await addDoc(collection(db, 'visit_requests'), payload)
+
+    // Reflect it locally so the card flips to "requested" without a reload.
+    myVisits[visitTarget.id] = { ...payload, _id: ref.id, startAt, endAt }
+    closeVisitModal()
+    renderCommunities()
+    toast('Visit request sent to ' + (visitTarget?.name || 'the center') + '.')
+  } catch (err) {
+    console.error('[communities] visit request failed:', err)
+    showVisitMsg('Could not send the request (' + (err.code || err.message) + ').')
+    btn.disabled = false
+    btn.textContent = 'Send request'
+  }
+}
+
+function toast(text) {
+  const el = document.createElement('div')
+  el.className = 'toast'
+  el.textContent = text
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), 3200)
+}
+
+async function loadMyVisits() {
+  myVisits = {}
+  if (!db || !currentUser || currentRole !== 'resident') return
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'visit_requests'),
+      where('residentUid', '==', currentUser.uid)
+    ))
+    snap.forEach(d => {
+      const v = { _id: d.id, ...d.data() }
+      const prev = myVisits[v.communityId]
+      // Keep the most recent request per community.
+      const at  = v.createdAt?.toDate?.() || new Date(0)
+      const pat = prev?.createdAt?.toDate?.() || new Date(0)
+      if (!prev || at >= pat) myVisits[v.communityId] = v
+    })
+  } catch (err) {
+    console.warn('[communities] could not load visit requests:', err.code || err.message)
+  }
+}
+
+async function loadCommunities() {
+  db = window.TechableAuth?.db || db
+  if (!db) { console.error('[communities] Firestore db not available'); return }
+  communities = []
+
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'communities'),
+      where('isPublic', '==', true)
+    ))
+
+    snap.forEach(docSnap => {
+      communities.push(normalizeCommunity(docSnap.id, docSnap.data()))
+    })
+
+    communities.sort((a,b) => (a.name || '').localeCompare(b.name || ''))
+  } catch (err) {
+    console.error('Community load failed:', err)
+  }
+
+  renderCommunities()
+}
+
+// Show join link banner for community managers
+// The manager's own join link, and the only one of the three that needs a query
+// rather than an href edit.
+//
+// The other two places that build this link (index.html, dashboard.html) have a
+// centre id already in hand. This page does not and cannot: it loads only
+// `isPublic == true` centres, so a manager whose own centre is not public is
+// simply absent from the array. Their id has to be fetched by owner.
+//
+// A manager with several centres gets the alphabetically first, which is the
+// same one dashboard.html and profile.html both already treat as "theirs", so
+// all three pages name the same centre. With no centre yet, the bare link is
+// left alone — join.html degrades to the full picker, which is correct.
+async function showJoinBanner(user) {
+  if (!window.TechableAuth?.normalizeRole) return
+  try {
+    const role = await window.TechableAuth.getRole?.()
+    if (window.TechableAuth.normalizeRole(role) !== 'community_manager') return
+
+    const banner = document.getElementById('join-banner')
+    const display = document.getElementById('join-url-display')
+    if (!banner || !display) return
+
+    const base = window.location.origin + window.location.pathname.replace('communities.html', '') + 'join.html'
+    let url = base
+    try {
+      const own = await getDocs(query(collection(db, 'communities'), where('managerUid', '==', user.uid)))
+      const mine = []
+      own.forEach(d => mine.push({ id: d.id, name: (d.data().name || '') }))
+      mine.sort((a, b) => a.name.localeCompare(b.name))
+      if (mine[0]) url = base + '?centre=' + encodeURIComponent(mine[0].id)
+    } catch (_) { /* leave the bare link; join.html shows the full picker */ }
+
+    display.textContent = url
+    const preview = document.getElementById('join-preview-link')
+    if (preview) preview.setAttribute('href', url)
+    banner.classList.add('show')
+  } catch (_) {}
+}
+
+window.copyJoinLink = function() {
+  const url = document.getElementById('join-url-display')?.textContent
+  if (!url) return
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('.join-copy-btn')
+    const orig = btn.textContent
+    btn.textContent = 'Copied!'
+    setTimeout(() => { btn.textContent = orig }, 1500)
+  }).catch(() => { alert('Join link: ' + url) })
+}
+
+// Use guard() directly instead of auth:stateChanged to avoid a race
+// condition where the event fires before the listener is registered.
+function waitForAuth() {
+  if (!window.TechableAuth?.ready) { setTimeout(waitForAuth, 50); return }
+  window.TechableAuth.guard(async (user, role) => {
+    // guard() hides auth-loading and confirms user is logged in
+    currentUser = user
+    currentRole = window.TechableAuth.normalizeRole(role)
+    db = window.TechableAuth?.db || db
+    // Visits must be in hand before the first render, otherwise every card
+    // shows "Request visit" for a centre the senior already asked to visit.
+    await loadMyVisits()
+    if (currentRole === 'resident') {
+      try {
+        followed = await news.myFollows(fsApi, db, user.uid)
+        followsKnown = true
+      } catch (err) {
+        followsKnown = false
+        console.warn('[communities] follows failed:', err.code || err.message)
+      }
+    }
+    await loadCommunities()
+    loadNews()
+    showJoinBanner(user)
+  })
+}
+waitForAuth()
+</script>
+</body>
+</html>

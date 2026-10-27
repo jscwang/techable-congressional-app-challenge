@@ -1,0 +1,3716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#FAF6F0" />
+<title>Techable — AI Companion</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --cream:#FAF6F0;
+  --cream2:#F2EAE0;
+  --cream3:#EDE3D8;
+  --white:#FFFFFF;
+  --rust:#547996;
+  --rust-lt:#6E9EC4;
+  --rust-pale:#ECF5FB;
+  /* The accent again, at a strength that can carry white lettering, and the
+     paler shade its :hover uses. Every surface that is filled with the accent
+     and lettered in #fff reads through these rather than --rust/--rust-lt,
+     because a palette swap that only redefines --rust cannot know which of
+     its uses have white text sitting on them. That is exactly how the peach
+     sweep left the senior's own chat bubbles, the Send button and the big
+     "Tap and talk" button at 2.28:1 — half the contrast body text needs.
+     Here they are the same blue they always were. */
+  --rust-ink:#547996;
+  --rust-ink-lt:#6E9EC4;
+  /* Keyboard focus, kept off the accent for the same reason: an outline is
+     drawn on the page ground, not on the control, so it has to stay legible
+     against the background whatever the accent becomes. */
+  --focus:#547996;
+  --navy:#0D1B2A;
+  --green:#3A7D5C;
+  --green-bg:#EBF5EF;
+  --gold:#85714B;
+  /* The escalation panel, and nothing else. Deliberately NOT part of the
+     accent palette: it used to be a hardcoded #FDECEA and became
+     var(--rust-pale) in the rust->blue sweep, which is correct for every
+     other accented surface and wrong for this one. That panel is what a
+     senior sees after reporting a fall or saying they want to die, and it
+     had ended up the same colour as the Send button. An alarm that matches
+     the furniture is not an alarm. Kept as its own tokens so the next
+     palette change sweeps past it rather than through it — resident-mode's
+     peach override does not touch these either. */
+  --alarm:#B3341C;
+  --alarm-pale:#FDECEA;
+  --ink:#1A1208;
+  --ink2:#4A3828;
+  --ink3:#8C7A6A;
+  --ink4:#C4B4A4;
+  --border:rgba(180,156,136,.18);
+  --border2:rgba(180,156,136,.32);
+  --shadow-xs:0 1px 2px rgba(26,18,8,.06);
+  --shadow-sm:0 2px 8px rgba(26,18,8,.07),0 1px 2px rgba(26,18,8,.04);
+  --shadow:0 4px 20px rgba(26,18,8,.09),0 1px 4px rgba(26,18,8,.05);
+  --shadow-lg:0 16px 48px rgba(26,18,8,.12),0 4px 12px rgba(26,18,8,.06);
+  --r:12px;
+  --r-lg:18px;
+  --r-xl:24px;
+  --r-sm:8px;
+  --sw:268px;
+  --hh:60px;
+  --font-d:'Fraunces',serif;
+  --font:'DM Sans',sans-serif;
+}
+
+html{
+  height:100%;
+  -webkit-text-size-adjust:100%;
+}
+
+body{
+  font-family:var(--font);
+  background:var(--cream);
+  color:var(--ink);
+  height:100%;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+button{
+  font-family:var(--font);
+  cursor:pointer;
+  border:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+input,textarea,select{
+  font-family:var(--font);
+}
+
+/* Keyboard focus must always be visible. The blanket `outline:none` that used
+   to sit on button/input here removed the focus ring from every control in
+   the app, so anyone navigating by keyboard — including a senior who cannot
+   use a mouse, and any screen-reader user — had no way to tell where they
+   were. :focus-visible restores it for keyboard users only, so it never
+   appears on mouse clicks.
+
+   The ring is var(--focus) rather than var(--rust) because it was drawn in
+   the accent, and when the accent became peach the ring measured 2.14:1 on
+   the senior's page ground — under the 3:1 an indicator needs, so someone
+   tabbing through could no longer tell where they were. */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible{
+  outline:3px solid var(--focus);
+  outline-offset:2px;
+  border-radius:6px;
+}
+
+/* Screen-reader-only text: announced, never drawn. */
+.sr-only{
+  position:absolute;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;
+  clip:rect(0 0 0 0);
+  white-space:nowrap;
+  border:0;
+}
+
+img{
+  display:block;
+  max-width:100%;
+}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+#auth-loading{
+  position:fixed;
+  inset:0;
+  background:var(--cream);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+
+.spin{
+  width:36px;
+  height:36px;
+  border:3px solid var(--border2);
+  border-top-color:var(--rust);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.shell{
+  display:grid;
+  grid-template-rows:var(--hh) 1fr;
+  grid-template-columns:var(--sw) 1fr;
+  height:100vh;
+  height:100dvh;
+  overflow:hidden;
+}
+
+.hdr{
+  grid-column:1/-1;
+  height:var(--hh);
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  padding:0 16px 0 20px;
+  gap:12px;
+  box-shadow:var(--shadow-xs);
+  z-index:60;
+  /* The header spans every grid column, so its min-content width was setting
+     the floor for the whole shell — 426px on a 375px phone, which clipped the
+     right edge of every panel underneath it. */
+  min-width:0;
+}
+
+.hdr-logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+  flex-shrink:0;
+}
+
+
+.hdr-name{
+  font-family:var(--font-d);
+  font-size:17px;
+  font-weight:400;
+  color:var(--ink);
+}
+
+.hdr-space{flex:1}
+
+.hdr-badge{
+  background:var(--green-bg);
+  color:var(--green);
+  font-size:11px;
+  font-weight:500;
+  padding:4px 10px;
+  border-radius:20px;
+  white-space:nowrap;
+}
+
+.hdr-back{
+  display:none;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:var(--cream);
+  border:1px solid var(--border);
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  color:var(--ink2);
+  text-decoration:none;
+  flex-shrink:0;
+}
+
+.hdr-menu{
+  display:none;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:transparent;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  color:var(--ink2);
+  flex-shrink:0;
+}
+
+.community-link{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:500;
+  color:var(--ink2);
+  padding:10px 14px;
+  min-height:40px;
+  border-radius:20px;
+  border:1.5px solid var(--border);
+  transition:all .18s;
+  white-space:nowrap;
+}
+
+.community-link:hover{
+  color:var(--rust);
+  border-color:rgba(84,121,150,.3);
+  background:var(--rust-pale);
+}
+
+.usr-btn{
+  display:none;
+  align-items:center;
+  gap:7px;
+  text-decoration:none;
+  border:1.5px solid var(--border);
+  border-radius:20px;
+  padding:4px 12px 4px 4px;
+  background:transparent;
+  transition:all .18s;
+}
+
+.usr-btn:hover{
+  background:var(--rust-pale);
+  border-color:var(--rust-lt);
+}
+
+.usr-av{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  background:var(--rust);
+  color:#fff;
+  font-size:10px;
+  font-weight:600;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  overflow:hidden;
+  font-family:var(--font-d);
+}
+
+.usr-av img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+}
+
+.usr-name{
+  font-size:12px;
+  font-weight:500;
+  color:var(--ink2);
+  max-width:90px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.sidebar{
+  background:var(--white);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.sb-search{
+  padding:12px 12px 8px;
+}
+
+.sb-search-input{
+  width:100%;
+  padding:8px 12px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  border-radius:20px;
+  font-size:13px;
+  color:var(--ink);
+  transition:all .2s;
+}
+
+.sb-search-input:focus{
+  border-color:var(--rust);
+  background:var(--white);
+}
+
+.sb-section{
+  padding:8px 12px 4px;
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:var(--ink4);
+}
+
+.res-list{
+  flex:1;
+  overflow-y:auto;
+  padding:0 8px 8px;
+}
+
+.res-card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  border-radius:var(--r);
+  cursor:pointer;
+  transition:all .18s;
+  border:1px solid transparent;
+  margin-bottom:3px;
+}
+
+.res-card:hover{
+  background:var(--cream);
+}
+
+.res-card.active{
+  background:var(--rust-pale);
+  border-color:rgba(84,121,150,.2);
+}
+
+.res-av{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:var(--cream3);
+  color:var(--ink2);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  font-weight:600;
+  flex-shrink:0;
+  overflow:hidden;
+  font-family:var(--font-d);
+}
+
+.res-card.active .res-av{
+  background:var(--rust);
+  color:#fff;
+}
+
+.res-av img,
+.rh-av img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
+}
+
+.res-info{
+  flex:1;
+  min-width:0;
+}
+
+.res-name{
+  font-size:13px;
+  font-weight:500;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  color:var(--ink);
+}
+
+.res-meta{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:2px;
+}
+
+.res-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--cream3);
+  flex-shrink:0;
+}
+
+.res-card.active .res-dot{
+  background:var(--green);
+}
+
+.add-res{
+  margin:4px 8px 8px;
+  padding:10px 14px;
+  background:transparent;
+  border:1.5px dashed var(--border2);
+  border-radius:var(--r);
+  font-size:12px;
+  color:var(--ink3);
+  width:calc(100% - 16px);
+  transition:all .18s;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.add-res:hover{
+  border-color:var(--rust);
+  color:var(--rust);
+  background:var(--rust-pale);
+}
+
+.sb-foot{
+  padding:10px 12px;
+  border-top:1px solid var(--border);
+  background:var(--cream);
+}
+
+.dev-lbl{
+  font-size:10px;
+  font-weight:500;
+  color:var(--ink4);
+  text-transform:uppercase;
+  letter-spacing:.07em;
+  margin-bottom:5px;
+}
+
+.dev-btn{
+  font-size:11px;
+  color:var(--ink3);
+  padding:3px 0;
+  cursor:pointer;
+  display:block;
+  background:none;
+  text-align:left;
+  width:100%;
+}
+
+.dev-btn:hover{
+  color:var(--rust);
+}
+
+.main{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:var(--cream);
+  position:relative;
+  /* Grid items default to min-width:auto, so this track was being inflated to
+     its widest content (426px on a 375px phone) and the right edge of every
+     panel was silently clipped. */
+  min-width:0;
+}
+
+/* ── Guess My Day ──────────────────────────────────────────────
+   Senior-facing surface: everything here is deliberately larger than the
+   rest of the app — minimum 19px text, 60px+ tap targets, high contrast. */
+
+.hist-checkin{
+  display:inline-block;
+  font-size:12px;
+  font-weight:600;
+  color:var(--gold);
+  background:#FFF6E4;
+  border-radius:999px;
+  padding:3px 10px;
+  margin:4px 0;
+}
+
+.checkin-card{
+  border-left:4px solid var(--gold);
+  margin-bottom:18px;
+}
+.checkin-body{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:12px;
+}
+.checkin-invite{
+  font-family:var(--font-d);
+  font-size:19px;
+  font-weight:400;
+  color:var(--ink);
+  line-height:1.5;
+}
+.checkin-play{
+  font-size:17px;
+  padding:14px 26px;
+  border-radius:var(--r);
+  min-height:52px;
+}
+.checkin-note{
+  font-size:13px;
+  color:var(--ink3);
+  font-weight:300;
+}
+.checkin-done{
+  background:var(--green-bg);
+  border-radius:var(--r);
+  padding:14px 16px;
+  width:100%;
+}
+.checkin-done-mood{
+  font-family:var(--font-d);
+  font-size:20px;
+  color:var(--green);
+  margin-bottom:4px;
+}
+.checkin-done-sum{
+  font-size:14px;
+  color:var(--ink2);
+  line-height:1.6;
+  font-weight:300;
+}
+
+.guess-panel{
+  display:none;
+  flex-direction:column;
+  gap:16px;
+  background:linear-gradient(180deg,var(--rust-pale),var(--white));
+  border:1px solid var(--border2);
+  border-radius:var(--r-lg);
+  padding:20px;
+  margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  flex:0 1 auto;
+  max-height:min(620px,calc(100dvh - var(--hh) - 132px));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  min-height:0;
+}
+.guess-panel.open{display:flex}
+
+.guess-head{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  flex-shrink:0;
+}
+.guess-head-space{flex:1}
+.guess-badge{
+  font-size:13px;
+  font-weight:600;
+  color:var(--rust);
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+.guess-ctl{
+  font-family:var(--font);
+  font-size:16px;
+  font-weight:500;
+  padding:12px 18px;
+  min-height:48px;
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  background:var(--white);
+  color:var(--ink2);
+  cursor:pointer;
+}
+.guess-ctl:hover{background:var(--cream2)}
+/* --rust-ink, not --rust: this word is now on screen during every voice
+   check-in, and the peach accent on white is 2.28:1. */
+.guess-stop{color:var(--rust-ink);border-color:var(--rust-lt)}
+
+/* The same two controls on the chat bar, shown only while a check-in is
+   actually running. */
+.checkin-ctls{
+  display:none;
+  gap:8px;
+  margin-top:8px;
+}
+.checkin-ctls.on{display:flex}
+.checkin-ctls .guess-ctl{flex:1}
+
+.guess-question{
+  font-family:var(--font-d);
+  font-size:26px;
+  font-weight:400;
+  line-height:1.4;
+  color:var(--ink);
+  overflow-wrap:anywhere;
+  flex-shrink:0;
+}
+
+.guess-options{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:12px;
+  min-height:0;
+}
+.guess-opt{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-family:var(--font);
+  font-size:19px;
+  font-weight:500;
+  color:var(--ink);
+  background:var(--white);
+  border:2px solid var(--border2);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+  min-height:68px;
+  cursor:pointer;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  transition:transform .08s ease,border-color .12s ease,background .12s ease;
+}
+.guess-opt:hover{border-color:var(--rust-lt);background:var(--rust-pale)}
+.guess-opt:active{transform:scale(.98)}
+.guess-opt:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.guess-opt.yes{border-color:var(--green);color:var(--green)}
+.guess-opt.yes:hover{background:var(--green-bg)}
+.guess-opt-emoji{font-size:24px;line-height:1}
+
+.guess-free{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.guess-free-input{
+  font-family:var(--font);
+  font-size:19px;
+  line-height:1.5;
+  color:var(--ink);
+  background:var(--white);
+  border:2px solid var(--border2);
+  border-radius:var(--r);
+  padding:14px 16px;
+  resize:none;
+  width:100%;
+}
+/* :focus:not(:focus-visible) — suppress the ring for mouse/touch focus only,
+   so the keyboard ring above still wins. A plain :focus{outline:none} here
+   outranked it and blanked the ring for keyboard users too. */
+.guess-free-input:focus{border-color:var(--rust-lt)}
+.guess-free-input:focus:not(:focus-visible){outline:none}
+.guess-free-btns{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.guess-mic{
+  font-size:22px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  border:2px solid var(--border2);
+  background:var(--white);
+  cursor:pointer;
+}
+.guess-mic.active{background:var(--rust);border-color:var(--rust);color:var(--white)}
+.guess-send{
+  font-size:17px;
+  padding:14px 28px;
+  min-height:56px;
+  border-radius:var(--r);
+}
+
+.guess-escalate{
+  grid-column:1/-1;
+  background:var(--alarm-pale);
+  border:2px solid var(--alarm);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+}
+.guess-escalate-title{
+  font-family:var(--font-d);
+  font-size:20px;
+  color:var(--alarm);
+  margin-bottom:6px;
+}
+.guess-escalate-body{
+  font-size:16px;
+  line-height:1.6;
+  color:var(--ink2);
+}
+
+/* While a check-in runs, the free-typing chat bar would compete with the
+   guided buttons — hide it so there is exactly one thing to do. */
+body.checkin-running .input-wrap{display:none}
+/* During a check-in there were THREE nested scroll boxes stacked inside a
+   column that itself could not scroll: the guess panel (capped by
+   max-height and allowed to shrink), the chat window, and the panel. On a
+   720px-tall laptop the panel got squeezed to ~266px against ~322px of
+   content, so the answer buttons and the "type or talk" field sat below
+   the fold of an inner box with no visible scrollbar — and scrolling the
+   page did nothing, because the page has no scroll. That is why the only
+   way to reach the rest of the check-in was to zoom the browser out.
+
+   Collapse it to ONE scrolling surface: .conv-wrap scrolls, and everything
+   inside it lays out at its natural height. Normal (non-check-in) chat is
+   untouched — there the chat window keeps its own scroll. */
+body.checkin-running #panel-conversation{
+  overflow:hidden;
+  min-height:0;
+}
+body.checkin-running .conv-wrap{
+  overflow-y:auto;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+body.checkin-running .guess-panel{
+  flex:none;
+  max-height:none;
+  overflow:visible;
+}
+body.checkin-running .chat-win{
+  flex:none;
+  min-height:0;
+  overflow:visible;
+}
+
+@media(max-width:640px){
+  .guess-panel{
+    max-height:calc(100dvh - var(--hh) - 92px);
+    padding:16px;
+    gap:12px;
+    border-radius:var(--r-lg);
+  }
+  .guess-head-space{display:none}
+  .guess-badge{width:100%}
+  .guess-ctl{flex:1;min-width:0}
+  .guess-question{font-size:22px}
+  .guess-options{grid-template-columns:1fr}
+  .guess-opt{min-height:58px;font-size:18px}
+  .guess-free-btns{align-items:stretch}
+  .guess-send{flex:1}
+}
+
+.empty-scr{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  color:var(--ink3);
+  padding:40px;
+  text-align:center;
+}
+
+.empty-scr .ei{
+  font-size:56px;
+  opacity:.6;
+}
+
+.empty-scr h3{
+  font-family:var(--font-d);
+  font-size:18px;
+  font-weight:400;
+  color:var(--ink2);
+}
+
+.empty-scr p{
+  font-size:13px;
+  line-height:1.65;
+  max-width:260px;
+  font-weight:300;
+}
+
+#res-view{
+  display:none;
+  flex-direction:column;
+  flex:1;
+  overflow:hidden;
+}
+
+.res-hdr{
+  padding:12px 20px;
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-shrink:0;
+}
+
+.rh-av{
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:var(--rust);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  font-weight:600;
+  flex-shrink:0;
+  overflow:hidden;
+  font-family:var(--font-d);
+  box-shadow:0 2px 8px rgba(84,121,150,.25);
+}
+
+.rh-av-edit{
+  border:none;
+  cursor:pointer;
+  transition:transform .18s, box-shadow .18s;
+  padding:0;
+}
+
+.rh-av-edit:hover{
+  transform:scale(1.04);
+  box-shadow:0 6px 18px rgba(84,121,150,.22);
+}
+
+.avatar-random-btn{
+  margin-top:6px;
+  background:var(--cream);
+  color:var(--rust);
+  border:1px solid rgba(84,121,150,.22);
+  border-radius:999px;
+  padding:8px 14px;
+  min-height:36px;
+  font-size:11px;
+  font-weight:600;
+  transition:all .18s;
+}
+
+.avatar-random-btn:hover{
+  background:var(--rust-pale);
+  border-color:rgba(84,121,150,.38);
+}
+
+.rh-name{
+  font-size:15px;
+  font-weight:500;
+  color:var(--ink);
+  line-height:1.2;
+}
+
+.rh-sub{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:2px;
+}
+
+.rh-space{flex:1}
+
+.rh-pill{
+  font-size:11px;
+  padding:3px 10px;
+  border-radius:20px;
+  background:var(--green-bg);
+  color:var(--green);
+  font-weight:500;
+  white-space:nowrap;
+}
+
+.tab-bar{
+  display:flex;
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  overflow-x:auto;
+}
+
+/* 44px minimum height. Everyone using this page is old enough that a tremor,
+   arthritis or a stylus-free tablet is the normal case rather than the edge
+   one, and these tabs are how they move around the app at all. */
+.tab-btn{
+  padding:11px 18px;
+  min-height:44px;
+  font-size:13px;
+  font-weight:400;
+  color:var(--ink3);
+  background:transparent;
+  border-bottom:2px solid transparent;
+  transition:all .18s;
+  white-space:nowrap;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.tab-btn:hover{
+  color:var(--ink);
+}
+
+.tab-btn.active{
+  color:var(--rust);
+  border-bottom-color:var(--rust);
+  font-weight:500;
+}
+
+.panel{
+  display:none;
+  flex:1;
+  overflow-y:auto;
+  flex-direction:column;
+  -webkit-overflow-scrolling:touch;
+}
+
+.panel.active{
+  display:flex;
+}
+
+.profile-wrap{
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.card{
+  background:var(--white);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-xs);
+}
+
+.card-hd{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+
+.card-title{
+  font-family:var(--font-d);
+  font-size:14px;
+  font-weight:400;
+  color:var(--ink);
+}
+
+.card-count{
+  font-size:11px;
+  color:var(--ink3);
+}
+
+.photo-section{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  margin-bottom:14px;
+}
+
+.photo-preview{
+  width:76px;
+  height:76px;
+  border-radius:50%;
+  background:var(--rust);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-d);
+  font-size:24px;
+  overflow:hidden;
+  flex-shrink:0;
+}
+
+.photo-actions{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1;
+  min-width:0;
+}
+
+.photo-actions input[type="file"]{
+  font-size:12px;
+  color:var(--ink3);
+}
+
+.photo-status{
+  font-size:11px;
+  color:var(--ink3);
+}
+
+.f2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  margin-bottom:12px;
+}
+
+.field:last-of-type{
+  margin-bottom:0;
+}
+
+.field label{
+  font-size:10px;
+  font-weight:500;
+  color:var(--ink3);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+/* Sentence-case explanation under a control, for settings whose effect is not
+   obvious from the label alone. */
+.field-note{
+  font-size:11px;
+  color:var(--ink3);
+  line-height:1.5;
+}
+
+.field input,
+.field textarea,
+.field select{
+  padding:9px 12px;
+  border:1.5px solid var(--border);
+  border-radius:var(--r-sm);
+  background:var(--cream);
+  color:var(--ink);
+  font-size:13px;
+  transition:all .18s;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus{
+  border-color:var(--rust);
+  background:var(--white);
+}
+
+.field textarea{
+  resize:none;
+  min-height:76px;
+  line-height:1.55;
+}
+
+.save-row{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:14px;
+}
+
+.forms-wrap{padding:18px;display:flex;flex-direction:column;gap:14px}
+.forms-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-notice{font-size:12px;line-height:1.6;color:var(--ink2);background:#FBF4E3;border:1px solid rgba(196,154,42,.22);border-radius:var(--r);padding:11px 13px;margin-bottom:14px}
+.check-row{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--ink2);line-height:1.5;margin:8px 0 12px}
+.check-row input{width:18px;height:18px;margin-top:1px;accent-color:var(--rust);flex-shrink:0}
+.draft-status{font-size:11px;color:var(--ink3);margin-top:9px;min-height:17px}
+.attendance-card{background:var(--green-bg);border-color:rgba(45,106,79,.2)}
+/* My details for forms (F43): typed once, shown on every form below. */
+.f2.f2-3{grid-template-columns:repeat(3,1fr)}
+.applicant-line{font-size:13px;line-height:1.55;color:var(--ink2);margin:-4px 0 12px;font-weight:600}
+/* Under 16px, iOS Safari zooms the page in on focus and the form slides off screen. */
+@media(max-width:768px){.f2.f2-3{grid-template-columns:1fr}.forms-wrap .field input,.forms-wrap .field select,.forms-wrap .field textarea{font-size:16px}}
+.attendance-link{font-family:monospace;font-size:11px;line-height:1.5;color:var(--green);word-break:break-all;background:rgba(255,255,255,.65);border-radius:8px;padding:9px 10px;margin:10px 0}
+@media(max-width:760px){.forms-grid{grid-template-columns:1fr}}
+
+.mem-list{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:12px;
+}
+
+.mem-row{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  padding:9px 12px;
+}
+
+.mem-txt{
+  flex:1;
+  font-size:12px;
+  color:var(--ink);
+  line-height:1.55;
+}
+
+.mem-badge{
+  font-size:10px;
+  padding:2px 7px;
+  border-radius:8px;
+  background:var(--rust-pale);
+  color:var(--rust);
+  font-weight:500;
+  white-space:nowrap;
+}
+
+.mem-del-btn{
+  font-size:16px;
+  color:var(--ink4);
+  cursor:pointer;
+  background:none;
+  line-height:1;
+  padding:0 2px;
+}
+
+.mem-del-btn:hover{
+  color:var(--rust);
+}
+
+.mem-empty{
+  font-size:12px;
+  color:var(--ink3);
+  font-style:italic;
+  padding:8px 0;
+}
+
+.mem-add{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.mem-add input{
+  flex:1;
+  padding:9px 12px;
+  border:1.5px solid var(--border);
+  border-radius:var(--r-sm);
+  background:var(--cream);
+  font-size:12px;
+  color:var(--ink);
+}
+
+.mem-add input:focus{
+  border-color:var(--rust);
+  background:var(--white);
+}
+
+.mem-add select{
+  width:95px;
+  padding:9px 8px;
+  border:1.5px solid var(--border);
+  border-radius:var(--r-sm);
+  background:var(--cream);
+  font-size:12px;
+  color:var(--ink);
+  flex-shrink:0;
+}
+
+.conv-wrap{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding:12px 14px;
+  gap:10px;
+  min-height:0;
+}
+
+.chat-win{
+  flex:1;
+  overflow-y:auto;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  box-shadow:var(--shadow-sm);
+  min-height:0;
+}
+
+/* ── Conversation starters, under the greeting (F47) ──────────
+   Tiles rather than a sideways-scrolling strip of chips: a strip hides most
+   of what it offers off the edge, and older users rarely find it. */
+.starters{
+  flex-shrink:0;      /* .conv-wrap is a flex column — the chat window flexes, this does not */
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.starters[hidden]{display:none}
+.starters-title{
+  margin:0 4px;
+  font-family:var(--font);
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink2);
+}
+.starters-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.starter{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:56px;
+  padding:10px 14px;
+  border:1.5px solid var(--border2);
+  border-radius:16px;
+  background:var(--white);
+  color:var(--ink);
+  font-size:15px;
+  font-weight:600;
+  line-height:1.25;
+  text-align:left;
+  box-shadow:var(--shadow-xs);
+}
+.starter:hover{background:var(--rust-pale)}
+.starter-ico{flex-shrink:0;font-size:22px;line-height:1}
+.starter-lbl{min-width:0;overflow-wrap:anywhere}
+body.resident-mode .starter{min-height:60px;font-size:17px}
+body.resident-mode .starters-title{font-size:16px}
+@media(min-width:1000px){
+  .starters-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+/* A phone has room for the greeting or for four tiles, not both, and the
+   greeting is the one that says what the tiles are for. One row of the two
+   that matter most (app.js puts them first); a tall screen shows all four. */
+@media(max-width:767px) and (max-height:900px){
+  .starter:nth-child(n+3){display:none}
+}
+@media(max-height:720px){
+  .starters-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+
+/* ── My Story: the life story book (F49) ──────────────────── */
+.story-head{padding:18px}
+.story-title{
+  margin:0 0 6px;
+  font-family:var(--font-d);
+  font-size:24px;
+  font-weight:400;
+  color:var(--ink);
+}
+.story-intro{margin:0;font-size:14px;line-height:1.6;color:var(--ink2)}
+body.resident-mode .story-intro{font-size:16px}
+.story-chapters{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.story-ch{padding:16px 18px}
+.story-ch-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.story-ch-title{margin:0;font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--ink)}
+.story-count{
+  min-width:30px;height:30px;
+  padding:0 9px;
+  border-radius:15px;
+  background:var(--rust-pale);
+  color:var(--ink);
+  font-size:14px;
+  font-weight:700;
+  line-height:30px;
+  text-align:center;
+}
+.story-empty{margin:0 0 4px;font-size:15px;color:var(--ink2)}
+.story-entry{padding:12px 0;border-top:1px solid var(--border)}
+.story-entry:first-of-type{border-top:none}
+.story-text{
+  margin:0;
+  font-size:16px;
+  line-height:1.7;
+  color:var(--ink);
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+body.resident-mode .story-text{font-size:18px}
+.story-meta{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px 10px;
+  margin-top:6px;
+  font-size:14px;
+  color:var(--ink2);
+}
+.story-entry-btns{display:flex;gap:6px}
+.story-link{
+  min-width:44px;min-height:44px;
+  padding:8px 12px;
+  border-radius:12px;
+  background:transparent;
+  color:var(--ink);
+  font-size:15px;
+  font-weight:600;
+  text-decoration:underline;
+}
+.story-link:hover{background:var(--cream)}
+.story-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+/* Through .story-btns: .btn is declared further down at 12px and would win. */
+.story-btns .story-btn{min-height:48px;padding:10px 18px;font-size:16px;font-weight:600}
+body.resident-mode .story-btns .story-btn{font-size:17px}
+.story-input{
+  display:block;
+  width:100%;
+  padding:10px 12px;
+  border:1.5px solid var(--border2);
+  border-radius:12px;
+  background:var(--white);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.6;
+  resize:vertical;
+}
+body.resident-mode .story-input{font-size:18px}
+.story-move{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:15px;color:var(--ink2)}
+.story-move select{min-height:44px;padding:6px 10px;border:1.5px solid var(--border2);border-radius:10px;background:var(--white);color:var(--ink);font-size:16px}
+
+/* ── Family messages (F50): on the Family screen and in the chat ── */
+.fam-note{padding:16px 18px}
+/* Who is connected to the senior (F32): one row each, name and Remove. */
+.fam-linked{padding:16px 18px}
+.fam-linked-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.fam-linked-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
+.fam-linked-row .story-btn{min-height:48px;padding:10px 18px;font-size:16px;font-weight:600}
+body.resident-mode .fam-linked-row .story-btn{font-size:17px}
+.fam-note-hd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:6px}
+.fam-from{font-size:17px;font-weight:600;color:var(--ink)}
+.fam-when{font-size:14px;color:var(--ink2)}
+.fam-new{
+  padding:2px 10px;
+  border-radius:12px;
+  background:var(--alarm);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+}
+.msg-note{margin-top:6px;max-width:100%;font-size:14px;color:var(--ink2)}
+.msg-note audio{display:block;width:100%;max-width:340px;min-height:44px}
+.msg-note-err{font-style:italic}
+.msg-photo{display:block;max-width:100%;max-height:60vh;border-radius:14px;box-shadow:var(--shadow-sm)}
+.chat-msg.ai .msg-note{align-self:flex-start}
+
+/* The printed book. Hidden on screen; while printing it is the only thing on
+   the page (body.print-story is set by printStory() for the length of the
+   print dialog). */
+.story-print{display:none}
+@media print{
+  html,body.print-story{height:auto!important;overflow:visible!important;background:#fff!important}
+  body.print-story > *:not(#story-print){display:none!important}
+  body.print-story #story-print{display:block!important;padding:0 8mm;color:#000;font-family:Georgia,'Times New Roman',serif}
+  #story-print h1{font-size:26pt;font-weight:400;margin:0 0 14pt}
+  #story-print h2{font-size:17pt;font-weight:400;margin:22pt 0 8pt;break-after:avoid}
+  #story-print .story-text{font-size:12pt;line-height:1.6;margin:0 0 10pt;break-inside:avoid}
+}
+
+/* After "Finish for now": the chat stays on screen above this, saved. */
+.chat-end{
+  align-self:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  margin:6px 0 2px;
+  padding:14px 18px;
+  border-top:1px dashed var(--border2);
+  text-align:center;
+}
+.chat-end-note{font-size:14px;color:var(--ink2)}
+.chat-again{min-height:48px;font-size:16px;padding:10px 22px;border-radius:24px}
+
+.chat-empty-s{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:var(--ink3);
+}
+
+.chat-empty-s .ce{
+  font-size:36px;
+  opacity:.5;
+}
+
+.chat-empty-s p{
+  font-size:12px;
+  text-align:center;
+  line-height:1.65;
+  max-width:220px;
+  font-weight:300;
+}
+
+.chat-msg{
+  display:flex;
+  flex-wrap:wrap;
+  max-width:82%;
+}
+
+.chat-msg.user{
+  align-self:flex-end;
+}
+
+.chat-msg.ai{
+  align-self:flex-start;
+}
+
+.msg-bubble{
+  padding:10px 13px;
+  border-radius:16px;
+  font-size:13px;
+  line-height:1.58;
+}
+
+.chat-msg.user .msg-bubble{
+  background:var(--rust-ink);
+  color:#fff;
+  border-bottom-right-radius:3px;
+}
+
+.chat-msg.ai .msg-bubble{
+  background:var(--cream);
+  border:1px solid var(--border);
+  color:var(--ink);
+  border-bottom-left-radius:3px;
+}
+
+/* Which voice actually spoke this reply. Off unless ?voicetell=1 — a caption
+   under every message is clutter for the person the app is for — so this is
+   sized and coloured to sit well below the reply in the reading order rather
+   than to be readable across a room. :empty hides the slot that is rendered
+   ahead of the report landing. */
+.msg-voice{
+  flex-basis:100%;
+  margin:4px 0 0 4px;
+  font-size:10.5px;
+  line-height:1.45;
+  color:var(--ink3);
+  font-variant-numeric:tabular-nums;
+}
+
+.msg-voice:empty{
+  display:none;
+}
+
+/* Talk, type, and two settings, stacked: the big button first because talking
+   is the main way in, the text box under it because typing must never need a
+   mode switch to reach. */
+.input-wrap{
+  background:var(--white);
+  border:1.5px solid var(--border);
+  border-radius:var(--r-xl);
+  padding:10px;
+  box-shadow:var(--shadow-sm);
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.input-wrap:focus-within{
+  border-color:rgba(84,121,150,.4);
+  box-shadow:var(--shadow),0 0 0 3px rgba(84,121,150,.08);
+}
+
+.input-row{
+  display:flex;
+  gap:8px;
+  align-items:flex-end;
+  background:var(--cream);
+  border:1.5px solid var(--border);
+  border-radius:18px;
+  padding:5px 5px 5px 14px;
+}
+
+.chat-ta{
+  flex:1;
+  border:none;
+  background:transparent;
+  /* 16px stops iOS Safari zooming the page when the field is focused, which
+     it does for anything under 16px and which strands the senior at 150% zoom
+     with the chat off screen. Also simply easier to read. */
+  font-size:16px;
+  min-height:26px;
+  resize:none;
+  max-height:120px;
+  min-height:22px;
+  line-height:1.5;
+  padding:1px 0;
+  color:var(--ink);
+}
+
+/* Mouse focus only — the keyboard ring must survive. See the note on
+   .guess-free-input:focus above. */
+.chat-ta:focus:not(:focus-visible){
+  outline:none;
+}
+
+
+@keyframes micPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(84,121,150,.5)}
+  50%{box-shadow:0 0 0 7px rgba(84,121,150,0)}
+}
+
+.mic-status{
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px 0;
+  font-size:13.5px;
+  font-weight:500;
+  /* Not var(--rust): that measures ~4.6:1 on white, thin margin above the
+     WCAG AA 4.5:1 floor for body text. This shade has real headroom. */
+  color:#4B6C85;
+}
+
+.mic-status.on{display:flex}
+
+.mic-status-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--rust);
+  animation:micPulse 1.6s ease-in-out infinite;
+  flex-shrink:0;
+}
+
+@media(prefers-reduced-motion:reduce){
+  .mic-status-dot{animation:none}
+}
+
+.send-btn{
+  height:44px;
+  padding:0 18px;
+  border-radius:20px;
+  background:var(--rust-ink);
+  color:#fff;
+  font-size:13px;
+  font-weight:500;
+  transition:all .18s;
+  flex-shrink:0;
+  box-shadow:0 2px 8px rgba(84,121,150,.25);
+}
+
+.send-btn:hover{
+  background:var(--rust-ink-lt);
+}
+
+/* A reply is on its way. Tapping again would have posted the same line twice;
+   now it does nothing, and this is how that reads as deliberate rather than
+   broken. */
+.send-btn:disabled{
+  opacity:.5;
+  cursor:default;
+  box-shadow:none;
+}
+
+.send-btn:disabled:hover{
+  background:var(--rust-ink);
+}
+
+/* ── Voice-first chat bar ──
+   Talking is the primary way in; typing is one tap away. The two modes share
+   one row, so the bar never changes height or jumps as you switch. */
+.talk-btn{
+  display:flex;
+  width:100%;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:58px;
+  border-radius:29px;
+  background:var(--rust-ink);
+  color:#fff;
+  font-size:16px;
+  font-weight:500;
+  font-family:inherit;
+  border:none;
+  transition:all .18s;
+  box-shadow:0 2px 10px rgba(84,121,150,.28);
+  min-width:0;
+}
+.talk-btn .talk-ico{font-size:22px;flex-shrink:0}
+body.resident-mode .talk-btn{font-size:19px;font-weight:600;min-height:62px;border-radius:31px}
+.talk-btn .talk-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.talk-btn:hover:not(:disabled){background:var(--rust-ink-lt)}
+.talk-btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* Recording. Carried by the pulsing ring, the wording on the button itself,
+   the "Listening…" caption and aria-pressed — never by colour alone. */
+.talk-btn.active{
+  background:#3A5468;
+  animation:micPulse 1.6s ease-in-out infinite;
+}
+
+/* "Read replies aloud: On" and "Finish for now". The switch draws its state
+   three ways — the word, the knob, and aria-checked — so none of them is
+   carried by colour alone. */
+.chat-opts{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  justify-content:space-between;
+}
+.aloud-switch{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:44px;
+  padding:6px 12px;
+  border-radius:22px;
+  background:var(--cream);
+  border:1.5px solid var(--border);
+  color:var(--ink);
+  font-size:14px;
+  font-weight:500;
+  text-align:left;
+}
+.aloud-ico{font-size:17px;line-height:1}
+.aloud-state{font-weight:700;min-width:2.2em}
+.aloud-track{
+  position:relative;
+  width:40px;height:22px;
+  border-radius:11px;
+  background:var(--ink3);
+  flex-shrink:0;
+  transition:background .18s;
+}
+.aloud-knob{
+  position:absolute;
+  top:3px;left:3px;
+  width:16px;height:16px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.25);
+  transition:transform .18s;
+}
+.aloud-switch[aria-checked="true"] .aloud-track{background:var(--green)}
+.aloud-switch[aria-checked="true"] .aloud-knob{transform:translateX(18px)}
+.aloud-switch[hidden]{display:none}
+.finish-btn{
+  min-height:44px;
+  padding:6px 16px;
+  border-radius:22px;
+  background:var(--white);
+  border:1.5px solid var(--border2);
+  color:var(--ink2);
+  font-size:14px;
+  font-weight:600;
+}
+.finish-btn:hover{background:var(--rust-pale);color:var(--ink)}
+.finish-btn[hidden]{display:none}
+body.resident-mode .aloud-switch,
+body.resident-mode .finish-btn{font-size:16px}
+@media(prefers-reduced-motion:reduce){
+  .aloud-track,.aloud-knob{transition:none}
+}
+
+
+@media(prefers-reduced-motion:reduce){
+  .talk-btn.active{animation:none}
+}
+
+.status-line{
+  font-size:11px;
+  color:var(--ink3);
+  margin-top:6px;
+  min-height:14px;
+}
+
+
+.mem-chips-bar{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:10px 12px;
+  flex-shrink:0;
+}
+
+.mc-label{
+  font-size:10px;
+  font-weight:500;
+  color:var(--ink3);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  white-space:nowrap;
+  align-self:center;
+}
+
+.chip{
+  font-size:11px;
+  padding:3px 9px;
+  border-radius:8px;
+  background:var(--cream);
+  border:1px solid var(--border);
+  color:var(--ink2);
+  transition:all .2s;
+}
+
+.hist-wrap{
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.hist-card,
+.sess-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:14px 16px;
+  box-shadow:var(--shadow-xs);
+}
+
+.hist-date,
+.sc-date{
+  font-size:11px;
+  color:var(--ink3);
+  margin-bottom:5px;
+}
+
+.hist-preview,
+.sc-prev{
+  font-size:13px;
+  color:var(--ink2);
+  line-height:1.5;
+  margin-bottom:8px;
+}
+
+.hist-meta,
+.sc-stats{
+  font-size:11px;
+  color:var(--ink3);
+}
+
+.btn{
+  padding:8px 16px;
+  border-radius:var(--r-sm);
+  font-size:12px;
+  font-weight:500;
+  transition:all .18s;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+
+.btn:active{
+  transform:scale(.97);
+}
+
+.btn-p{
+  background:var(--rust-ink);
+  color:#fff;
+  box-shadow:0 2px 8px rgba(84,121,150,.2);
+}
+
+.btn-p:hover{
+  background:var(--rust-ink-lt);
+}
+
+.btn-s{
+  background:var(--cream);
+  color:var(--ink2);
+  border:1.5px solid var(--border);
+}
+
+.btn-s:hover{
+  border-color:var(--rust);
+  color:var(--rust);
+}
+
+.btn-g{
+  background:var(--green);
+  color:#fff;
+}
+
+.btn-sm{
+  padding:6px 12px;
+  font-size:11px;
+}
+
+.btn-danger{
+  background:#B3261E;
+  color:#fff;
+}
+
+.btn-danger:hover{
+  background:#8F1D17;
+}
+
+.overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(26,18,8,.45);
+  z-index:200;
+  align-items:flex-end;
+  justify-content:center;
+  backdrop-filter:blur(4px);
+}
+
+.overlay.open{
+  display:flex;
+}
+
+.modal{
+  background:var(--white);
+  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+  width:100%;
+  max-height:90vh;
+  overflow-y:auto;
+  box-shadow:var(--shadow-lg);
+}
+
+.modal-handle{
+  width:36px;
+  height:4px;
+  border-radius:2px;
+  background:var(--border2);
+  margin:0 auto 16px;
+}
+
+.modal-title{
+  font-family:var(--font-d);
+  font-size:17px;
+  font-weight:400;
+  margin-bottom:16px;
+  color:var(--ink);
+}
+
+.modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:18px;
+}
+
+.toast{
+  position:fixed;
+  bottom:calc(20px + env(safe-area-inset-bottom));
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--ink);
+  color:#fff;
+  padding:10px 18px;
+  border-radius:20px;
+  font-size:13px;
+  font-weight:500;
+  z-index:999;
+  box-shadow:var(--shadow-lg);
+  /* Wraps inside the screen with a 16px gutter. The escalated "not sent to
+     the care team" message is ~95 characters; as one nowrap line it was 627px
+     wide on a 375px phone and clipped at both ends. max-content because
+     left:50% would otherwise cap a shrink-to-fit box at half the screen. */
+  width:max-content;
+  max-width:min(680px, calc(100vw - 32px));
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-align:center;
+  line-height:1.45;
+}
+
+.bottom-nav{
+  display:none;
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:var(--white);
+  border-top:1px solid var(--border);
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom));
+  z-index:80;
+  box-shadow:0 -4px 20px rgba(26,18,8,.06);
+}
+
+.bn-items{
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+}
+
+.bn-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  padding:4px 6px;
+  background:none;
+  color:var(--ink3);
+  transition:color .15s;
+  /* Manager mode adds a sixth item (Elderly). At the old fixed 64px min-width
+     that came to 384px and pushed the last item off a 375px screen — worse on
+     a 360px one. Items now share the bar evenly instead. */
+  flex:1 1 0;
+  min-width:0;
+}
+
+.bn-label{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.bn-item.active{
+  color:var(--rust);
+}
+
+.bn-icon{
+  font-size:20px;
+  line-height:1;
+}
+
+.bn-label{
+  font-size:10px;
+  font-weight:500;
+}
+
+.mob-res-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(26,18,8,.4);
+  z-index:90;
+  backdrop-filter:blur(4px);
+}
+
+.mob-res-overlay.open{
+  display:block;
+}
+
+/* Closed, this is parked off the left edge rather than removed, so its five
+   nav buttons stayed in the tab order the whole time — a sighted keyboard
+   user tabbing along the header watched focus vanish into an invisible
+   region and had to guess their way back out. visibility:hidden takes them
+   out of it; the delay holds it visible for the length of the slide-out so
+   the drawer is still seen leaving. */
+.mob-res-drawer{
+  position:fixed;
+  left:0;
+  top:var(--hh);
+  bottom:0;
+  width:280px;
+  background:var(--white);
+  z-index:91;
+  transform:translateX(-100%);
+  visibility:hidden;
+  transition:transform .28s ease,visibility 0s linear .28s;
+  display:flex;
+  flex-direction:column;
+  box-shadow:var(--shadow-lg);
+}
+
+.mob-res-drawer.open{
+  transform:translateX(0);
+  visibility:visible;
+  transition:transform .28s ease,visibility 0s linear 0s;
+}
+
+@media(min-width:481px){
+  .overlay{
+    align-items:center;
+    padding:20px;
+  }
+
+  .modal{
+    border-radius:var(--r-xl);
+    width:420px;
+    max-width:95vw;
+    padding:24px;
+  }
+
+  .modal-handle{
+    display:none;
+  }
+}
+
+@media(max-width:900px){
+  :root{--sw:230px}
+}
+
+@media(max-width:768px){
+  .shell{
+    grid-template-columns:1fr;
+  }
+
+  .sidebar{
+    display:none;
+  }
+
+  .hdr-menu,
+  .hdr-back{
+    display:flex;
+  }
+
+  /* The AI/data status badge is nowrap and ~162px wide, so it could not shrink
+     and pushed the ☰ menu button off the right edge of the screen — the drawer
+     was unreachable on a phone. It is a diagnostic label; navigation wins. */
+  .hdr-badge{
+    display:none;
+  }
+
+  .bottom-nav{
+    display:block;
+  }
+
+  .profile-wrap{
+    padding:12px 12px 86px;
+  }
+
+  .conv-wrap{
+    padding:10px 10px 86px;
+  }
+
+  .hist-wrap{
+    padding:12px 12px 86px;
+  }
+
+  .f2{
+    grid-template-columns:1fr;
+  }
+
+  .photo-section{
+    align-items:flex-start;
+  }
+
+  .res-hdr{
+    padding:10px 14px;
+  }
+
+  .rh-pill{
+    display:none;
+  }
+
+  .mem-chips-bar{
+    display:none;
+  }
+
+  .community-link{
+    display:none;
+  }
+}
+
+@media(max-width:380px){
+  .hdr-name{
+    font-size:15px;
+  }
+
+  .tab-btn{
+    padding:10px 12px;
+    font-size:12px;
+  }
+
+  .usr-name{
+    display:none;
+  }
+}
+
+@media(max-width:640px){
+  .avatar-random-btn{
+    padding:6px 10px;
+    font-size:11px;
+  }
+}
+
+
+/* ROLE-BASED APP PATCH */
+.role-panel{display:none}
+.role-panel.show{display:block}
+.side-nav{padding:8px;display:flex;flex-direction:column;gap:4px}
+/* 44px minimum on everything a senior taps to move around the app. These were
+   37-38px. Everyone using this page is old enough that a tremor, arthritis or a
+   tablet balanced on a lap is the ordinary case, and a missed tap on the only
+   navigation there is means being stuck on the wrong screen. */
+.side-nav-btn{width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px;min-height:44px;border-radius:var(--r);background:transparent;color:var(--ink2);font-size:13px;text-align:left;transition:all .18s}
+.side-nav-btn:hover{background:var(--cream);color:var(--rust)}
+.side-nav-btn.active{background:var(--rust-pale);color:var(--rust);font-weight:500}
+.side-nav-ico{font-size:16px;width:18px;text-align:center;line-height:1}
+.manager-tools{display:flex;flex-direction:column;min-height:0;flex:1}
+/* margin-top:auto pins this to the sidebar bottom for residents, whose
+   .manager-tools block is hidden and so contributes no flex:1 spacer. */
+.sb-logout{margin-top:auto;padding:10px 12px;border-top:1px solid var(--border);background:var(--white);flex-shrink:0}
+.sb-logout-btn{width:100%;display:flex;align-items:center;gap:9px;padding:11px 12px;min-height:44px;border-radius:var(--r);background:transparent;border:1px solid transparent;color:var(--ink2);font-size:13px;font-family:inherit;text-align:left;cursor:pointer;transition:all .18s}
+.sb-logout-btn:hover{background:var(--rust-pale);border-color:rgba(84,121,150,.22);color:var(--rust)}
+.sb-logout-btn:disabled{opacity:.6;cursor:not-allowed}
+.sb-logout-ico{font-size:15px;width:18px;text-align:center;line-height:1}
+.manager-tools.hidden,.resident-only.hidden,.manager-only.hidden{display:none!important}
+.dashboard-wrap{padding:18px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dash-hero{background:linear-gradient(135deg,var(--navy),#1A2E42);border-radius:var(--r-xl);padding:22px;color:#fff;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.dash-hero::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-50px;top:50%;transform:translateY(-50%);background:radial-gradient(circle,rgba(84,121,150,.22),transparent 70%)}
+.dash-hero>*{position:relative;z-index:1}.dash-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:6px}.dash-title{font-family:var(--font-d);font-size:clamp(22px,4vw,34px);font-weight:300;line-height:1.18}.dash-sub{font-size:13px;color:rgba(255,255,255,.62);line-height:1.65;margin-top:8px;max-width:680px}.dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.dash-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow-xs)}.dash-num{font-family:var(--font-d);font-size:28px;font-weight:300;color:var(--navy);line-height:1}.dash-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-top:5px}.dash-note{font-size:12px;color:var(--ink3);line-height:1.6;margin-top:8px}.dash-rows{display:grid;grid-template-columns:1fr 1fr;gap:14px}.dash-list{display:flex;flex-direction:column;gap:8px}.dash-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--cream);border:1px solid var(--border);border-radius:var(--r)}.dash-item-icon{width:30px;height:30px;border-radius:10px;background:var(--rust-pale);display:flex;align-items:center;justify-content:center}.dash-item-main{flex:1;min-width:0}.dash-item-title{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dash-item-sub{font-size:11px;color:var(--ink3);margin-top:2px}.role-title-inline{font-size:11px;color:var(--ink3);background:var(--cream);border:1px solid var(--border);border-radius:20px;padding:4px 10px;white-space:nowrap}.resident-mode .manager-only,.manager-mode .resident-only{display:none!important}.resident-mode .delete-resident-btn{display:none!important}.resident-mode .avatar-random-btn,.resident-mode .rh-av-edit{pointer-events:none}.resident-mode #p-status,.resident-mode #p-community,.resident-mode #p-community-name,.resident-mode #p-notes{opacity:.82}.resident-mode .manager-field-note{display:none!important}.mob-drawer-tools{display:flex;flex-direction:column;min-height:0;flex:1}
+@media(max-width:900px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-rows{grid-template-columns:1fr}}
+@media(max-width:768px){.dashboard-wrap{padding:12px 12px 86px}.side-nav{border-bottom:1px solid var(--border);padding-bottom:10px}.mob-res-drawer .manager-tools{display:flex}}
+@media(max-width:520px){.dash-grid{grid-template-columns:1fr}.dash-hero{padding:18px}}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SENIOR VIEW — the chat IS the app
+   ══════════════════════════════════════════════════════════════
+   Feedback from the pilot was that the workspace is too complicated for the
+   person it is actually for: five tabs, a sidebar of tools they cannot use,
+   and a statistics dashboard as the landing screen. A senior wants one thing
+   on opening the app — someone to talk to.
+
+   Everything below is scoped to body.resident-mode, which app.js already sets
+   from the signed-in role. Managers, family and providers keep the full
+   workspace untouched; only the senior sees the stripped-down version.
+
+   The plumbing is deliberately reused rather than rebuilt: the panels, the
+   drawer and switchTab() are the same ones the workspace uses, so a fix to the
+   chat is a fix in both views. What changes is what is on screen at rest.
+   ────────────────────────────────────────────────────────────── */
+
+/* Calm blue and peach, as asked for. Only the tokens are redefined — every
+   rule in this file reads through them, so the whole surface re-themes without
+   a second set of selectors to keep in sync. */
+body.resident-mode{
+  --cream:#F4F8FB;          /* page ground — barely-there blue */
+  --cream2:#E7F0F7;
+  --cream3:#DCE8F2;
+  --white:#FFFFFF;
+  --rust:#E8996A;           /* peach: the senior's own voice + primary actions */
+  --rust-lt:#F2B489;
+  --rust-pale:#FDEDE1;
+  /* The same peach taken down to where white lettering is readable on it:
+     #A85520 measures 5.27:1 against #fff and #B35E28 4.62:1, both clear of
+     the 4.5:1 AA floor, and both the same hue as the tint above so the
+     senior's bubbles and buttons still read as peach. */
+  --rust-ink:#A85520;
+  --rust-ink-lt:#B35E28;
+  --focus:#2E5F86;          /* 6.35:1 on the page ground, 6.78:1 on a card */
+  --navy:#2E5F86;           /* calm blue: headings, the companion */
+  --green:#4C8C74;
+  --green-bg:#EAF4F0;
+  --ink:#152A3A;
+  --ink2:#3B5A70;
+  --ink3:#6E8BA1;
+  --ink4:#AEC3D3;
+  --border:rgba(46,95,134,.16);
+  --border2:rgba(46,95,134,.28);
+  --shadow-xs:0 1px 2px rgba(21,42,58,.06);
+  --shadow-sm:0 2px 8px rgba(21,42,58,.07),0 1px 2px rgba(21,42,58,.04);
+  --shadow:0 4px 20px rgba(21,42,58,.09),0 1px 4px rgba(21,42,58,.05);
+  --shadow-lg:0 16px 48px rgba(21,42,58,.12),0 4px 12px rgba(21,42,58,.06);
+  /* The senior bar's height, which the panels leave free at the bottom. */
+  --snh:76px;
+}
+
+/* One column at every width. The sidebar held manager tools and a tab list
+   the senior never needed; their places are on the labelled bar at the foot
+   of the screen (.senior-nav below). */
+body.resident-mode .shell{grid-template-columns:1fr}
+body.resident-mode .sidebar,
+body.resident-mode .tab-bar,
+body.resident-mode .bottom-nav,
+body.resident-mode .mem-chips-bar{display:none!important}
+
+/* No ☰ for a senior, at any width. It used to be the only way to reach
+   anything but the chat, and a new senior trying the app said what the
+   research says: older users find hamburger menus hard to discover and hard
+   to read back (audits/P3-senior-feedback.md, item 4). Its places are on the
+   labelled bar at the foot of the screen now, and the rest is one tile away
+   on About Me. */
+body.resident-mode .hdr-menu{display:none!important}
+body.resident-mode .hdr-back{display:none!important}
+body.resident-mode .hdr-badge{display:none!important}
+
+/* The two header links duplicate the one big button below, and a senior does
+   not need to tell "Friends" from "Communities" to get to their centre. */
+body.resident-mode .community-link:not(.help-link){display:none!important}
+
+/* The resident header was a profile card with an editable avatar and a status
+   pill — none of it actionable for the person themselves. Their name now sits
+   in the greeting the companion opens with. */
+body.resident-mode .res-hdr{display:none!important}
+
+/* Their own picture and name in the header are a link to profile.html, which
+   turns residents straight back round to app.html — a full page reload that
+   empties currentMessages, so tapping their own face wiped the conversation
+   and the companion came back greeting them from scratch, with nothing on
+   screen to say anything had been lost. About Me in the ☰ menu reaches the
+   same page without leaving the app. !important because the avatar wiring
+   sets display:flex as an inline style once the account loads. */
+body.resident-mode .usr-btn{display:none!important}
+
+/* Bigger type throughout the conversation. This is the one number that matters
+   most to the people using it, and for a while it did nothing at all: it was
+   set on .chat-msg, which is only the flex wrapper and holds no words of its
+   own, while .msg-bubble — where every word actually is — declares its own
+   font-size:13px and line-height:1.58, and a direct declaration beats an
+   inherited one. The senior read the whole conversation at 13px on a screen
+   where the box they typed into was 18px and the companion's question was
+   26px: the reply was smaller than the question that prompted it. */
+body.resident-mode .msg-bubble{font-size:18px;line-height:1.7}
+body.resident-mode #chat-input{font-size:18px}
+/* The box itself is the target, not just the frame drawn round it. */
+body.resident-mode .chat-ta{min-height:44px;padding:8px 0}
+body.resident-mode .help-link{min-height:44px}
+
+/* On a phone these panels reserve 86px at the foot for the fixed bottom nav.
+   Resident mode hides that nav, and .conv-wrap cannot scroll, so the 86px was
+   not trailing space to scroll through — it was a permanent empty band. The
+   senior's chat bar, mode switch and status line floated 86px clear of the
+   bottom of the screen with nothing underneath them, on an iPhone SE about an
+   eighth of the display, taken off the one view this whole section exists to
+   give the screen to. */
+@media(max-width:768px){
+  body.resident-mode .conv-wrap{padding-bottom:10px}
+  body.resident-mode .profile-wrap,
+  body.resident-mode .hist-wrap{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+}
+
+/* ── The senior's assigned community centre ─────────────────── */
+.centre-card{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  width:100%;
+  margin:0;
+  flex-shrink:0;      /* .conv-wrap is a flex column — the chat window flexes, this does not */
+  padding:18px 22px;
+  border:none;
+  border-radius:var(--r-xl);
+  background:linear-gradient(135deg,var(--navy),#3E7CAA);
+  color:#fff;
+  text-align:left;
+  font-family:var(--font);
+  line-height:1.3;
+  box-shadow:0 6px 22px rgba(46,95,134,.28);
+}
+.centre-card-ico{
+  width:46px;height:46px;flex-shrink:0;
+  border-radius:14px;
+  background:var(--rust-pale);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+}
+.centre-card-copy{display:flex;flex-direction:column;min-width:0}
+.centre-card-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.68);margin-bottom:3px}
+.centre-card-name{font-size:19px;font-weight:600;overflow-wrap:anywhere}
+.centre-card-details{
+  display:block;
+  margin-top:5px;
+  font-size:13px;
+  font-weight:400;
+  color:rgba(255,255,255,.78);
+}
+.centre-card-empty{background:linear-gradient(135deg,#40566B,#60788D)}
+.centre-card{flex-wrap:wrap}
+.centre-card-copy{flex:1 1 0}
+.centre-card-action{
+  flex-shrink:0;
+  align-self:center;
+  min-height:44px;
+  padding:8px 18px;
+  border-radius:22px;
+  background:#fff;
+  color:var(--navy);
+  font-size:15px;
+  font-weight:600;
+}
+.centre-card-action[hidden]{display:none}
+@media(max-width:520px){
+  .centre-card-action{flex-basis:100%}
+}
+
+/* ── The first visit (F45) ────────────────────────────────── */
+.onb{
+  position:fixed;
+  inset:0;
+  z-index:150;          /* over the senior's bar (80), under toasts (999) */
+  display:flex;
+  justify-content:center;
+  overflow-y:auto;
+  background:var(--cream);
+}
+.onb[hidden]{display:none}
+.onb-card{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  width:100%;
+  max-width:640px;
+  min-height:100%;
+  padding:24px 18px calc(24px + env(safe-area-inset-bottom));
+}
+.onb-step{margin:0;font-size:15px;font-weight:600;color:var(--ink2)}
+.onb-title{margin:0;font-family:var(--font-d);font-size:28px;font-weight:400;line-height:1.25;color:var(--ink)}
+/* Focused by the app at each step so it is read out. It is a heading, not a
+   control, so it never shows a ring — on a first load with no touch yet the
+   browser would otherwise draw one round the question. My Story's and
+   Family's headings are focused the same way when the button just pressed
+   goes with its card (Delete, Keep, Block). */
+.onb-title:focus,
+.onb-title:focus-visible,
+.story-title:focus,
+.story-title:focus-visible{outline:none}
+.onb-body{display:flex;flex-direction:column;gap:14px}
+.onb-text{margin:0;font-size:18px;line-height:1.6;color:var(--ink)}
+.onb-strong{font-weight:600}
+.onb-hint{margin:0;font-size:16px;line-height:1.5;color:var(--ink2)}
+.onb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.onb-list{grid-template-columns:1fr}
+.onb-tile{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:2px;
+  min-height:64px;
+  padding:12px 40px 12px 14px;
+  border:2px solid var(--border2);
+  border-radius:16px;
+  background:var(--white);
+  color:var(--ink);
+  font-size:18px;
+  font-weight:600;
+  line-height:1.25;
+  text-align:left;
+}
+/* Chosen: a darker edge, a tint and a tick, so it reads without colour too. */
+.onb-tile[aria-pressed="true"]{border-color:var(--navy);background:var(--rust-pale)}
+.onb-tile[aria-pressed="true"]::after{
+  content:"✓";
+  position:absolute;
+  top:50%;right:14px;
+  transform:translateY(-50%);
+  font-size:20px;
+  color:var(--navy);
+}
+.onb-tile-sub{font-size:15px;font-weight:400;color:var(--ink2)}
+.onb-field{display:flex;flex-direction:column;gap:6px}
+.onb-field label{font-size:16px;font-weight:600;color:var(--ink)}
+.onb-input{
+  min-height:52px;
+  padding:10px 14px;
+  border:1.5px solid var(--border2);
+  border-radius:14px;
+  background:var(--white);
+  color:var(--ink);
+  font-size:18px;
+}
+.onb-status{margin:0;min-height:1.5em;font-size:17px;line-height:1.5;color:var(--ink)}
+.onb-how{display:flex;flex-direction:column;gap:14px;margin:0;padding:0;list-style:none}
+.onb-how li{display:flex;gap:12px;font-size:18px;line-height:1.55;color:var(--ink)}
+.onb-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:auto;padding-top:10px}
+/* Through .onb-actions / .onb-body: .btn is declared further down at 12px. */
+.onb-actions .onb-btn,
+.onb-body .onb-btn{min-height:56px;padding:12px 22px;border-radius:28px;font-size:18px;font-weight:600}
+.onb-actions .onb-next{margin-left:auto}
+.onb-actions .onb-skip{background:transparent;color:var(--ink2);text-decoration:underline;padding-left:6px;padding-right:6px}
+@media(min-width:700px){
+  .onb-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .onb-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* On a phone the buttons sit at the foot, under the thumb. On a big
+     screen that is a long way from the question, so they follow it. */
+  .onb-card{min-height:auto;padding-top:56px}
+  .onb-actions{margin-top:18px}
+}
+/* Manager/family/provider keep their own navigation; this card is the senior's. */
+body:not(.resident-mode) .centre-card{display:none}
+@media(max-width:520px){
+  .centre-card{padding:14px 16px;gap:11px}
+  .centre-card-ico{width:40px;height:40px;font-size:21px}
+  .centre-card-name{font-size:17px}
+  .centre-card-details{font-size:12px}
+}
+
+/* The drawer is the senior's whole menu, so it gets room and reachable
+   targets rather than the compact mobile sizing. */
+body.resident-mode .mob-res-drawer .side-nav-btn{
+  font-size:17px;
+  padding:14px 14px;
+}
+body.resident-mode .mob-res-drawer .sb-section{font-size:11px}
+
+/* Which screen they are on. Inherited from the workspace, the active item was
+   var(--rust) lettering on var(--rust-pale), which in peach is 2.00:1 — the
+   word telling the senior where they are was the least readable word in the
+   only menu they have, and the tint behind it was the only thing marking it
+   at all. Dark ink to read it by, and a leading bar so the state survives
+   not being able to make out the colour. */
+body.resident-mode .mob-res-drawer .side-nav-btn.active{
+  color:var(--ink);
+  border-left:4px solid var(--navy);
+  padding-left:10px;
+}
+
+/* ── The senior's bottom bar ─────────────────────────────────
+   Fixed to the foot of the screen at every width, with the word under each
+   icon. .main gives up its height so nothing in a panel sits underneath. */
+.senior-nav{display:none}
+body.resident-mode .senior-nav{
+  display:flex;
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:80;
+  justify-content:center;
+  gap:6px;
+  padding:6px 10px calc(6px + env(safe-area-inset-bottom));
+  background:var(--white);
+  border-top:1px solid var(--border2);
+  box-shadow:0 -4px 20px rgba(21,42,58,.08);
+}
+body.resident-mode .main{padding-bottom:calc(var(--snh) + env(safe-area-inset-bottom))}
+.sn-item{
+  position:relative;
+  flex:1 1 0;
+  min-width:0;
+  max-width:160px;
+  min-height:62px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:6px 4px;
+  border-radius:16px;
+  background:transparent;
+  color:var(--ink2);
+  font-size:14px;
+  font-weight:600;
+  line-height:1.15;
+}
+.sn-ico{font-size:24px;line-height:1}
+.sn-lbl{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sn-item:hover{background:var(--cream)}
+/* Where they are, by a tint, a bar under the word, and aria-current — so the
+   state survives not being able to make out the colour. */
+.sn-item.active{background:var(--rust-pale);color:var(--ink)}
+.sn-item.active::after{
+  content:"";
+  position:absolute;
+  left:22%;right:22%;bottom:3px;
+  height:3px;
+  border-radius:2px;
+  background:var(--navy);
+}
+.sn-badge{
+  position:absolute;
+  top:4px;
+  left:calc(50% + 8px);
+  min-width:20px;height:20px;
+  padding:0 6px;
+  border-radius:10px;
+  background:var(--alarm);
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  line-height:20px;
+  text-align:center;
+}
+.sn-badge[hidden]{display:none}
+@media(max-width:360px){
+  .sn-item{font-size:13px}
+  body.resident-mode .senior-nav{gap:2px;padding-left:4px;padding-right:4px}
+}
+
+/* ── About Me: what the ☰ used to hold, as tiles ───────────── */
+.senior-hub{padding:18px}
+.hub-title{
+  font-family:var(--font-d);
+  font-size:22px;
+  font-weight:400;
+  color:var(--ink);
+  margin:0 0 12px;
+}
+.hub-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:10px;
+}
+.hub-tile{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:8px;
+  min-height:96px;
+  padding:14px 16px;
+  border-radius:18px;
+  background:var(--cream);
+  border:1.5px solid var(--border);
+  color:var(--ink);
+  font-size:16px;
+  font-weight:600;
+  line-height:1.3;
+  text-align:left;
+  text-decoration:none;
+  font-family:var(--font);
+}
+.hub-tile:hover{background:var(--rust-pale)}
+.hub-ico{font-size:28px;line-height:1}
+.hub-logout{background:var(--white)}
+.hub-back{
+  align-self:flex-start;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:44px;
+  padding:8px 16px;
+  border-radius:22px;
+  background:var(--white);
+  border:1.5px solid var(--border2);
+  color:var(--ink);
+  font-size:16px;
+  font-weight:600;
+}
+.hist-back-row{padding:14px 14px 0}
+.hist-back-row:empty{display:none}
+
+/* On a laptop or a large tablet the conversation stretched edge to edge — a
+   1400px talk button and lines too long to follow back. The senior's pages
+   keep a readable width and sit in the middle instead. */
+body.resident-mode .conv-wrap,
+body.resident-mode .profile-wrap,
+body.resident-mode .forms-wrap,
+body.resident-mode .hist-wrap,
+body.resident-mode .hist-back-row{
+  width:100%;
+  max-width:860px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+/* Toasts sit above the senior's bar rather than over the words on it. */
+body.resident-mode .toast{bottom:calc(var(--snh) + 14px + env(safe-area-inset-bottom));font-size:15px}
+
+/* One label per audience. .resident-only is only suppressed under
+   .manager-mode, so family and provider viewers — who carry neither class —
+   would see both words; these two rules key off resident-mode alone. */
+body.resident-mode .label-manager{display:none}
+body:not(.resident-mode) .label-senior{display:none}
+
+/* Keep the conversation readable while the microphone and game controls are
+   visible. On very short screens the panel can scroll instead of compressing
+   the transcript into a narrow strip. The button-based check-in is separate. */
+body.resident-mode:not(.checkin-running) .conv-wrap{
+  overflow-y:auto;
+  gap:8px;
+}
+body.resident-mode:not(.checkin-running) .chat-win{
+  flex:1 0 min(38dvh,320px);
+  min-height:min(38dvh,320px);
+  scroll-padding-block:16px;
+}
+body.resident-mode .centre-card{
+  padding:8px 12px;
+  gap:10px;
+  flex-wrap:nowrap;
+  border-radius:16px;
+}
+body.resident-mode .centre-card-label{display:none}
+body.resident-mode .centre-card-name{font-size:16px;line-height:1.3}
+body.resident-mode .centre-card-details{font-size:13px;margin-top:2px;line-height:1.3}
+body.resident-mode .centre-card-ico{width:32px;height:32px;font-size:20px}
+body.resident-mode .centre-card-action{flex-basis:auto;padding:6px 12px;max-width:45%}
+body.resident-mode:not(.checkin-running) .input-wrap{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  padding:8px;
+}
+body.resident-mode .mic-status{grid-column:1/-1;grid-row:1}
+body.resident-mode:not(.checkin-running) .talk-btn{
+  grid-column:1/-1;grid-row:2;min-height:52px;
+}
+body.resident-mode .input-row{grid-column:1/-1;grid-row:3}
+body.resident-mode .checkin-ctls{grid-column:1/3;grid-row:4;gap:6px}
+body.resident-mode .checkin-ctls .guess-ctl{min-height:44px;padding:6px;font-size:16px}
+body.resident-mode .chat-opts{display:contents}
+body.resident-mode .aloud-switch{grid-column:1/-1;grid-row:5;justify-content:center}
+body.resident-mode .finish-btn{grid-column:3;grid-row:4;padding:6px;min-width:0}
+body.resident-mode .input-wrap:not(:has(.checkin-ctls.on)) .finish-btn{grid-column:1/-1}
+body.resident-mode .status-line{grid-column:1/-1;grid-row:6}
+body.resident-mode .status-line:empty{display:none}
+@media(max-width:520px){
+  body.resident-mode .centre-card-ico{display:none}
+  body.resident-mode:not(.checkin-running) .conv-wrap{padding:8px}
+}
+@media(min-width:760px){
+  body.resident-mode:not(.checkin-running) .input-wrap{grid-template-columns:minmax(200px,.8fr) minmax(0,1.8fr)}
+  body.resident-mode:not(.checkin-running) .talk-btn{grid-column:1;grid-row:2}
+  body.resident-mode .input-row{grid-column:2;grid-row:2}
+  body.resident-mode .checkin-ctls{grid-column:1;grid-row:3}
+  body.resident-mode .chat-opts{display:flex;grid-column:2;grid-row:3;flex-wrap:wrap;gap:6px}
+  body.resident-mode .aloud-switch{justify-content:flex-start}
+  body.resident-mode .status-line{grid-row:4}
+}
+body:not(.companion-ready) .shell{visibility:hidden}
+#companion-starting{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;background:var(--cream,#faf7f2);color:var(--ink,#1a1208);font-size:18px}
+body.companion-ready #companion-starting{display:none}
+</style>
+</head>
+
+<body class="resident-mode">
+<div id="companion-starting" role="status">Opening your senior workspace…</div>
+<div id="auth-loading">
+  <div class="spin"></div>
+</div>
+<script id="senior-startup-watchdog">
+// This classic script also runs when configuration or Firebase's modules stall.
+// Keep the authentication overlay in place; only the real guard can admit a user.
+window._seniorStartupTimer = setTimeout(function() {
+  const overlay = document.getElementById('auth-loading')
+  if (!overlay || window._companionLayoutReady || (overlay.style.display === 'none' && !document.getElementById('companion-starting'))) return
+  overlay.style.display='flex'
+  const starting=document.getElementById('companion-starting');if(starting)starting.style.display='none'
+  if (document.getElementById('role-retry-btn')) return
+  overlay.innerHTML = '<div role="alert" style="max-width:420px;padding:28px;text-align:center;color:var(--ink,#1A1208)">' +
+    '<h1 style="font-size:25px;line-height:1.3;margin:0 0 16px">We could not open your companion.</h1>' +
+    '<p style="font-size:18px;line-height:1.6;margin:0 0 22px">Please check your connection, then try again.</p>' +
+    '<button id="startup-retry" type="button" style="min-height:48px;padding:12px 24px;font:inherit;font-size:18px;border:0;border-radius:9px;background:var(--ink,#1A1208);color:white;cursor:pointer">Try again</button>' +
+    '<p style="margin:20px 0 0"><a href="senior-login.html" style="color:inherit;font-size:16px">Back to senior sign-in</a></p></div>'
+  const retry = overlay.querySelector('#startup-retry')
+  retry.addEventListener('click', () => window.location.reload())
+  retry.focus()
+}, 15000)
+</script>
+
+<div class="shell">
+  <header class="hdr">
+    <a class="hdr-back" href="index.html" title="Back to home">←</a>
+
+    <a class="hdr-logo" href="index.html" aria-label="Techable home">
+      <img class="brand-mark" src="assets/techable-icon.png" alt="" width="29" height="34">
+      <span class="hdr-name">Techable</span>
+    </a>
+
+    <div class="hdr-space"></div>
+
+    <div class="hdr-badge" id="ai-badge">● Loading</div>
+
+    <a class="community-link" href="community.html">🤝 Friends</a>
+    <a class="community-link" href="senior-centers.html" onclick="window.TechableApp?.pauseChatAudio?.()">🏘️ Centres &amp; News</a>
+    <a class="community-link help-link" href="faq.html">❓ FAQ</a>
+
+    <a href="profile.html" id="usr-btn" class="usr-btn">
+      <div id="usr-av" class="usr-av">?</div>
+      <span id="usr-name" class="usr-name"></span>
+    </a>
+
+    <!-- Named, because for a senior this is the whole menu and "☰" on its own
+         is announced as "trigram for heaven" or as nothing at all — so the
+         one control that reaches About Me, Memories, Past Chats and Log out
+         was the only unlabelled control on the screen. -->
+    <button class="hdr-menu" id="hdr-menu" onclick="toggleDrawer()"
+      aria-label="Menu" aria-expanded="false" aria-controls="mob-drawer">
+      <span aria-hidden="true">☰</span>
+    </button>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-section" id="sidebar-mode-label">Navigation</div>
+
+    <div class="side-nav" id="side-nav">
+      <button class="side-nav-btn active" id="nav-dashboard" onclick="switchTab('dashboard', this)">
+        <span class="side-nav-ico">📊</span>
+        Dashboard
+      </button>
+      <button class="side-nav-btn" id="nav-profile" onclick="switchTab('profile', this)">
+        <span class="side-nav-ico">📋</span>
+        Profile
+      </button>
+      <button class="side-nav-btn" id="nav-conversation" onclick="switchTab('conversation', this)">
+        <span class="side-nav-ico">💬</span>
+        Chat
+      </button>
+      <button class="side-nav-btn" id="nav-memories" onclick="switchTab('memories', this)">
+        <span class="side-nav-ico">🧠</span>
+        Memories
+      </button>
+      <button class="side-nav-btn" id="nav-forms" onclick="switchTab('forms', this)">
+        <span class="side-nav-ico">📝</span>
+        Forms & Benefits
+      </button>
+      <button class="side-nav-btn" id="nav-history" onclick="switchTab('history', this)">
+        <span class="side-nav-ico">📁</span>
+        History
+      </button>
+    </div>
+
+    <div class="manager-tools" id="manager-tools">
+      <div class="sb-search">
+        <input class="sb-search-input" type="text" placeholder="Search elderly…" oninput="filterRes(this.value)" />
+      </div>
+
+      <div class="sb-section">Elderly in Facility</div>
+
+      <div class="res-list" id="res-list"></div>
+
+      <button class="add-res manager-only" onclick="openAddModal()">
+        <span style="font-size:17px;line-height:1">+</span>
+        Add Elderly
+      </button>
+
+      <div class="sb-foot manager-only">
+        <div class="dev-lbl">Dev Tools</div>
+        <button class="dev-btn" onclick="resetSamples()">↺ Reset sample data</button>
+        <button class="dev-btn" onclick="clearAll()">🗑 Clear all data</button>
+      </div>
+    </div>
+
+    <div class="sb-logout">
+      <button class="sb-logout-btn" id="sb-logout-btn" onclick="doSignOut()">
+        <span class="sb-logout-ico">⏻</span>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <!-- The page had no h1 at all, so a screen reader offered nothing to
+         orient by and the heading order started at h3. Visually hidden rather
+         than drawn: the resident's own name is the visible heading here, and
+         adding a second one above it would be clutter for everybody else. -->
+    <h1 class="sr-only">Techable companion workspace</h1>
+
+    <div class="empty-scr" id="empty-scr">
+      <div class="ei">👴👵</div>
+      <h3 id="empty-title">No resident selected</h3>
+      <p id="empty-copy">Choose an elderly profile from the sidebar or add a new one.</p>
+    </div>
+
+    <div id="res-view">
+      <div class="res-hdr">
+        <button class="rh-av rh-av-edit" id="rh-av" type="button" onclick="randomizeAvatar()" title="Randomize avatar"></button>
+
+        <div>
+          <div class="rh-name" id="rh-name"></div>
+          <div class="rh-sub" id="rh-sub"></div>
+          <button class="avatar-random-btn" type="button" onclick="randomizeAvatar()">Random Avatar</button>
+        </div>
+
+        <div class="rh-space"></div>
+        <div class="rh-pill">Active</div>
+      </div>
+
+      <div class="tab-bar" id="tab-bar">
+        <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard', this)">
+          <span class="tb-icon">📊</span>
+          Dashboard
+        </button>
+
+        <button class="tab-btn" id="tab-profile" onclick="switchTab('profile', this)">
+          <span class="tb-icon">📋</span>
+          Profile
+        </button>
+
+        <button class="tab-btn" id="tab-conversation" onclick="switchTab('conversation', this)">
+          <span class="tb-icon">💬</span>
+          Chat
+        </button>
+
+        <button class="tab-btn" id="tab-memories" onclick="switchTab('memories', this)">
+          <span class="tb-icon">🧠</span>
+          Memories
+        </button>
+
+        <button class="tab-btn" id="tab-story" onclick="switchTab('story', this)">
+          <span class="tb-icon">📖</span>
+          Life Story
+        </button>
+
+        <button class="tab-btn" id="tab-forms" onclick="switchTab('forms', this)">
+          <span class="tb-icon">📝</span>
+          Forms
+        </button>
+
+        <button class="tab-btn" id="tab-history" onclick="switchTab('history', this)">
+          <span class="tb-icon">📁</span>
+          History
+        </button>
+      </div>
+
+      <div class="panel active" id="panel-dashboard">
+        <div class="dashboard-wrap">
+          <div class="dash-hero">
+            <div class="dash-eyebrow" id="dash-eyebrow">Resident Dashboard</div>
+            <div class="dash-title" id="dash-title">Welcome back</div>
+            <div class="dash-sub" id="dash-sub">Your Techable space is ready.</div>
+          </div>
+
+          <div class="dash-grid">
+            <div class="dash-card">
+              <div class="dash-num" id="dash-residents">1</div>
+              <div class="dash-label" id="dash-residents-label">Profile</div>
+              <div class="dash-note" id="dash-residents-note">Your private workspace</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-num" id="dash-memories">0</div>
+              <div class="dash-label">Memories</div>
+              <div class="dash-note">Saved personal context</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-num" id="dash-sessions">0</div>
+              <div class="dash-label">Saved Chats</div>
+              <div class="dash-note">Conversations stored locally</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-num" id="dash-active-time">0m</div>
+              <div class="dash-label">Active Time</div>
+              <div class="dash-note">Estimated from saved chats</div>
+            </div>
+          </div>
+
+          <!-- Today's Check-In — entry point for Guess My Day -->
+          <div class="card checkin-card" id="checkin-card" style="display:none">
+            <div class="card-hd">
+              <div>
+                <div class="card-title">☀️ Today's Check-In</div>
+                <div class="card-sub">A short daily chat about how you feel</div>
+              </div>
+            </div>
+            <div class="checkin-body" id="checkin-body"></div>
+          </div>
+
+          <div class="dash-rows">
+            <div class="card">
+              <div class="card-hd">
+                <div class="card-title" id="dash-left-title">Quick Actions</div>
+              </div>
+              <div class="dash-list" id="dash-actions"></div>
+            </div>
+            <div class="card manager-only" id="dash-manager-card">
+              <div class="card-hd">
+                <div class="card-title">Facility Snapshot</div>
+                <div class="card-count" id="dash-facility-count"></div>
+              </div>
+              <div class="dash-list" id="dash-facility-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel active" id="panel-profile">
+        <div class="profile-wrap">
+          <!-- What the ☰ drawer used to hold for a senior, as big labelled
+               tiles. The bottom bar carries the everyday places; everything
+               else is one tap from here. -->
+          <section class="card senior-hub resident-only" id="senior-hub" aria-labelledby="hub-title">
+            <h2 class="hub-title" id="hub-title" data-i18n="hub.title">About me</h2>
+            <div class="hub-grid">
+              <button class="hub-tile" id="senior-blog-open" type="button"><span class="hub-ico" aria-hidden="true">✍️</span><span class="hub-lbl">Personal blog</span></button>
+              <a class="hub-tile" href="senior-benefits.html"><span class="hub-ico" aria-hidden="true">📋</span><span class="hub-lbl">Benefits &amp; applications</span></a>
+              <a class="hub-tile" href="senior-providers.html"><span class="hub-ico" aria-hidden="true">🤝</span><span class="hub-lbl">Select providers</span></a>
+              <button class="hub-tile" type="button" onclick="switchTab('memories')">
+                <span class="hub-ico" aria-hidden="true">🧠</span><span class="hub-lbl" data-i18n="hub.memories">Things I remember about you</span>
+              </button>
+              <button class="hub-tile" type="button" onclick="switchTab('history')">
+                <span class="hub-ico" aria-hidden="true">🕘</span><span class="hub-lbl" data-i18n="hub.history">Past chats</span>
+              </button>
+              <button class="hub-tile" type="button" onclick="switchTab('forms')">
+                <span class="hub-ico" aria-hidden="true">📝</span><span class="hub-lbl" data-i18n="hub.forms">Forms &amp; benefits</span>
+              </button>
+              <a class="hub-tile" href="senior-centers.html" onclick="window.TechableApp?.pauseChatAudio?.()">
+                <span class="hub-ico" aria-hidden="true">🏘️</span><span class="hub-lbl" data-i18n="hub.centres">Centres &amp; news</span>
+              </a>
+              <a class="hub-tile" href="faq.html">
+                <span class="hub-ico" aria-hidden="true">❓</span><span class="hub-lbl" data-i18n="hub.help">Help &amp; questions</span>
+              </a>
+              <button class="hub-tile hub-logout" type="button" onclick="doSignOut()">
+                <span class="hub-ico" aria-hidden="true">⏻</span><span class="hub-lbl" data-i18n="hub.logout">Log out</span>
+              </button>
+            </div>
+          </section>
+
+          <div class="card">
+            <div class="card-hd">
+              <div class="card-title">Basic Info</div>
+            </div>
+
+            <div class="f2">
+              <div class="field">
+                <label>Full Name</label>
+                <input type="text" id="p-name" placeholder="e.g. Margaret Chen" oninput="dirty()" />
+              </div>
+
+              <div class="field">
+                <label>Preferred Name</label>
+                <input type="text" id="p-preferred" placeholder="Grandma Maggie" oninput="dirty()" />
+              </div>
+            </div>
+
+            <div class="f2">
+              <div class="field">
+                <label>Age</label>
+                <input type="number" id="p-age" placeholder="81" oninput="dirty()" />
+              </div>
+
+              <div class="field">
+                <label>Room</label>
+                <input type="text" id="p-room" placeholder="Room 7" oninput="dirty()" />
+              </div>
+            </div>
+
+            <div class="f2">
+              <div class="field">
+                <label>Status</label>
+                <select id="p-status" onchange="dirty()">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Community</label>
+                <select id="p-community" onchange="onCommunitySelect();dirty()"></select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Community Name Override</label>
+              <input type="text" id="p-community-name" placeholder="Fill manually if community is not listed" oninput="dirty()" />
+            </div>
+
+            <!-- Sets the language of the daily check-in: the questions asked,
+                 the microphone, and the voice that reads the replies aloud.
+                 The care team's dashboard stays in English either way. -->
+            <div class="field">
+              <label for="p-language">Spoken Language</label>
+              <select id="p-language" onchange="setResidentLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="cmn">普通話 · Mandarin</option>
+                <option value="yue">廣東話 · Cantonese</option>
+              </select>
+              <div class="field-note">Techable speaks and listens in this language during the daily check-in.</div>
+            </div>
+
+            <div class="field">
+              <label>Internal Notes</label>
+              <textarea id="p-notes" rows="2" placeholder="Private center notes…" oninput="dirty()"></textarea>
+            </div>
+
+            <div class="save-row" style="justify-content:space-between">
+              <button class="btn btn-danger delete-resident-btn manager-only" onclick="deleteResident()">Delete Resident</button>
+              <button class="btn btn-p" onclick="saveProfile()">Save Changes</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd">
+              <div class="card-title">Background & Family</div>
+            </div>
+
+            <div class="field">
+              <label>Personal Background</label>
+              <textarea id="p-background" rows="3" placeholder="Hobbies, career, personality, interests…" oninput="dirty()"></textarea>
+            </div>
+
+            <div class="field">
+              <label>Family</label>
+              <textarea id="p-family" rows="2" placeholder="Family members, relationships…" oninput="dirty()"></textarea>
+            </div>
+
+            <div class="field">
+              <label>Medical Notes</label>
+              <textarea id="p-medical" rows="2" placeholder="Conditions, communication preferences…" oninput="dirty()"></textarea>
+            </div>
+
+            <div class="save-row">
+              <button class="btn btn-p" onclick="saveProfile()">Save Changes</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="panel" id="panel-memories">
+        <div class="profile-wrap">
+          <button class="hub-back resident-only" type="button" onclick="switchTab('profile')"><span aria-hidden="true">←</span> <span data-i18n="hub.back">Back to About me</span></button>
+          <div class="card">
+            <div class="card-hd">
+              <div class="card-title">Memory Bank</div>
+              <div class="card-count" id="mem-count"></div>
+            </div>
+
+            <p style="font-size:12px;color:var(--ink3);margin-bottom:12px;line-height:1.6;font-weight:300">
+              The AI uses these memories to hold personalized conversations. Add as many as you like.
+            </p>
+
+            <div class="mem-list" id="mem-list"></div>
+
+            <div class="mem-add">
+              <input
+                type="text"
+                id="mem-input"
+                placeholder="e.g. Won a rose competition in 1985"
+                onkeydown="if(event.key==='Enter')addMem()"
+              />
+
+              <select id="mem-tag">
+                <option value="family">Family</option>
+                <option value="hobby">Hobby</option>
+                <option value="event">Event</option>
+                <option value="place">Place</option>
+                <option value="feeling">Feeling</option>
+                <option value="other">Other</option>
+              </select>
+
+              <button class="btn btn-p btn-sm" onclick="addMem()">Add</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="panel" id="panel-forms">
+        <p><a href="senior-benefits.html" class="btn btn-s">Benefits &amp; applications →</a></p>
+        <p><a href="center-forms.html" class="btn btn-s">Forms sent by my center →</a></p>
+        <div class="forms-wrap">
+          <button class="hub-back resident-only" type="button" onclick="switchTab('profile')"><span aria-hidden="true">←</span> <span data-i18n="hub.back">Back to About me</span></button>
+          <section class="card mydetails-card" aria-labelledby="md-title">
+            <div class="card-hd"><div><div class="card-title" id="md-title">My details for forms</div><div class="card-count">Type them once — every form uses them</div></div></div>
+            <div class="form-notice">Enter these once. The forms below and “Copy my details” use them, so you do not type them again for each programme. Do not enter your Social Security, Medicare or Medicaid numbers here — give those only on the official form.</div>
+            <div class="f2">
+              <div class="field"><label for="md-fullname">Full name</label><input id="md-fullname" autocomplete="name" maxlength="120" /></div>
+              <div class="field"><label for="md-dob">Date of birth</label><input id="md-dob" type="date" autocomplete="bday" /></div>
+            </div>
+            <div class="f2">
+              <div class="field"><label for="md-phone">Phone</label><input id="md-phone" type="tel" autocomplete="tel" maxlength="40" /></div>
+              <div class="field"><label for="md-email">Email</label><input id="md-email" type="email" autocomplete="email" maxlength="120" /></div>
+            </div>
+            <div class="field"><label for="md-address">Home address</label><textarea id="md-address" rows="2" autocomplete="street-address" maxlength="300"></textarea></div>
+            <div class="f2">
+              <div class="field"><label for="md-emergency-name">Emergency contact name</label><input id="md-emergency-name" maxlength="120" placeholder="e.g. Jane Lim (daughter)" /></div>
+              <div class="field"><label for="md-emergency-phone">Emergency contact phone</label><input id="md-emergency-phone" type="tel" maxlength="40" /></div>
+            </div>
+            <div class="f2 f2-3">
+              <div class="field"><label for="md-medicare">Enrolled in Medicare?</label><select id="md-medicare"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not sure</option></select></div>
+              <div class="field"><label for="md-medicaid">Enrolled in Medicaid?</label><select id="md-medicaid"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not sure</option></select></div>
+              <div class="field"><label for="md-lives-alone">Do you live alone?</label><select id="md-lives-alone"><option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+            </div>
+            <div class="save-row" style="gap:8px"><button class="btn btn-s" type="button" onclick="copyMyDetails()">Copy my details</button><button class="btn btn-p" type="button" onclick="saveMyDetails()">Save my details</button></div>
+            <div class="draft-status" id="md-status" role="status"></div>
+          </section>
+
+          <div class="forms-grid">
+            <section class="card" aria-labelledby="wellness-form-title">
+              <div class="card-hd">
+                <div>
+                  <div class="card-title" id="wellness-form-title">Health Evaluation Form</div>
+                  <div class="card-count">Editable wellness summary</div>
+                </div>
+                <button class="btn btn-s btn-sm" type="button" onclick="fillWellnessFromLatest()">Use latest check-in</button>
+              </div>
+              <div class="form-notice">This form records what the senior reports. It does not diagnose a condition or replace clinical care.</div>
+              <p class="applicant-line" id="wf-applicant"></p>
+              <div class="f2">
+                <div class="field"><label for="wf-mood">Mood</label><select id="wf-mood"><option value="">Not recorded</option><option>Good</option><option>Okay</option><option>Tired</option><option>Low</option></select></div>
+                <div class="field"><label for="wf-sleep">Sleep</label><input id="wf-sleep" placeholder="e.g. Woke twice" /></div>
+              </div>
+              <div class="f2">
+                <div class="field"><label for="wf-appetite">Appetite</label><input id="wf-appetite" placeholder="e.g. Ate breakfast and lunch" /></div>
+                <div class="field"><label for="wf-pain">Aches or pain</label><input id="wf-pain" placeholder="e.g. Knee stiff this morning" /></div>
+              </div>
+              <div class="field"><label for="wf-mobility">Mobility and time outside</label><input id="wf-mobility" placeholder="e.g. Short walk after lunch" /></div>
+              <div class="field"><label for="wf-notes">Additional notes</label><textarea id="wf-notes" rows="3" placeholder="Only include information the senior agreed to record"></textarea></div>
+              <label class="check-row"><input type="checkbox" id="wf-confirm" /> <span>I reviewed this summary with the senior before saving it.</span></label>
+              <div class="save-row"><button class="btn btn-p" type="button" onclick="saveWellnessForm()">Save Wellness Form</button></div>
+              <div class="draft-status" id="wf-status" role="status"></div>
+            </section>
+
+            <section class="card" aria-labelledby="benefit-form-title">
+              <div class="card-hd"><div><div class="card-title" id="benefit-form-title">Benefit Application Helper</div><div class="card-count">Draft and track an application</div></div></div>
+              <div class="form-notice">Techable saves a preparation draft only and does not submit it to an agency. The senior or an authorized helper must review and submit it through the appropriate agency.</div>
+              <p class="applicant-line" id="bf-applicant"></p>
+              <div class="field"><label for="bf-type">Support type</label><select id="bf-type"><option value="">Choose support</option><option>Health-care cost support</option><option>Food assistance</option><option>Housing or utility support</option><option>Mobility or transport support</option><option>Other benefit</option></select></div>
+              <div class="field"><label for="bf-program">Program or agency</label><input id="bf-program" placeholder="Name of the program or agency" /></div>
+              <div class="field"><label for="bf-reference">Application reference</label><input id="bf-reference" placeholder="Optional reference number" /></div>
+              <div class="field"><label for="bf-status-select">Status</label><select id="bf-status-select"><option value="draft">Draft</option><option value="ready">Ready for review</option><option value="submitted">Submitted outside Techable</option></select></div>
+              <div class="field"><label for="bf-notes">Information and next steps</label><textarea id="bf-notes" rows="4" placeholder="Documents needed, appointment details, deadlines or questions"></textarea></div>
+              <label class="check-row"><input type="checkbox" id="bf-consent" /> <span>The senior agreed that Techable may save this application draft.</span></label>
+              <div class="save-row" style="gap:8px"><button class="btn btn-s" type="button" onclick="copyBenefitSummary()">Copy Summary</button><button class="btn btn-p" type="button" onclick="saveBenefitDraft()">Save Draft</button></div>
+              <div class="draft-status" id="bf-status" role="status"></div>
+            </section>
+          </div>
+
+          <section class="card attendance-card" aria-labelledby="attendance-title">
+            <div class="card-hd"><div><div class="card-title" id="attendance-title">Community Center Attendance</div><div class="card-count">Automatic daily check-in</div></div></div>
+            <p style="font-size:12px;color:var(--ink2);line-height:1.65">A center can share its attendance link at reception. Opening that link while signed in records one attendance entry for the day after Techable verifies that the resident belongs to that center.</p>
+            <div class="attendance-link" id="attendance-link">Your center has not provided an attendance link.</div>
+            <div class="draft-status" id="attendance-status" role="status"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-conversation">
+        <div class="conv-wrap">
+          <!-- A senior sees their assigned centre immediately after sign-in.
+               This replaces the old link to the public directory. -->
+          <section class="centre-card centre-card-empty" id="centre-card" aria-labelledby="centre-card-name">
+            <span class="centre-card-ico" aria-hidden="true">🏘️</span>
+            <span class="centre-card-copy">
+              <span class="centre-card-label" data-i18n="centre.label">Your community centre</span>
+              <strong class="centre-card-name" id="centre-card-name">No community centre connected yet</strong>
+              <span class="centre-card-details" id="centre-card-details">Choose your centre and ask to join.</span>
+            </span>
+            <!-- Choose a centre, ask to join, or cancel a request: app.js
+                 syncCentreLink() decides which, centreCardAction() does it. -->
+            <button class="centre-card-action" id="centre-card-action" type="button" onclick="centreCardAction()" hidden></button>
+          </section>
+
+          <div class="mem-chips-bar" id="chips-bar">
+            <span class="mc-label">Memories</span>
+            <div id="chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+
+          <!-- Guess My Day — senior-facing check-in surface.
+               Large text, large targets, spoken prompts, always escapable. -->
+          <div class="guess-panel" id="guess-panel" role="region" aria-label="Today's check-in">
+            <div class="guess-head">
+              <div class="guess-badge">☀️ Today's Check-In</div>
+              <div class="guess-head-space"></div>
+              <button class="guess-ctl" type="button" onclick="repeatCheckIn()"
+                aria-label="Repeat the question out loud">
+                <span aria-hidden="true">🔁</span> Repeat
+              </button>
+              <button class="guess-ctl guess-stop" type="button" onclick="stopCheckIn()"
+                aria-label="Stop the check-in">
+                <span aria-hidden="true">✕</span> Stop
+              </button>
+            </div>
+
+            <!-- The spoken question, announced when it changes so it reaches a
+                 screen reader as well as the speaker. -->
+            <div class="guess-question" id="guess-question" role="status" aria-live="assertive">Getting ready…</div>
+
+            <div class="guess-options" id="guess-options" role="group" aria-label="Your answer"></div>
+
+            <div class="guess-free" id="guess-free" style="display:none">
+              <label class="sr-only" for="guess-free-input">Your answer</label>
+              <textarea
+                id="guess-free-input"
+                class="guess-free-input"
+                rows="2"
+                placeholder="You can type here, or tap the microphone and just talk…"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCheckInText()}"
+              ></textarea>
+              <div class="guess-free-btns">
+                <button class="guess-mic" id="guess-mic" type="button" onclick="micCheckIn()"
+                  aria-pressed="false" aria-label="Speak your answer"><span aria-hidden="true">🎙</span></button>
+                <button class="btn btn-p guess-send" type="button" onclick="submitCheckInText()">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- role="log" + aria-live: each new turn is announced as it lands,
+               so a screen-reader user hears the companion's replies without
+               having to go looking for them. -->
+          <div class="chat-win" id="chat-win" role="log" aria-live="polite"
+               aria-relevant="additions" aria-label="Conversation">
+            <div class="chat-empty-s">
+              <div class="ce" aria-hidden="true">💬</div>
+              <p>Session ready.<br />Tap and talk, or switch to typing below.</p>
+            </div>
+          </div>
+
+          <!-- Something to say, for a senior faced with a greeting and an
+               empty window (audits/P3-senior-feedback.md, item 3). Filled by
+               app.js renderStarters() and shown only until they say anything.
+               Outside the conversation log on purpose: these are suggestions,
+               and a screen reader must not read them out as the companion
+               speaking. -->
+          <section class="starters" id="starters" aria-labelledby="starters-title" hidden>
+            <h2 class="starters-title" id="starters-title" data-i18n="starters.title">Something to talk about?</h2>
+            <div class="starters-grid" id="starters-grid"></div>
+          </section>
+
+          <!-- There used to be a bar here reading "Msgs 1 | 0s" with New and
+               Save buttons. A senior trying the app for the first time asked
+               what any of it meant (audits/P3-senior-feedback.md, item 4), and
+               the honest answer was "nothing you need": chats now save
+               themselves — when they are finished, when the page is put away,
+               and after a long pause — so the only decision left to offer is
+               whether to stop for now. -->
+
+          <div class="input-wrap">
+            <!-- Announces listening / heard / sent to screen readers, and shows
+                 a visible "Listening…" caption so the state is never carried by
+                 the button colour alone. -->
+            <div class="mic-status" id="mic-status" role="status" aria-live="polite">
+              <span class="mic-status-dot" aria-hidden="true"></span>
+              <span id="mic-status-text">Listening…</span>
+            </div>
+
+            <!-- The one way to talk. It used to share the bar with a second,
+                 unlabelled 🎙 that did the same thing and a "Talk instead"
+                 link that did it a third way; a senior should only ever have
+                 to find one microphone, and it should say what it does. Tap,
+                 not hold: holding a button down is hard with a tremor or
+                 arthritis, and a long pause in the middle of a sentence is
+                 ordinary. A short silence sends what was said. -->
+            <button class="talk-btn" id="talk-btn" type="button" onclick="toggleMic()"
+              aria-pressed="false" aria-label="Tap to talk">
+              <span class="talk-ico" aria-hidden="true">🎙</span>
+              <span class="talk-lbl" id="talk-lbl">Tap to talk</span>
+            </button>
+
+            <!-- Typing is always here underneath rather than behind a switch,
+                 so nobody has to find a mode before they can say something. -->
+            <div class="input-row">
+              <label class="sr-only" for="chat-input">Type a message</label>
+              <textarea
+                class="chat-ta"
+                id="chat-input"
+                rows="1"
+                placeholder="Or type a message here…"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"
+                oninput="grow(this)"
+              ></textarea>
+              <button class="send-btn" id="send-btn" type="button" onclick="send()">Send</button>
+            </div>
+
+            <!-- Repeat and Stop again. The originals sit in #guess-panel,
+                 which only the button-mode check-in opens and which nothing
+                 in the app reaches for, so in the check-in every senior
+                 actually gets there was no way to hear the question a second
+                 time and no visible way to say "that's enough". Here they are
+                 on the chat bar, which the voice check-in leaves on screen,
+                 and only while a check-in is running. -->
+            <div class="checkin-ctls" id="checkin-ctls">
+              <button class="guess-ctl" type="button" onclick="repeatCheckIn()"
+                aria-label="Repeat the question out loud">
+                <span aria-hidden="true">🔁</span> <span id="ctl-repeat-lbl">Repeat</span>
+              </button>
+              <button class="guess-ctl guess-stop" type="button" onclick="stopCheckIn()"
+                aria-label="Stop the check-in">
+                <span aria-hidden="true">✕</span> <span id="ctl-stop-lbl">Stop</span>
+              </button>
+            </div>
+
+            <!-- Two settings a senior can actually reason about, in words. The
+                 speaker used to be a bare 🔊 that changed to 🔇. -->
+            <div class="chat-opts">
+              <button class="aloud-switch" id="voice-btn" type="button" role="switch"
+                aria-checked="true" onclick="toggleVoice()">
+                <span class="aloud-ico" id="voice-ico" aria-hidden="true">🔊</span>
+                <span class="aloud-lbl" data-i18n="aloud.label">Read replies aloud:</span>
+                <span class="aloud-state" id="voice-state">On</span>
+                <span class="aloud-track" aria-hidden="true"><span class="aloud-knob"></span></span>
+              </button>
+              <button class="finish-btn" id="finish-btn" type="button" onclick="finishChat()">
+                <span aria-hidden="true">👋</span> <span data-i18n="chat.finish">Finish for now</span>
+              </button>
+            </div>
+
+            <div class="status-line" id="status-line" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The life story book (F49). Chapters are drawn by app.js
+           renderStory(); clicks are handled on #story-chapters. -->
+      <div class="panel" id="panel-story">
+        <div class="profile-wrap story-wrap">
+          <section class="card story-head" aria-labelledby="story-title">
+            <h2 class="story-title" id="story-title" tabindex="-1" data-i18n="story.title">My life story</h2>
+            <p class="story-intro" data-i18n="story.intro">The stories you tell me, kept in chapters like a book. You can change or remove any of them. Your centre, family you have linked and care providers assigned to you can read them too.</p>
+            <div class="story-btns">
+              <button class="btn btn-p story-btn" type="button" onclick="printStory()"><span aria-hidden="true">🖨️</span> <span data-i18n="story.print">Print or save as PDF</span></button>
+              <button class="btn btn-s story-btn" id="blog-open-story" type="button">Personal blog</button>
+            </div>
+          </section>
+          <div class="story-chapters" id="story-chapters"></div>
+          <section class="card" id="personal-blog" aria-labelledby="blog-title-heading">
+            <h2 class="story-title" id="blog-title-heading" tabindex="-1">Personal blog</h2>
+            <p class="story-intro">Write or speak an entry, review it, then save. Entries stay in your life story. Your center manager (if your record is linked), family you approved, and assigned care providers can read them. They are not published on the public web.</p>
+            <input id="blog-id" type="hidden">
+            <div class="field"><label for="blog-title">Entry title</label><input id="blog-title" maxlength="120" placeholder="A day to remember"></div>
+            <div class="field"><label for="blog-text">Your words</label><textarea class="story-input" id="blog-text" rows="6" maxlength="4000" placeholder="Write here, or use Speak your entry below."></textarea></div>
+            <div class="story-btns"><button class="btn btn-s story-btn" id="blog-dictate" type="button" aria-pressed="false">Speak your entry</button><button class="btn btn-p story-btn" id="blog-save" type="button">Save entry</button><button class="btn btn-s story-btn" id="blog-new" type="button">New entry</button></div>
+            <p id="blog-status" role="status" aria-live="polite"></p>
+            <div id="blog-entries"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- What the family sent (F50): messages, voice notes and photos from
+           family-dashboard.html. Drawn by app.js renderFamily(); clicks are
+           handled on #family-list. -->
+      <div class="panel" id="panel-family">
+        <p><a class="btn btn-s" href="family-chat.html">Chat with family — type or speak →</a> <a class="btn btn-s" href="family-contributions.html">Review family stories, photos &amp; videos →</a></p>
+        <div class="profile-wrap story-wrap">
+          <section class="card story-head" aria-labelledby="family-title">
+            <h2 class="story-title" id="family-title" tabindex="-1" data-i18n="inbox.title">Messages from your family</h2>
+            <p class="story-intro" data-i18n="inbox.intro">Messages, voice notes and photos your family send you through Techable. Only you and the person who sent each one can open it here. Once you open one in the chat, it is part of that conversation.</p>
+          </section>
+          <div class="story-chapters" id="family-list"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-history">
+        <div class="hist-back-row"><button class="hub-back resident-only" type="button" onclick="switchTab('profile')"><span aria-hidden="true">←</span> <span data-i18n="hub.back">Back to About me</span></button></div>
+        <div class="hist-wrap" id="hist-wrap"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bn-items">
+    <button class="bn-item active" id="bn-dashboard" data-tab="dashboard" onclick="mobileSwitchTab('dashboard')">
+      <span class="bn-icon">📊</span>
+      <span class="bn-label">Dashboard</span>
+    </button>
+
+    <button class="bn-item" id="bn-profile" data-tab="profile" onclick="mobileSwitchTab('profile')">
+      <span class="bn-icon">📋</span>
+      <span class="bn-label">Profile</span>
+    </button>
+
+    <button class="bn-item" id="bn-conversation" data-tab="conversation" onclick="mobileSwitchTab('conversation')">
+      <span class="bn-icon">💬</span>
+      <span class="bn-label">Chat</span>
+    </button>
+
+    <button class="bn-item" id="bn-memories" data-tab="memories" onclick="mobileSwitchTab('memories')">
+      <span class="bn-icon">🧠</span>
+      <span class="bn-label">Memory</span>
+    </button>
+
+    <button class="bn-item" id="bn-history" data-tab="history" onclick="mobileSwitchTab('history')">
+      <span class="bn-icon">📁</span>
+      <span class="bn-label">History</span>
+    </button>
+
+    <button class="bn-item manager-only" id="bn-residents" onclick="toggleDrawer()">
+      <span class="bn-icon">👥</span>
+      <span class="bn-label">Elderly</span>
+    </button>
+  </div>
+</nav>
+
+<!-- The senior's navigation. Everything that was not the chat used to sit
+     behind a ☰ in the header, and older users find hamburger menus hard to
+     discover and hard to read back (audits/P3-senior-feedback.md, item 4). A
+     handful of destinations, each with its word under it, always on screen —
+     at every width, so a laptop or a tablet on a lap behaves like the phone.
+     The labels are translated by app.js with the rest of the senior chrome. -->
+<nav class="senior-nav" id="senior-nav" aria-label="Main">
+  <button class="sn-item active" type="button" data-tab="conversation" onclick="switchTab('conversation')">
+    <span class="sn-ico" aria-hidden="true">💬</span>
+    <span class="sn-lbl" data-i18n="nav.chat">Chat</span>
+  </button>
+  <button class="sn-item" type="button" data-tab="story" onclick="switchTab('story')">
+    <span class="sn-ico" aria-hidden="true">📖</span>
+    <span class="sn-lbl" data-i18n="nav.story">My Story</span>
+  </button>
+  <button class="sn-item" type="button" data-tab="family" onclick="switchTab('family')">
+    <span class="sn-ico" aria-hidden="true">💌</span>
+    <span class="sn-lbl" data-i18n="nav.family">Family</span>
+    <span class="sn-badge" id="family-badge" aria-hidden="true" hidden></span>
+  </button>
+  <button class="sn-item" type="button" data-tab="profile" onclick="switchTab('profile')">
+    <span class="sn-ico" aria-hidden="true">🙂</span>
+    <span class="sn-lbl" data-i18n="nav.about">About Me</span>
+  </button>
+</nav>
+
+<div class="mob-res-overlay" id="mob-overlay" onclick="toggleDrawer()"></div>
+
+<div class="mob-res-drawer" id="mob-drawer">
+  <div class="sb-section">Navigation</div>
+
+  <!-- For a senior this drawer is the entire menu, so Dashboard — a wall of
+       statistics about them, written for their centre manager — is dropped
+       from it, and Profile is named for what they use it for: telling the
+       companion about themselves. -->
+  <div class="side-nav">
+    <button class="side-nav-btn active manager-only" data-tab="dashboard" onclick="mobileSwitchTab('dashboard')"><span class="side-nav-ico">📊</span>Dashboard</button>
+    <button class="side-nav-btn" data-tab="conversation" onclick="mobileSwitchTab('conversation')"><span class="side-nav-ico">💬</span>Chat</button>
+    <button class="side-nav-btn" data-tab="profile" onclick="mobileSwitchTab('profile')"><span class="side-nav-ico">📋</span><span class="label-manager">Profile</span><span class="label-senior">About Me</span></button>
+    <button class="side-nav-btn" data-tab="memories" onclick="mobileSwitchTab('memories')"><span class="side-nav-ico">🧠</span>Memories</button>
+    <button class="side-nav-btn" data-tab="story" onclick="mobileSwitchTab('story')"><span class="side-nav-ico">📖</span>Life Story</button>
+    <button class="side-nav-btn" data-tab="forms" onclick="mobileSwitchTab('forms')"><span class="side-nav-ico">📝</span>Forms &amp; Benefits</button>
+    <button class="side-nav-btn" data-tab="history" onclick="mobileSwitchTab('history')"><span class="side-nav-ico">📁</span><span class="label-manager">History</span><span class="label-senior">Past Chats</span></button>
+  </div>
+
+  <div class="manager-tools" id="mob-manager-tools">
+    <div style="padding:14px 12px 8px;border-bottom:1px solid var(--border)">
+      <input
+        class="sb-search-input"
+        type="text"
+        placeholder="Search elderly…"
+        oninput="filterRes(this.value)"
+        style="width:100%"
+      />
+    </div>
+
+    <div class="sb-section">Elderly in Facility</div>
+
+    <div class="res-list" id="mob-res-list" style="flex:1;overflow-y:auto;padding:0 8px 8px"></div>
+
+    <div style="padding:8px 8px 0" class="manager-only">
+      <button class="add-res" onclick="openAddModal()" style="width:100%;margin:0">
+        <span style="font-size:17px;line-height:1">+</span>
+        Add Elderly
+      </button>
+    </div>
+
+    <div class="sb-foot manager-only">
+      <div class="dev-lbl">Dev Tools</div>
+      <button class="dev-btn" onclick="resetSamples()">↺ Reset sample data</button>
+      <button class="dev-btn" onclick="clearAll()">🗑 Clear all data</button>
+    </div>
+  </div>
+
+  <div class="sb-logout">
+    <button class="sb-logout-btn" onclick="doSignOut()">
+      <span class="sb-logout-ico">⏻</span>
+      Log out
+    </button>
+  </div>
+</div>
+
+<div class="overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+
+    <div class="modal-title">Add New Elderly Profile</div>
+
+    <div class="field" style="margin-bottom:12px">
+      <label>Full Name</label>
+      <input type="text" id="new-name" placeholder="e.g. Margaret Chen" />
+    </div>
+
+    <div class="field" style="margin-bottom:12px">
+      <label>Age</label>
+      <input type="number" id="new-age" placeholder="81" />
+    </div>
+
+    <div class="field" style="margin-bottom:12px">
+      <label>Room</label>
+      <input type="text" id="new-room" placeholder="Room 7" />
+    </div>
+
+    <div class="field">
+      <label>Community</label>
+      <select id="new-community"></select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-s" onclick="closeModal('add-modal')">Cancel</button>
+      <button class="btn btn-p" onclick="createRes()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- The first visit (F45): language, what to call them, what they enjoy,
+     their family, their centre, how it works. Drawn by app.js
+     renderOnboarding(); also opened with only the centre step from the card
+     on the chat screen. Every step can be skipped. -->
+<section class="onb" id="onboarding" role="dialog" aria-modal="true" aria-labelledby="onb-title" hidden>
+  <div class="onb-card">
+    <p class="onb-step" id="onb-step"></p>
+    <h2 class="onb-title" id="onb-title" tabindex="-1">Which language shall we speak?</h2>
+    <div class="onb-body" id="onb-body"></div>
+    <!-- Outside the redrawn body, so a message put here is announced. -->
+    <p class="onb-status" id="onb-status" role="status" aria-live="polite"></p>
+    <div class="onb-actions" id="onb-actions"></div>
+  </div>
+</section>
+
+<!-- The life story as a book, filled by app.js printStory() and shown only
+     while printing (or saving as PDF) — everything else on the page is hidden
+     then. A direct child of <body> so the print rule can hide its siblings. -->
+<section class="story-print" id="story-print" aria-hidden="true"></section>
+
+<script>
+function grow(el){
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+}
+
+document.querySelectorAll('.overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open')
+  })
+})
+
+// The ☰ opens a drawer that sits at the very end of the document, so pressing
+// it used to change nothing anyone listening could tell: no expanded state
+// announced, and focus left behind in the header with the menu it had just
+// opened dozens of tab stops away. Watching the drawer's own class covers
+// every route in and out of it — the button, the overlay behind it and
+// mobileSwitchTab() — rather than keeping a second copy of that logic here.
+;(function drawerState(){
+  'use strict'
+
+  const btn = document.getElementById('hdr-menu')
+  const drawer = document.getElementById('mob-drawer')
+  if (!btn || !drawer) return
+
+  // Which screen they are on is drawn as a tint and a leading bar. This is
+  // the same fact for someone who can see neither.
+  function markCurrent() {
+    drawer.querySelectorAll('.side-nav-btn').forEach(b => {
+      if (b.classList.contains('active')) b.setAttribute('aria-current', 'page')
+      else b.removeAttribute('aria-current')
+    })
+  }
+
+  markCurrent()
+
+  new MutationObserver(records => {
+    markCurrent()
+    if (!records.some(r => r.target === drawer)) return
+
+    const open = drawer.classList.contains('open')
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false')
+
+    // offsetParent skips the Dashboard entry, which is manager-only and so is
+    // display:none for the senior — focusing it would land on nothing.
+    if (open) [...drawer.querySelectorAll('.side-nav-btn')].find(b => b.offsetParent)?.focus()
+    else if (drawer.contains(document.activeElement)) btn.focus()
+  }).observe(drawer, { attributes: true, attributeFilter: ['class'], subtree: true })
+})()
+
+// Repeat and Stop belong to the check-in, and the check-in they belong to no
+// longer opens the panel they were built into: the voice version runs in the
+// transcript, so a senior who did not catch "How are you feeling today?" had
+// nothing to press to hear it again, and no way to end it other than waiting
+// it out. The copies on the chat bar are shown for exactly as long as one is
+// running.
+//
+// Polled rather than driven by an event because checkin.js publishes its
+// state through isVoiceActive() and nothing else — and a check-in ends inside
+// an async save(), with no DOM change of its own to listen for.
+;(function checkInControls(){
+  'use strict'
+
+  const row = document.getElementById('checkin-ctls')
+  if (!row) return
+
+  const labels = [['ctl-repeat-lbl', 'ui.repeat'], ['ctl-stop-lbl', 'ui.stop']]
+  let showing = false
+
+  setInterval(() => {
+    const on = Boolean(window.TechableCheckIn?.isVoiceActive?.())
+    if (on === showing) return
+    showing = on
+    row.classList.toggle('on', on)
+
+    // Read on the way in rather than once at startup: the senior can change
+    // language mid-session, and these two words are as senior-facing as the
+    // question itself.
+    if (!on) return
+    labels.forEach(([id, key]) => {
+      const text = window.TechableI18n?.t?.(key)
+      const node = document.getElementById(id)
+      if (text && node) node.textContent = text
+    })
+  }, 500)
+})()
+</script>
+
+<script>
+window._cfg = (async function loadConfig(){
+  try {
+    const res = await fetch('/api/config', { cache: 'no-store' })
+
+    if (res.ok) {
+      const data = await res.json()
+
+      if (data?.firebase?.apiKey) {
+        window.TECHABLE_CONFIG = data
+        return data
+      }
+    }
+  } catch (_) {}
+
+  await new Promise(resolve => {
+    const s = document.createElement('script')
+    s.src = 'config.js'
+    s.onload = resolve
+    s.onerror = resolve
+    document.head.appendChild(s)
+  })
+
+  return window.TECHABLE_CONFIG || null
+})()
+</script>
+
+<script type="module" src="auth.js"></script>
+
+<script>
+document.addEventListener('auth:stateChanged', e => {
+  const user = e.detail
+  if (!user) return
+
+  const btn = document.getElementById('usr-btn')
+  const av = document.getElementById('usr-av')
+  const uname = document.getElementById('usr-name')
+
+  if (!btn || !av || !uname) return
+
+  btn.style.display = 'flex'
+
+  const name = user.displayName || user.email?.split('@')[0] || 'User'
+  const seed = encodeURIComponent(user.uid || name)
+
+  av.innerHTML = `<img src="https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${seed}&radius=50&backgroundColor=ecf5fb" alt="avatar" />`
+  uname.textContent = name
+})
+
+window.doSignOut = async function() {
+  // Both the desktop sidebar and the mobile drawer carry a logout button.
+  // …and so does the senior's Log out tile on About Me, whose words live in a
+  // span of their own rather than in the button's last text node.
+  const btns = [...document.querySelectorAll('.sb-logout-btn, .hub-logout')]
+  const labelOf = b => b.querySelector('.hub-lbl') || b.lastChild
+  const labels = btns.map(b => labelOf(b)?.textContent)
+  btns.forEach(btn => {
+    btn.disabled = true
+    if (labelOf(btn)) labelOf(btn).textContent = ' Logging out…'
+  })
+
+  const restore = () => btns.forEach((btn, i) => {
+    btn.disabled = false
+    if (labelOf(btn) && labels[i] != null) labelOf(btn).textContent = labels[i]
+  })
+
+  try {
+    // signOut() navigates away itself, and has its own internal deadline. This
+    // outer one is only for the case where even that does not come back —
+    // otherwise the button sits on "Logging out…" for the rest of the day,
+    // which is precisely how "I can't log out" looked from the sofa.
+    await Promise.race([
+      window.TechableAuth?.signOut?.(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timed out')), 6000))
+    ])
+  } catch (e) {
+    console.warn('[app] signOut:', e?.message)
+    // Deliberately not redirecting on failure: landing on the login page while
+    // still signed in is what sent people straight back into the app. Say so,
+    // and let them press it again.
+    restore()
+    window.TechableApp?.showToast?.('Could not log out — please check your connection and try again')
+  }
+}
+
+function waitForAuth(){
+  if (window.TechableAuth?.ready !== undefined) {
+    // Only seniors enter the companion. Other roles return to their workspace.
+    window.TechableAuth.guardRole(['resident'], () => {
+      // app.js keeps the loading state until the senior workspace is rendered.
+    })
+  } else {
+    setTimeout(waitForAuth, 50)
+  }
+}
+
+waitForAuth()
+</script>
+
+<script src="data.js"></script>
+<!-- Before app.js: normalizeResident() reads TechableI18n to resolve a saved
+     language code, and Voice picks its synthesis voice from the same place. -->
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+<!-- Loads after app.js: checkin.js binds to the window.TechableApp bridge. -->
+<script src="checkin.js"></script>
+<script src="chat-layout.js"></script>
+<script type="module" src="centre-directory-nav.mjs"></script>
+<script type="module" src="voice-input.mjs"></script>
+<script type="module" src="senior-blog.mjs"></script>
+</body>
+</html>

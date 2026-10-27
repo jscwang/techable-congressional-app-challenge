@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Sign In</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<!-- The role cards moved onto the homepage. This page stays so that old links,
+     bookmarks and the ?mode=signup links people were sent keep working. -->
+<meta http-equiv="refresh" content="0;url=index.html#signin">
+<script>
+  // ?mode=signup used to come to this page; on the homepage it is #signup.
+  var signup = new URLSearchParams(location.search).get('mode') === 'signup'
+  location.replace('index.html#' + (signup ? 'signup' : 'signin'))
+</script>
+</head>
+<body>
+<p style="font-family:sans-serif;padding:24px"><a href="index.html#signin">Continue to sign in</a></p>
+</body>
+</html>

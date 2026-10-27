@@ -1,0 +1,6 @@
+/* Techable brand assets, shared so every page draws the mark the same way.
+   .brand-mark is the icon that sits beside the word "Techable" in a header;
+   set --brand-h on the element to size it. .brand-logo is the full logo
+   (icon, wordmark and tagline) for places with room for it. */
+.brand-mark{display:block;height:var(--brand-h,34px);width:auto;flex-shrink:0}
+.brand-logo{display:block;width:var(--logo-w,128px);height:auto}

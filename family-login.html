@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Family &amp; Friends Sign In</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#C4552B;--accent-lt:#E07A55;--accent-pale:#FDF0EB;
+  --accent-rgb:196,85,43;
+  --navy:#0D1B2A;--cream:#FAF6F0;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --border:rgba(180,156,136,.22);--border2:rgba(180,156,136,.38);
+  --green:#2D6A4F;--green-bg:#EBF5EF;
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --r:12px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input{font-family:inherit}
+button{cursor:pointer;border:none;outline:none}
+input{outline:none}
+
+/* Keyboard focus must always be visible. The blanket `outline:none` above
+   took the ring off the Google button, the submit button, the sign-in /
+   sign-up toggle and the privacy consent box, so anyone filling this form in
+   from the keyboard had no way to tell where they were. :focus-visible
+   restores it for the keyboard only, so it never appears on a mouse click. */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible{
+  outline:3px solid var(--accent);
+  outline-offset:2px;
+}
+.page{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}
+
+/* ── Panel entrance animations ── */
+@media (prefers-reduced-motion: no-preference) {
+  .left{
+    animation: slideInLeft 0.65s cubic-bezier(0.22,1,0.36,1) 0ms both;
+  }
+  .right{
+    animation: fadeUp 0.65s cubic-bezier(0.22,1,0.36,1) 80ms both;
+  }
+  @keyframes slideInLeft{
+    from{opacity:0;transform:translateX(-30px)}
+    to{opacity:1;transform:translateX(0)}
+  }
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* ── Step items stagger ── */
+  .left-steps .step{
+    opacity:0;
+    animation: stepIn 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  .left-steps .step:nth-child(1){animation-delay:0.50s}
+  .left-steps .step:nth-child(2){animation-delay:0.58s}
+  .left-steps .step:nth-child(3){animation-delay:0.66s}
+  .left-steps .step:nth-child(4){animation-delay:0.74s}
+  @keyframes stepIn{
+    from{opacity:0;transform:translateY(12px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* ── Orb pulse ── */
+  .left::after{
+    animation: pulse 8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.15)}
+  }
+
+  /* ── Shimmer keyframe ── */
+  @keyframes shimmer{
+    from{background-position:200% center}
+    to{background-position:-200% center}
+  }
+}
+
+.left{background:var(--navy);padding:48px 52px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.left::after{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(196,85,43,.18),transparent 70%);right:-130px;bottom:-130px;pointer-events:none}
+.logo{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+
+
+.left-body{position:relative;z-index:1}
+.left-body h1{font-family:'Fraunces',serif;font-size:clamp(30px,3.2vw,44px);font-weight:300;color:#fff;line-height:1.15;margin-bottom:18px;letter-spacing:-.02em}
+.left-body em{font-style:italic;color:var(--accent-lt)}
+.left-body p{color:rgba(255,255,255,.5);line-height:1.75;max-width:380px;font-size:14px;font-weight:300}
+.left-steps{margin-top:32px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1}
+.step{display:flex;align-items:flex-start;gap:12px}
+.step-num{width:26px;height:26px;border-radius:50%;background:rgba(196,85,43,.25);border:1px solid rgba(196,85,43,.4);color:var(--accent-lt);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;font-weight:300}
+.step-text strong{color:rgba(255,255,255,.8);font-weight:500}
+.left-foot{position:relative;z-index:1;color:rgba(255,255,255,.2);font-size:11px}
+.right{display:flex;align-items:center;justify-content:center;padding:40px 36px;background:var(--cream)}
+.box{width:100%;max-width:420px}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3);text-decoration:none;margin-bottom:22px;font-weight:500;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+.form-title{font-family:'Fraunces',serif;font-size:26px;color:var(--navy);font-weight:400;margin-bottom:6px;letter-spacing:-.01em}
+.form-sub{font-size:14px;color:var(--ink3);margin-bottom:26px;line-height:1.55;font-weight:300}
+
+/* ── Google button with accent left-border on hover ── */
+.google-btn{
+  width:100%;height:48px;border-radius:var(--r);
+  border:1.5px solid var(--border2);
+  border-left:1.5px solid var(--border2);
+  background:var(--white);color:var(--ink);font-size:14px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .18s, border-left .18s;
+  margin-bottom:18px;box-shadow:0 1px 4px rgba(26,18,8,.06)
+}
+.google-btn:hover:not(:disabled){
+  border-color:rgba(180,156,136,.5);
+  border-left:3px solid var(--accent);
+  box-shadow:0 3px 12px rgba(26,18,8,.09);
+  transform:translateY(-1px)
+}
+.google-btn:disabled{opacity:.65;cursor:not-allowed}
+.google-icon{width:18px;height:18px;flex-shrink:0}
+#google-btn-text{flex:1;text-align:center}
+.divider{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-txt{font-size:11px;color:var(--ink4);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+
+/* ── Toggle crossfade rows ── */
+#name-row,#relationship-row{transition:opacity 0.25s ease}
+
+.field{margin-bottom:14px}
+/* 10px of #8C7A6A on the cream ground is 3.8:1, under the 4.5:1 AA floor, and
+   a field under 16px makes iOS Safari zoom the whole page in the moment it is
+   focused — which pushes the rest of the form off the screen while you are
+   still typing into it. */
+.field label{display:block;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);margin-bottom:6px}
+.field input,
+.field select{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r);
+  background:var(--white);font-size:16px;color:var(--ink);
+  transition:all .18s;appearance:none
+}
+/* ── Input focus ring ── */
+.field input:focus,
+.field select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3.5px rgba(var(--accent-rgb), 0.12);
+  outline:none;
+}
+/* #C4B4A4 on white is 2:1 — the hint that the password needs six characters
+   was, for practical purposes, not on the page. */
+.field input::placeholder{color:var(--ink3)}
+
+/* ── Submit button shimmer ── */
+.submit-btn{
+  width:100%;height:48px;border-radius:var(--r);border:none;
+  background:var(--accent);color:#fff;font-size:14px;font-weight:600;
+  transition:all .18s;
+  box-shadow:0 2px 10px rgba(196,85,43,.28);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background-size:200%;
+}
+.submit-btn:hover:not(:disabled){
+  background-color:var(--accent-lt);
+  background-image:linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  background-size:200%;
+  animation:shimmer 0.55s ease forwards;
+  transform:translateY(-1px);
+  box-shadow:0 4px 16px rgba(196,85,43,.36)
+}
+.submit-btn:disabled{opacity:.65;cursor:not-allowed;transform:none}
+
+.msg{display:none;margin:0 0 14px;padding:12px 14px;border-radius:var(--r);font-size:13px;line-height:1.55}
+.msg.err{display:block;background:#FEF2EF;color:#9B2C2C;border:1px solid rgba(196,85,43,.2)}
+.msg.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid rgba(45,106,79,.2)}
+.msg.info{display:block;background:var(--gold-bg);color:#92610A;border:1px solid rgba(196,154,42,.2)}
+.consent-check{display:flex;align-items:flex-start;gap:10px;margin:2px 0 14px;padding:12px 14px;background:var(--accent-pale);border:1px solid rgba(196,85,43,.18);border-radius:var(--r);font-size:12px;line-height:1.55;color:var(--ink3);font-weight:300}
+.consent-check input{width:16px;height:16px;margin-top:2px;accent-color:var(--accent);flex-shrink:0}
+.consent-check a{color:var(--accent);font-weight:600;text-decoration:none}
+.consent-check a:hover{text-decoration:underline}
+.toggle-line{text-align:center;font-size:13px;color:var(--ink3);margin-top:16px;line-height:1.6}
+.toggle-btn{background:none;border:none;color:var(--accent);font-weight:600;cursor:pointer;font-size:13px;padding:0}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.spinner-sm{width:14px;height:14px;border:2px solid rgba(26,18,8,.15);border-top-color:var(--ink2);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:820px){.page{grid-template-columns:1fr}.left{display:none}.right{padding:32px 20px 48px;align-items:flex-start;padding-top:40px}}
+@media(max-width:420px){.right{padding:24px 16px 40px}.form-row{grid-template-columns:1fr}}
+
+/* ── Reduced motion: disable all animations ── */
+@media (prefers-reduced-motion: reduce) {
+  .left,.right,.left-steps .step{animation:none !important;opacity:1 !important;transform:none !important}
+  .left::after{animation:none !important}
+  .submit-btn:hover:not(:disabled){animation:none !important}
+}
+.module-account-choice{margin:0 0 18px;padding:16px;border:1px solid var(--border);border-radius:var(--r);background:var(--cream);font-size:14px;line-height:1.6}.module-account-choice[hidden]{display:none}.module-account-choice p{margin:0 0 12px}.module-account-choice button{min-height:44px;padding:10px 14px;border:1px solid var(--green);border-radius:10px;background:#fff;color:var(--green);font:inherit;font-weight:600;cursor:pointer}.module-account-choice a{display:inline-block;margin-left:12px;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="left">
+    <div class="logo">
+      <img class="brand-logo" src="assets/techable-logo.png" alt="Techable for Elderly" width="120" height="111">
+    </div>
+    <div class="left-body">
+      <h1>Stay <em>close</em> to<br/>someone you love.</h1>
+      <p>Follow your loved one's journey, share memories, and receive well-being updates from your phone or computer.</p>
+      <div class="left-steps">
+        <div class="step"><div class="step-num">1</div><div class="step-text"><strong>Create your family account</strong> with your name and email</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text"><strong>Ask the community center to link your account</strong> to your loved one</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text"><strong>View their memories and well-being updates</strong> from your dashboard</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text"><strong>Leave messages</strong> and share family moments</div></div>
+      </div>
+    </div>
+    <div class="left-foot">Techable © 2025 · Keeping families connected</div>
+  </section>
+
+  <section class="right">
+    <div class="box">
+      <a id="back-link" href="index.html#signin" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M13 7H1M6 2L1 7l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to sign in options
+      </a>
+      <!-- Opens on the sign-IN form. The homepage's card here says "Sign in as
+           Family", and this page used to answer it with "Family & Friends Sign
+           Up": a returning daughter typed her real email and password and was
+           told "That email is already registered", which is how "email login
+           does not work, only Google" was reported. ?mode=signup, which the
+           homepage appends to its sign-up cards, opens the other form; the plain
+           script at the foot of the page reads it. -->
+      <div class="form-title" id="form-title">Welcome Back</div>
+      <div class="form-sub" id="form-sub">Sign in to your family account.</div>
+      <!-- role="alert" because this box sits above the Google button, the name
+           row, the relationship picker and both fields: on a phone it is off
+           the top of the screen by the time anything is written into it. -->
+      <div class="msg" id="msg" role="alert"></div>
+      <section class="module-account-choice" id="module-account-choice" role="status" aria-live="polite" hidden>
+        <p id="module-account-message"></p>
+        <button type="button" id="use-module-account" onclick="useModuleAccount()">Use another account</button>
+        <a href="index.html#signin">Choose a module</a>
+      </section>
+      <!-- Both buttons ship disabled and say "Loading…". googleLogin() and
+           doSubmit() do not exist until the module at the foot of this file
+           has run, and until it has, a tap on Google was a silent no-op. They
+           are enabled at the end of that module. -->
+      <button class="google-btn" id="google-btn" onclick="googleLogin()" type="button" disabled>
+        <svg class="google-icon" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+        <span id="google-btn-text">Loading…</span>
+      </button>
+      <div class="divider"><div class="divider-line"></div><span class="divider-txt">or</span><div class="divider-line"></div></div>
+      <div class="form-row" id="name-row" style="display:none">
+        <div class="field" style="margin-bottom:0"><label for="first-name">First Name</label><input id="first-name" autocomplete="given-name" placeholder="Sarah" /></div>
+        <div class="field" style="margin-bottom:0"><label for="last-name">Last Name</label><input id="last-name" autocomplete="family-name" placeholder="Tan" /></div>
+      </div>
+      <div id="relationship-row" style="margin-top:14px;display:none">
+        <div class="field">
+          <label for="relationship">Your relationship to the senior</label>
+          <select id="relationship">
+            <option value="">Select relationship…</option>
+            <option value="daughter">Daughter</option>
+            <option value="son">Son</option>
+            <option value="spouse">Spouse / Partner</option>
+            <option value="sibling">Sibling</option>
+            <option value="grandchild">Grandchild</option>
+            <option value="friend">Close Friend</option>
+            <option value="caregiver">Caregiver</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <form onsubmit="formSubmit(event)" novalidate style="margin-top:0">
+        <div class="field"><label for="email">Email</label><input id="email" type="email" required autocomplete="email" placeholder="you@example.com" /></div>
+        <div class="field"><label for="password">Password</label><input id="password" type="password" required autocomplete="current-password" placeholder="min. 6 characters" minlength="6" /></div>
+        <label class="consent-check" id="consent-row" style="display:none">
+          <input id="privacy-consent" type="checkbox" />
+          <span>I agree to Techable's <a href="privacy.html" target="_blank" rel="noopener">Data & Privacy Policy</a> and consent to my information being used to create and manage my account.</span>
+        </label>
+        <button class="submit-btn" id="submit-btn" type="submit" disabled><span id="btn-label">Loading…</span></button>
+      </form>
+      <div class="toggle-line" id="reset-row">
+        <button class="toggle-btn" type="button" onclick="resetPassword()">Forgot your password?</button>
+      </div>
+      <div class="toggle-line"><a class="toggle-btn" href="faq.html">Help &amp; FAQ</a></div>
+      <div class="toggle-line">
+        <span id="toggle-text">New here?</span>
+        <button class="toggle-btn" onclick="toggleMode()" id="toggle-btn">Create account</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+// Both waits below are bounded now. This promise used to be able to stay
+// pending for ever — a request to /api/config that is answered by nobody, or a
+// config.js whose script tag never fires load or error — and the module at the
+// foot of this file cannot run a single line until it settles. That is not a
+// slow page, it is a permanently dead one: no doSubmit(), no googleLogin(),
+// and not even the "Firebase config not found" message, because that branch
+// sits past the same await.
+window._cfg = (async function(){
+  try {
+    const ctl  = new AbortController()
+    const bell = setTimeout(() => ctl.abort(), 6000)
+    const res  = await fetch('/api/config', { cache: 'no-store', signal: ctl.signal })
+    clearTimeout(bell)
+    if (res.ok) { const d = await res.json(); if (d?.firebase?.apiKey) { window.TECHABLE_CONFIG = d; return d } }
+  } catch (_) {}
+  await new Promise(res => {
+    const s = document.createElement('script'); s.src = 'config.js'
+    s.onload = res; s.onerror = res
+    setTimeout(res, 6000)
+    document.head.appendChild(s)
+  })
+  return window.TECHABLE_CONFIG || null
+})()
+
+// ── The form is not live until the module below is ───────────────
+// `onsubmit="doSubmit(event)"` threw ReferenceError for as long as the module
+// was still loading, so the default action was never prevented and the browser
+// submitted the form for real. None of the inputs carry a name attribute, so
+// that is a plain GET back to this page: everything typed is wiped, and the
+// mode the homepage asked for goes with it. preventDefault() happens here,
+// unconditionally, so a handler that does not exist yet can never navigate.
+window.authReady = false
+window.formSubmit = function(e) {
+  e.preventDefault()
+  if (typeof window.doSubmit === 'function') window.doSubmit(e)
+}
+
+// If the module never arrives — the Firebase modules come from gstatic, which
+// an ad blocker or a blocked network can swallow whole — nothing above ever
+// reports it. Say so instead of leaving the buttons reading "Loading…" until
+// the visitor gives up. Cleared by the module the moment it starts.
+window._loadTimer = setTimeout(function() {
+  const el = document.getElementById('msg')
+  if (!el) return
+  window.authFailed = true   // keep toggleMode() from wiping this or relabelling the buttons
+  // The buttons are still disabled; do not leave them saying "Loading…" beside
+  // a message that says the page could not finish loading.
+  for (const id of ['btn-label', 'google-btn-text']) {
+    const b = document.getElementById(id)
+    if (b) b.textContent = 'Unavailable'
+  }
+  el.className = 'msg err'
+  el.textContent = 'This page could not finish loading. Please check your internet connection and reload the page.'
+}, 15000)
+
+// ── Sign in / sign up: which form is showing ─────────────────────
+// Deliberately out here rather than in the module below, which waits on the
+// config and on three Firebase modules before it runs a line. This is pure
+// DOM, so which form a visitor lands on never depends on the network. The
+// page opens on sign-IN — the homepage's card for it reads "Sign in as Family"
+// — and ?mode=signup, which the homepage appends to its sign-up cards, opens
+// the other one. It was ignored entirely before, so every visitor arrived on
+// a form headed "Family & Friends Sign Up" whatever they had clicked.
+window.isSignUp = false
+
+window.toggleMode = function() {
+  window.isSignUp = !window.isSignUp
+  const on = window.isSignUp
+  const set = (id, prop, value) => { const el = document.getElementById(id); if (el) el[prop] = value }
+
+  // Switching form while the module is still loading must not relabel a
+  // disabled button as though it were ready to be pressed.
+  const ready = window.authReady === true
+
+  set('form-title', 'textContent', on ? 'Family & Friends Sign Up' : 'Welcome Back')
+  set('form-sub', 'textContent', on
+    ? 'Create an account to connect with your loved one.'
+    : 'Sign in to your family account.')
+  set('btn-label', 'textContent', ready ? (on ? 'Create Account' : 'Sign In') : (window.authFailed === true ? 'Unavailable' : 'Loading…'))
+  set('toggle-text', 'textContent', on ? 'Already have an account?' : 'New here?')
+  set('toggle-btn', 'textContent', on ? 'Sign in' : 'Create account')
+
+  const show = (id, value) => { const el = document.getElementById(id); if (el) el.style.display = value }
+  show('name-row', on ? 'grid' : 'none')
+  show('relationship-row', on ? 'block' : 'none')
+  show('consent-row', on ? 'flex' : 'none')
+  show('reset-row', on ? 'none' : 'flex')
+
+  // Back goes to the homepage cards for the mode the visitor is in, so someone
+  // who chose "Sign up as ..." and backs out is not shown the sign-in wording.
+  set('back-link', 'href', on ? 'index.html#signup' : 'index.html#signin')
+
+  const msg = document.getElementById('msg')
+  if (msg && window.authFailed !== true) { msg.className = 'msg'; msg.textContent = '' }
+}
+
+if (new URLSearchParams(location.search).get('mode') === 'signup') {
+  document.addEventListener('DOMContentLoaded', () => window.toggleMode())
+}
+</script>
+
+<script type="module">
+await window._cfg
+
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js"
+import {
+  getAuth, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signInWithPopup, signInWithRedirect, getRedirectResult,
+  GoogleAuthProvider, updateProfile, signOut, sendPasswordResetEmail, deleteUser
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js"
+import {
+  getFirestore, doc, getDoc, setDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+// This module is running, so the "could not finish loading" warning armed in
+// the script above has nothing left to warn about — including on the way into
+// the config failure just below, which has a message of its own.
+clearTimeout(window._loadTimer)
+
+const cfg = window.TECHABLE_CONFIG
+if (!cfg?.firebase?.apiKey) {
+  // Read by toggleMode() in the script above. Without it, opening the page with
+  // ?mode=signup ran toggleMode() on DOMContentLoaded, which blanked the message
+  // below and relabelled the dead buttons "Loading…" — a form that never worked
+  // and never said why, which is what a visitor met when the config was missing.
+  window.authFailed = true
+  console.error('Firebase config not found. Check /api/config or config.js.')
+  showMsg('Sign-in is not available right now. Please try again in a few minutes.', 'err')
+  document.getElementById('google-btn').disabled = true
+  document.getElementById('submit-btn').disabled = true
+  for (const id of ['btn-label', 'google-btn-text']) {
+    const el = document.getElementById(id)
+    if (el) el.textContent = 'Unavailable'
+  }
+  throw new Error('No config')
+}
+
+const app  = getApps().length ? getApps()[0] : initializeApp(cfg.firebase)
+const auth = getAuth(app)
+const db   = getFirestore(app)
+const gp   = new GoogleAuthProvider()
+gp.setCustomParameters({ prompt: 'select_account' })
+
+const ROLE = 'family'
+const HOME = 'family-dashboard.html'
+
+// Owned by the plain script above, which defines toggleMode() and reads
+// ?mode from the URL. Read as a function throughout this module; the value
+// lives on window so both scripts see the same one.
+const isSignUpNow = () => window.isSignUp === true
+let manualFlow = false
+const GOOGLE_REDIRECT_PENDING = 'techable_google_redirect_pending'
+let googleRedirectPendingAtLoad = false
+try { googleRedirectPendingAtLoad = Boolean(sessionStorage.getItem(GOOGLE_REDIRECT_PENDING)) } catch (_) {}
+
+
+const googleRedirectCompletion = (async () => {
+  let handling = false
+  try {
+    const result = await getRedirectResult(auth)
+    if (googleRedirectPendingAtLoad && typeof auth.authStateReady === 'function') await auth.authStateReady()
+    const returnedUser = result?.user || (googleRedirectPendingAtLoad ? auth.currentUser : null)
+    if (returnedUser) {
+      if (arrivedAfterSignOut) return false
+      manualFlow = true
+      handling = true
+      showMsg('Signing you in…', 'info')
+      await ensureUserDoc(returnedUser)
+      await routeFor(returnedUser)
+      return true
+    }
+    if (googleRedirectPendingAtLoad) {
+      showMsg('Google sign-in did not finish. Please try Continue with Google again. If you opened this link inside another app, open it directly in Chrome or Safari.', 'err')
+    }
+  } catch (err) {
+    if (err.code && err.code !== 'auth/null-user') showMsg(friendlyError(err.code, 'google'), 'err')
+  } finally {
+    if (handling) manualFlow = false
+    if (googleRedirectPendingAtLoad) {
+      try { sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING) } catch (_) {}
+    }
+  }
+  return false
+})()
+
+
+// Every sign-out on this page goes through here (F06). This page runs its own
+// Firebase, so it does not get TechableAuth.signOut()'s sweep: without this the
+// person signed out here left their transcripts and check-ins in localStorage
+// for whoever uses the tablet next. Device preferences are kept; the list lives
+// in account-deletion.js, loaded on demand so a failed fetch cannot break the
+// page. Cleared only once nobody is signed in — a sign-out that did not take
+// leaves the same person here, and their data is theirs.
+async function signOutAndClear() {
+  try { await signOut(auth) } catch (_) {}
+  if (auth.currentUser) return
+  try {
+    const { clearPersonalLocalData } = await import('./account-deletion.js')
+    clearPersonalLocalData()
+  } catch (_) {
+    try {
+      Object.keys(localStorage).filter(k => k.startsWith('techable_')).forEach(k => localStorage.removeItem(k))
+    } catch (_) {}
+  }
+}
+
+// Read once as this page loads. Anyone who has just pressed Log out must see a
+// login page, not be routed onward by the shortcut below — a sign-out that did
+// not fully take plus a shortcut that skips the form is a user pressing Log out
+// and landing back in the app they were trying to leave.
+const arrivedAfterSignOut = (() => {
+  try {
+    const flag = sessionStorage.getItem('techable_just_signed_out')
+    if (flag) sessionStorage.removeItem('techable_just_signed_out')
+    return Boolean(flag)
+  } catch (_) { return false }
+})()
+
+onAuthStateChanged(auth, async user => {
+  const redirectHandled = await googleRedirectCompletion
+  if (!user || manualFlow || redirectHandled) return
+
+  if (arrivedAfterSignOut) {
+    manualFlow = true
+    await signOutAndClear()
+    manualFlow = false
+    return
+  }
+
+  manualFlow = true
+  try { await routeFor(user) }
+  catch (err) { manualFlow = false; showMsg(friendlyError(err.code, 'password'), 'err') }
+})
+
+// Where an account actually belongs. Called by the observer above for someone
+// who arrives already signed in, and called DIRECTLY by the sign-in handlers
+// below — which is the part that was missing. They set `manualFlow` before
+// signing in, the observer opens by bailing on exactly that flag, and so the
+// redirect they were leaving to it never happened: the button kept its spinner
+// and the visitor eventually walked away. Whoever signs the user in owns what
+// happens next.
+async function routeFor(user) {
+  // An existing account keeps its own role, whichever door it came in by.
+  let snap
+  try { snap = await getDoc(doc(db, 'users', user.uid)) }
+  catch (cause) {
+    const err = new Error('Could not load account profile', { cause })
+    err.code = 'profile/read-failed'
+    throw err
+  }
+  if (!snap.exists()) {
+    const err = new Error('Account profile is missing')
+    err.code = 'profile/missing'
+    throw err
+  }
+  const role = snap.data()?.role
+  if (['family'].includes(role)) {document.getElementById('module-account-choice').hidden=true;window.location.href=HOME;return}
+  const label={resident:'Senior',elderly:'Senior',community_manager:'Senior Center',centre:'Senior Center',family:'Family & Friends',service_provider:'Service Provider',provider:'Service Provider'}[role]||'another module'
+  document.getElementById('module-account-message').textContent=(user.email?user.email+' is':'This account is')+' registered for '+label+'. Family & Friends sign-in needs its own account. Use another account or choose a module.'
+  const choice=document.getElementById('module-account-choice');choice.hidden=false;choice.scrollIntoView?.({block:'center',behavior:'smooth'})
+  document.getElementById('google-btn').disabled=false;document.getElementById('google-btn-text').textContent='Continue with Google'
+  document.getElementById('submit-btn').disabled=false;document.getElementById('btn-label').textContent=isSignUpNow()?'Create Account':'Sign In'
+  showMsg('');manualFlow=false
+}
+
+function roleHome(r) {
+  if (r === 'community_manager') return 'profile.html'
+  if (r === 'service_provider')  return 'provider-dashboard.html'
+  if (r === 'resident')          return 'app.html'
+  return HOME
+}
+
+
+window.useModuleAccount=async function(){
+ const button=document.getElementById('use-module-account');if(button.disabled)return
+ button.disabled=true;manualFlow=true
+ const controls=['email','password','google-btn','submit-btn'].map(id=>document.getElementById(id));controls.forEach(el=>{if(el)el.disabled=true})
+ try{await signOutAndClear();if(auth.currentUser)throw Error('Sign-out incomplete');document.getElementById('module-account-choice').hidden=true;document.getElementById('email').value='';document.getElementById('password').value='';showMsg('Choose the account for this module to continue.','info')}
+ catch{showMsg('Could not sign out. Please try Use another account again.','err')}
+ finally{button.disabled=false;manualFlow=false;controls.forEach(el=>{if(el)el.disabled=false})}
+}
+
+window.googleLogin = async function() {
+  if (isSignUpNow() && !hasPrivacyConsent()) return
+  const btn = document.getElementById('google-btn')
+  const txt = document.getElementById('google-btn-text')
+  showMsg('')
+  btn.disabled = true
+  txt.innerHTML = '<span class="spinner-sm"></span>&ensp;Connecting…'
+  try {
+    manualFlow = true
+    const cred = await signInWithPopup(auth, gp)
+    await ensureUserDoc(cred.user)
+    await routeFor(cred.user)
+  } catch (err) {
+    if (err.code === 'auth/popup-blocked' && cfg.firebase.authDomain === window.location.hostname) {
+      txt.innerHTML = '<span class="spinner-sm"></span>&ensp;Redirecting to Google…'
+      try { sessionStorage.setItem(GOOGLE_REDIRECT_PENDING, String(Date.now()))
+        await signInWithRedirect(auth, gp) } catch (e) { try { sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING) } catch (_) {} manualFlow = false; showMsg(friendlyError(e.code, 'google'), 'err'); btn.disabled = false; txt.textContent = 'Continue with Google' }
+    } else {
+      manualFlow = false; showMsg(friendlyError(err.code, 'google'), 'err'); btn.disabled = false; txt.textContent = 'Continue with Google'
+    }
+  }
+}
+
+window.doSubmit = async function(e) {
+  e.preventDefault()
+  const email = document.getElementById('email').value.trim()
+  const pass  = document.getElementById('password').value
+  const btn   = document.getElementById('submit-btn')
+  const lbl   = document.getElementById('btn-label')
+  if (!email) { highlightField('email'); return }
+  if (!pass)  { highlightField('password'); return }
+  if (isSignUpNow() && !hasPrivacyConsent()) return
+  btn.disabled = true
+  lbl.innerHTML = '<div class="spinner"></div>'
+  showMsg('')
+  try {
+    manualFlow = true
+    if (isSignUpNow()) {
+      const first = document.getElementById('first-name').value.trim()
+      const last  = document.getElementById('last-name').value.trim()
+      const name  = [first, last].filter(Boolean).join(' ')
+      const rel   = document.getElementById('relationship').value
+      const cred  = await createUserWithEmailAndPassword(auth, email, pass)
+      try {
+        if (name) await updateProfile(cred.user, { displayName: name })
+        await ensureUserDoc(cred.user, name, rel)
+      } catch (profileError) {
+        // Avoid an Auth-only account that cannot sign up again and has no role.
+        try { await deleteUser(cred.user) }
+        catch (rollbackError) { console.warn('[family-login] account rollback failed:', rollbackError?.code || rollbackError?.message) }
+        throw profileError
+      }
+      window.location.href = HOME
+    } else {
+      const cred = await signInWithEmailAndPassword(auth, email, pass)
+      await routeFor(cred.user)
+    }
+  } catch (err) {
+    manualFlow = false; showMsg(friendlyError(err.code, 'password'), 'err'); btn.disabled = false; lbl.textContent = isSignUpNow() ? 'Create Account' : 'Sign In'
+  }
+}
+
+window.resetPassword = async function() {
+  const email = document.getElementById('email').value.trim()
+  if (!email) { showMsg('Enter your email address above first.', 'err'); highlightField('email'); return }
+  try {
+    await sendPasswordResetEmail(auth, email)
+    showMsg('Password reset email sent! Check your inbox.', 'ok')
+  } catch (err) { showMsg(friendlyError(err.code, 'password'), 'err') }
+}
+
+// toggleMode() and the ?mode handling live in the plain script above, so which
+// form a visitor lands on never depends on Firebase being reachable.
+
+function hasPrivacyConsent() {
+  const el = document.getElementById('privacy-consent')
+  if (!el?.checked) {
+    showMsg('Please tick the Data & Privacy Policy consent before creating an account.', 'err')
+    el?.focus()
+    return false
+  }
+  return true
+}
+
+async function ensureUserDoc(user, displayName, relationship) {
+  const ref  = doc(db, 'users', user.uid)
+  const snap = await getDoc(ref)
+  const name = displayName || user.displayName || ''
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      uid: user.uid, role: ROLE,
+      displayName: name, displayNameLower: name.toLowerCase(),
+      email: user.email || '', emailLower: (user.email || '').toLowerCase(),
+      photoURL: user.photoURL || '', avatarSeed: user.uid,
+      relationship: relationship || '',
+      linkedResidentIds: [],
+      isPublic: false, communitySetup: false,
+      privacyConsent: true,
+      privacyConsentAt: serverTimestamp(),
+      privacyPolicyVersion: '2026-08-07',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    }, { merge: true })
+  }
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('msg')
+  if (!text) { el.className = 'msg'; el.textContent = ''; return }
+  el.className = 'msg ' + (type || 'err'); el.textContent = text
+  // The box is above everything else on the page, so on a phone the sign-up
+  // form scrolls it out of sight: the consent-tick reminder was painted
+  // somewhere off the top of the screen and the button simply looked dead.
+  try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }) } catch (_) {}
+}
+
+function highlightField(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.style.borderColor = '#C4302B'; el.focus()
+  el.addEventListener('input', () => { el.style.borderColor = '' }, { once: true })
+}
+
+// `provider` says which route the visitor took: 'google' for the button,
+// 'password' for the email form. It only matters for auth/operation-not-allowed,
+// which Firebase throws for BOTH a disabled Google provider and a disabled
+// Email/Password provider. Naming the wrong one sends people hunting the wrong
+// setting — a disabled Email/Password provider used to report itself as
+// "Google sign-in is not enabled".
+function friendlyError(code, provider) {
+  const notEnabled = {
+    google:   'Google sign-in is not enabled in Firebase Console.',
+    password: 'Email/password sign-in is not enabled in Firebase Console.',
+  }[provider] || 'That sign-in method is not enabled in Firebase Console.'
+  const map = {
+    'auth/email-already-in-use':   'That email is already registered. Try signing in instead.',
+    'auth/invalid-email':          'Please enter a valid email address.',
+    'auth/weak-password':          'Password must be at least 6 characters.',
+    // Google-created accounts have no password here, and Firebase collapses
+    // that case into invalid-credential — so the message has to name it.
+    'auth/invalid-credential':     'Incorrect email or password — or this email was registered with Google. Try the Google button instead.',
+    'auth/user-not-found':         'No account found with that email. If you joined with Google, use the Google button.',
+    'auth/wrong-password':         'Incorrect password.',
+    'auth/network-request-failed': 'Network error — check your internet connection.',
+    'auth/too-many-requests':      'Too many attempts. Wait a moment and try again.',
+    'auth/unauthorized-domain':    'This domain is not authorized for Google sign-in.',
+    'auth/popup-closed-by-user':   'The Google sign-in window was closed. Select Continue with Google to try again.',
+    'auth/cancelled-popup-request': 'Google sign-in was cancelled. Select Continue with Google to try again.',
+    'auth/popup-blocked':          'Your browser blocked the Google sign-in popup. Allow this site to open its sign-in popup and try again, or open the link directly in Chrome or Safari.',
+    'auth/operation-not-supported-in-this-environment': 'Google sign-in is not supported in this browser window. Open the link directly in Chrome or Safari and try again.',
+    'auth/web-storage-unsupported': 'This browser could not keep your Google sign-in state. Open the link directly in Chrome or Safari and try again.',
+    'auth/operation-not-allowed':  notEnabled,
+    'profile/read-failed':         'We could not load your account profile. Please check your connection and try again.',
+    'profile/missing':             'Your sign-in exists, but its account profile is missing. Please contact Techable support.',
+  }
+  return map[code] || ('Sign-in error (' + (code || 'unknown') + '). Please try again.')
+}
+
+// ── The buttons come alive here, and nowhere earlier ─────────────
+// Last thing in the module, so nothing above can be tapped before the handler
+// that answers it exists. Everything up to this point has been reached, so
+// the "could not finish loading" warning is cleared with it.
+showMsg('')
+window.authReady = true
+window.authFailed = false
+const gbtn = document.getElementById('google-btn')
+const gtxt = document.getElementById('google-btn-text')
+if (gbtn) gbtn.disabled = false
+if (gtxt) gtxt.textContent = 'Continue with Google'
+const sbtn = document.getElementById('submit-btn')
+const slbl = document.getElementById('btn-label')
+if (sbtn) sbtn.disabled = false
+if (slbl) slbl.textContent = isSignUpNow() ? 'Create Account' : 'Sign In'
+</script>
+</body>
+</html>

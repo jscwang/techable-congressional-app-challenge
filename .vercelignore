@@ -1,0 +1,46 @@
+# Vercel serves this repository's root as the website (vercel.json has
+# "outputDirectory": "."), so any file here can be downloaded from the live
+# site unless it is listed below. The audits matter most: each one describes
+# security gaps that have not been fixed yet.
+/audits
+/.claude
+/.github
+/scripts
+/scratch
+# The test suites and tools, including the rules probes that document the
+# holes still open.
+/tests
+/tools
+/CLAUDE.md
+/FEATURES.md
+
+# Local secrets. Git never has them, but `vercel deploy` from this folder
+# uploads everything not excluded here, and Vercel's own defaults skip
+# .env.local but not .env.
+/.env
+/.env.*
+# The local config.js can hold a live AI key. Keep the leading slash: a
+# bare "config.js" would also drop api/config.js, the function that serves
+# the public Firebase config and must stay deployed.
+/config.js
+
+# Downloaded keys, mirrored from .gitignore. Git keeps them out of the repo,
+# but `vercel deploy` uploads the working folder. Google names a
+# service-account download after the project and key id
+# (techable-tts-1a2b3c4d.json), which matches nothing obvious, so the root
+# deploys only the .json files that belong there. vercel.json stays allowed:
+# it is the deployment's own configuration.
+/*.json
+!/firestore.indexes.json
+!/firebase.json
+!/vercel.json
+# And the obvious names, for a key dropped in a subdirectory instead.
+*-key.json
+*credential*.json
+*service-account*.json
+*serviceaccount*.json
+gcp-*.json
+*.pem
+*.p12
+# Firebase emulator logs (firebase-debug.log, firestore-debug.log, ...).
+*-debug.log

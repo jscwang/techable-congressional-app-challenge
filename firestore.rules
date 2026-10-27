@@ -1,0 +1,1805 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ───────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // A signed-in user does not necessarily have a users/{uid} doc yet — a
+    // Google sign-in that failed partway leaves auth without a profile. Reading
+    // a missing doc throws and denies the whole rule, so every role lookup is
+    // guarded by exists() first.
+    function hasProfile() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function role() {
+      return hasProfile() ? profile().get('role', 'resident') : '';
+    }
+
+    // Admin-granted QA developer modules. Ordinary users cannot set this field.
+    function qaDev2Provider(id, data) {
+      return id == 'iotk9iBczvVZ2zc3VuA5GtQeLVk1'
+        && data.get('role','') == 'community_manager' && data.get('verificationStatus','') == 'approved'
+        && data.get('qaDeveloperModules',[]) is list
+        && data.get('qaDeveloperModules',[]).size() == 2
+        && data.get('qaDeveloperModules',[]).hasAll(['community_manager','service_provider']);
+    }
+    function hasProviderRole() {
+      return role() == 'service_provider' || (signedIn() && request.auth.uid == 'iotk9iBczvVZ2zc3VuA5GtQeLVk1' && hasProfile() && qaDev2Provider(request.auth.uid,profile())
+        && request.auth.token.get('email','') == 'dev2@techable.org'
+        && request.auth.token.get('email_verified',false) == true);
+    }
+
+    // A string no longer than maxLen (requiredText: and not empty).
+    function textField(v, maxLen) {
+      return v is string && v.size() <= maxLen;
+    }
+
+    function requiredText(v, maxLen) {
+      return textField(v, maxLen) && v.size() > 0;
+    }
+
+    // Missing-field-safe list lookups. profile().linkedResidentIds throws when
+    // the field was never written; .get(field, default) does not.
+    function linkedResidents() {
+      return hasProfile() ? profile().get('linkedResidentIds', []) : [];
+    }
+
+    function assignedResidents() {
+      return hasProfile() ? profile().get('assignedResidentIds', []) : [];
+    }
+
+    // New provider links live in their own documents. The legacy list above is
+    // kept readable for existing deployments, but new assignments no longer
+    // require one manager to edit another user's profile.
+    function providerAssignmentPath(providerId, residentId) {
+      return /databases/$(database)/documents/provider_assignments/$(providerId + '_' + residentId);
+    }
+
+    function providerAssignedTo(residentId) {
+      return signedIn() && hasProviderRole() && isApproved()
+        && residentId is string && residentId != ''
+        && exists(providerAssignmentPath(request.auth.uid, residentId));
+    }
+
+    function providerIsApproved(providerId) {
+      return exists(/databases/$(database)/documents/users/$(providerId))
+        && (get(/databases/$(database)/documents/users/$(providerId)).data.get('role', '') == 'service_provider'
+          || qaDev2Provider(providerId,get(/databases/$(database)/documents/users/$(providerId)).data))
+        && get(/databases/$(database)/documents/users/$(providerId)).data.get('verificationStatus', '') == 'approved';
+    }
+
+    // New self-service family connections live outside the user profile so a
+    // family account still cannot grant itself arbitrary resident IDs. The
+    // deterministic document can exist only after a validated directory match,
+    // and is active only once the senior (or their centre's manager) says yes.
+    function hasFamilyConnection(residentId) {
+      return signedIn()
+        && role() == 'family'
+        && exists(/databases/$(database)/documents/family_links/$(request.auth.uid + '_' + residentId))
+        && get(/databases/$(database)/documents/family_links/$(request.auth.uid + '_' + residentId)).data.get('familyUid', '') == request.auth.uid
+        && get(/databases/$(database)/documents/family_links/$(request.auth.uid + '_' + residentId)).data.get('residentId', '') == residentId
+        && get(/databases/$(database)/documents/family_links/$(request.auth.uid + '_' + residentId)).data.get('status', '') == 'active';
+    }
+
+    // ── Users ─────────────────────────────────────────────────
+    // The fields below decide what a user is allowed to see anywhere else in
+    // this file, so a user must not be able to edit them on their own doc.
+    // Previously `allow update: if isSelf(userId)` let anyone:
+    //   • set role:'community_manager' and gain manager reads across the app;
+    //   • append any residentId to their own linkedResidentIds and read that
+    //     senior's residents doc and entire check-in history, escalations
+    //     included.
+    // These are only ever written at sign-up (as the role, and as []), and no
+    // client code updates them afterwards, so they are frozen after create.
+    function privilegeFieldsUnchanged() {
+      return request.resource.data.get('qaDeveloperModules',[]) == resource.data.get('qaDeveloperModules',[])
+        && request.resource.data.get('role', '')
+               == resource.data.get('role', '')
+        && request.resource.data.get('linkedResidentIds', [])
+               == resource.data.get('linkedResidentIds', [])
+        && request.resource.data.get('assignedResidentIds', [])
+               == resource.data.get('assignedResidentIds', []);
+    }
+
+    // Verification decisions are made in the admin console (admin.html ->
+    // api/admin-verifications.js, a service account), which bypasses these
+    // rules. A registrant may submit or resubmit up to
+    // ten documents and set their status to pending, but can never approve or
+    // reject themselves from a browser session.
+    function verificationFieldsValidOnCreate() {
+      let status = request.resource.data.get('verificationStatus', 'not_submitted');
+      let count = request.resource.data.get('verificationDocumentCount', 0);
+      let submittedAt = request.resource.data.get('verificationSubmittedAt', null);
+      return (status == 'not_submitted' && count == 0 && submittedAt == null)
+        || (status == 'pending'
+            && count is int && count > 0 && count <= 10
+            && submittedAt is timestamp);
+    }
+
+    // Written only by api/admin-verifications.js (service account). A browser
+    // may neither arrive with them nor change them.
+    function reviewFieldsAbsent() {
+      return !('verificationReviewedAt' in request.resource.data)
+        && !('verificationNote' in request.resource.data);
+    }
+
+    function reviewFieldsUnchanged() {
+      return request.resource.data.get('verificationReviewedAt', null)
+               == resource.data.get('verificationReviewedAt', null)
+        && request.resource.data.get('verificationNote', null)
+               == resource.data.get('verificationNote', null);
+    }
+
+    // The organisation an admin approved is the name every senior sees on a
+    // provider's programmes, so once approved it cannot be changed from a
+    // browser; a new name needs a new review.
+    function approvedIdentityUnchanged() {
+      return resource.data.get('verificationStatus', '') != 'approved'
+        || request.resource.data.get('organisation', '') == resource.data.get('organisation', '');
+    }
+
+    function verificationFieldsValidOnUpdate() {
+      let oldStatus = resource.data.get('verificationStatus', 'not_submitted');
+      let oldCount = resource.data.get('verificationDocumentCount', 0);
+      let oldSubmittedAt = resource.data.get('verificationSubmittedAt', null);
+      let newStatus = request.resource.data.get('verificationStatus', 'not_submitted');
+      let newCount = request.resource.data.get('verificationDocumentCount', 0);
+      let newSubmittedAt = request.resource.data.get('verificationSubmittedAt', null);
+      return (newStatus == oldStatus
+              && newCount == oldCount
+              && newSubmittedAt == oldSubmittedAt)
+        || (newStatus == 'pending'
+            && newCount is int && newCount > 0 && newCount <= 10
+            && newSubmittedAt is timestamp);
+    }
+
+    // Freezing the two linkage lists on update alone left that freeze one
+    // delete away from being pointless: `deleteDoc(users/<uid>)` is a call an
+    // ordinary browser session can already make — senior-login.html makes it
+    // when a senior switches roles — and re-creating the doc afterwards with
+    // linkedResidentIds:['<some senior>'] in it walked straight past the
+    // update rule. No legitimate sign-up arrives that way: family-login.html
+    // and provider-login.html both create with an empty list and nothing
+    // anywhere ever populates one, so a create carrying a resident id is
+    // always somebody helping themselves to that senior's residents doc and
+    // their whole check-in history, escalations included.
+    function linkageFieldsEmpty() {
+      return request.resource.data.get('linkedResidentIds', []).size() == 0
+        && request.resource.data.get('assignedResidentIds', []).size() == 0
+        // users.centreId decides which centres/{id} a profile may read. No
+        // client flow writes it, so nobody may give it to themselves.
+        && request.resource.data.get('centreId', '') == '';
+    }
+
+    // The same mapping as normalizeRole() in auth.js: legacy aliases collapse
+    // to their current name, and anything unrecognised reads as a resident.
+    function canonicalRole(r) {
+      return r in ['community_manager', 'centre'] ? 'community_manager'
+        : r == 'family' ? 'family'
+        : r in ['service_provider', 'provider'] ? 'service_provider'
+        : 'resident';
+    }
+
+    function tombstonePath(userId) {
+      return /databases/$(database)/documents/deleted_profiles/$(userId);
+    }
+
+    // Role on CREATE. The update rule freezes `role`, but `delete` is allowed
+    // (account deletion needs it), and a create after a delete used to accept
+    // any role — two console calls turned any account into a community
+    // manager. A delete now has to leave a tombstone naming the role the
+    // account held (see deleted_profiles below), and a re-create may only come
+    // back as that role or as a resident, the least-privileged one: that keeps
+    // a half-finished deletion (deleteUser() refused with requires-recent-login)
+    // recoverable from any login page while closing the escalation.
+    //
+    // NOT closed here (X1-b, product decision): login.html is a public sign-up
+    // that creates a brand-new community_manager account with no verification
+    // gate. A fresh uid has no tombstone, so that path is unchanged.
+    function roleValidOnCreate(userId) {
+      let r = request.resource.data.get('role', 'resident');
+      return r in ['resident', 'family', 'service_provider', 'community_manager']
+        && (
+          r == 'resident'
+          || !exists(tombstonePath(userId))
+          || get(tombstonePath(userId)).data.get('role', '') == r
+        );
+    }
+
+    match /users/{userId} {
+      allow create: if isSelf(userId)
+        && linkageFieldsEmpty()
+        && request.resource.data.get('qaDeveloperModules',[]).size() == 0
+        && roleValidOnCreate(userId)
+        && verificationFieldsValidOnCreate()
+        && reviewFieldsAbsent();
+      allow update: if isSelf(userId)
+        && privilegeFieldsUnchanged()
+        && request.resource.data.get('centreId', '') == resource.data.get('centreId', '')
+        && verificationFieldsValidOnUpdate()
+        && reviewFieldsUnchanged()
+        && approvedIdentityUnchanged();
+      // Only together with a tombstone written in the same batch, recording
+      // the role this profile holds.
+      allow delete: if isSelf(userId)
+        && existsAfter(tombstonePath(userId))
+        && getAfter(tombstonePath(userId)).data.get('role', '')
+             == canonicalRole(resource.data.get('role', 'resident'));
+
+      // Own profile, plus the public directory for the Friends page. The old
+      // `|| isManager()` clause let any self-declared manager read every
+      // account in the system; no manager page reads another user's profile.
+      allow read: if signedIn()
+        && (
+          userId == request.auth.uid
+          || resource.data.get('isPublic', false) == true
+        );
+    }
+
+    // The admin's verification review note, written only by
+    // api/admin-verifications.js with the service account. It used to sit on
+    // users/{uid}, which every signed-in account can read for a public
+    // manager (the Friends directory), so a rejection reason was everyone's
+    // to see (bug hunt 2026-10-22, BUG-008). Only the account holder reads it.
+    match /verification_notes/{userId} {
+      allow read: if signedIn() && userId == request.auth.uid;
+      // ...and deletes it with their account (account-deletion.js).
+      allow delete: if signedIn() && userId == request.auth.uid;
+      allow create, update: if false;
+    }
+
+    // A manager's companion defaults live apart from their account profile so
+    // a senior never needs permission to read the manager's email, verification
+    // details or other private fields. A self-owned resident record supplies
+    // the manager route and cannot be reassigned by the resident.
+    match /companion_settings/{managerUid} {
+      // The client performs one exact get using the manager id already present
+      // on its authorised resident record. Legacy resident document ids are
+      // not reliably the auth uid, so rules cannot re-read that arbitrary path;
+      // keep this document to two booleans and deny resident list queries.
+      allow get: if signedIn()
+        && (resource.data.get('managerUid', '') == request.auth.uid
+            || role() == 'resident');
+      allow list: if signedIn()
+        && resource.data.get('managerUid', '') == request.auth.uid;
+
+      allow create, update: if signedIn()
+        && role() == 'community_manager'
+        && managerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'managerUid', 'aiEnabled', 'voiceEnabled', 'updatedAt'
+        ])
+        && request.resource.data.get('managerUid', '') == request.auth.uid
+        && request.resource.data.get('aiEnabled', null) is bool
+        && request.resource.data.get('voiceEnabled', null) is bool
+        && request.resource.data.get('updatedAt', null) == request.time;
+
+      // Cleanup queries run for every role. Binding this to the stored owner
+      // lets an empty `where(managerUid == my uid)` query succeed safely too.
+      allow delete: if signedIn()
+        && resource.data.get('managerUid', '') == request.auth.uid;
+    }
+
+    // ── Deleted-profile tombstones ────────────────────────────
+    // Written by account deletion (auth.js deleteAccount, senior-login.html
+    // runDelete) in the same batch as the users/{uid} delete. Holds only the
+    // role, so a later re-create of the same uid cannot pick a new one. Never
+    // readable by anyone else and never removable from a browser.
+    match /deleted_profiles/{userId} {
+      allow create, update: if isSelf(userId)
+        && hasProfile()
+        && request.resource.data.keys().hasOnly(['role', 'deletedAt'])
+        && request.resource.data.role == canonicalRole(role())
+        && request.resource.data.deletedAt == request.time;
+      allow read: if isSelf(userId);
+      allow delete: if false;
+    }
+
+    // ── Residents ─────────────────────────────────────────────
+    // Every field any client writes here: app.js residentToFirestorePayload /
+    // profilePayload / the memory, wellness-form, benefit-draft and life story
+    // patches, and dashboard.html saveResident.
+    function residentFields() {
+      return [
+        'name', 'preferredName', 'age', 'room', 'status',
+        'communityId', 'communityName',
+        'background', 'family', 'medical', 'notes', 'language',
+        'avatarSeed', 'avatarStyle', 'memories', 'wellnessForm', 'benefitDraft', 'myDetails',
+        'lifeStory', 'onboardedAt', 'messageFrom', 'messageBlocked', 'findable',
+        'ownerUid', 'centreId', 'createdBy', 'createdAt', 'updatedAt'
+      ];
+    }
+
+    function myDetailsValid(v) {
+      return v == null || (v is map
+        && v.keys().hasOnly([
+          'fullName', 'dob', 'phone', 'email', 'address',
+          'emergencyName', 'emergencyPhone', 'medicare', 'medicaid',
+          'livesAlone', 'savedAt'
+        ])
+        && textField(v.get('fullName', ''), 120)
+        && textField(v.get('dob', ''), 10)
+        && textField(v.get('phone', ''), 40)
+        && textField(v.get('email', ''), 120)
+        && textField(v.get('address', ''), 300)
+        && textField(v.get('emergencyName', ''), 120)
+        && textField(v.get('emergencyPhone', ''), 40)
+        && v.get('medicare', '') in ['', 'yes', 'no', 'unsure']
+        && v.get('medicaid', '') in ['', 'yes', 'no', 'unsure']
+        && v.get('livesAlone', '') in ['', 'yes', 'no', 'unsure']
+        && textField(v.get('savedAt', ''), 40));
+    }
+
+    // Values are checked only for the keys this write touches (`changed`), so
+    // a legacy document holding an old-shaped value in some other field can
+    // still be edited.
+    function residentValuesValid(d, changed) {
+      return changed.hasOnly(residentFields())
+        && (!('name' in changed)          || textField(d.name, 200))
+        && (!('preferredName' in changed) || textField(d.preferredName, 200))
+        && (!('age' in changed)           || d.age == null || d.age is number)
+        && (!('room' in changed)          || textField(d.room, 100))
+        && (!('status' in changed)        || textField(d.status, 40))
+        && (!('communityId' in changed)   || textField(d.communityId, 128))
+        && (!('communityName' in changed) || textField(d.communityName, 200))
+        && (!('background' in changed)    || textField(d.background, 20000))
+        && (!('family' in changed)        || textField(d.family, 20000))
+        && (!('medical' in changed)       || textField(d.medical, 20000))
+        && (!('notes' in changed)         || textField(d.notes, 20000))
+        && (!('language' in changed)      || textField(d.language, 20))
+        && (!('avatarSeed' in changed)    || textField(d.avatarSeed, 200))
+        && (!('avatarStyle' in changed)   || textField(d.avatarStyle, 60))
+        // Rewritten whole on every save; unbounded, it walks toward the 1 MiB
+        // document limit, after which every write to the resident fails (R13).
+        && (!('memories' in changed)      || (d.memories is list && d.memories.size() <= 1000))
+        // The life story book (F49): the senior's own stories, up to 4000
+        // characters each in app.js. Read by everyone who reads the record —
+        // linked family and assigned providers included — and written, like
+        // memories, only by whoever may update the record. Capped by count
+        // for the same 1 MiB reason.
+        && (!('lifeStory' in changed)     || (d.lifeStory is list && d.lifeStory.size() <= 300))
+        // When the senior finished (or skipped) the first-visit welcome (F45).
+        && (!('onboardedAt' in changed)   || d.onboardedAt == request.time)
+        // Who may send this senior family messages, and who may not (F50):
+        // the senior's own decision, so only the senior who owns the record
+        // may change either list — not the centre that manages it.
+        && (!('messageFrom' in changed)
+            || (d.messageFrom is list && d.messageFrom.size() <= 100
+                && d.get('ownerUid', '') == request.auth.uid))
+        && (!('messageBlocked' in changed)
+            || (d.messageBlocked is list && d.messageBlocked.size() <= 100
+                && d.get('ownerUid', '') == request.auth.uid))
+        // "Let my family find me" (F32, finding 3): whether family can find this
+        // senior by their email at all. Theirs alone, like the lists above.
+        && (!('findable' in changed)
+            || (d.findable is bool && d.get('ownerUid', '') == request.auth.uid))
+        && (!('wellnessForm' in changed)  || d.wellnessForm == null || d.wellnessForm is map)
+        && (!('benefitDraft' in changed)  || d.benefitDraft == null || d.benefitDraft is map)
+        && (!('myDetails' in changed)     || myDetailsValid(d.myDetails))
+        && (!('createdAt' in changed)     || d.createdAt == request.time)
+        && (!('updatedAt' in changed)     || d.updatedAt == request.time);
+    }
+
+    // The ownership fields decide who reads the record — its medical notes
+    // included — and whose roster it appears in, so the incoming write must
+    // not hand them to anybody else. On create each is empty or the caller.
+    function residentOwnershipValidOnCreate(d) {
+      return d.get('ownerUid',  '') in ['', request.auth.uid]
+        && d.get('centreId',  '') in ['', request.auth.uid]
+        && d.get('createdBy', '') in ['', request.auth.uid]
+        && (
+          d.get('ownerUid',  '') == request.auth.uid
+          || d.get('centreId',  '') == request.auth.uid
+          || d.get('createdBy', '') == request.auth.uid
+        );
+    }
+
+    // On update each is unchanged, or an empty one is claimed by the caller —
+    // app.js saveProfile fills createdBy on records the old dashboard.html
+    // created without one.
+    function residentOwnershipFieldKept(f) {
+      return request.resource.data.get(f, '') == resource.data.get(f, '')
+        || (resource.data.get(f, '') == ''
+            && request.resource.data.get(f, '') in ['', request.auth.uid]);
+    }
+
+    function registrationSentTo(regId) {
+      return exists(/databases/$(database)/documents/registrations/$(regId))
+        && get(/databases/$(database)/documents/registrations/$(regId)).data.get('centreId', '') == request.auth.uid;
+    }
+
+    function managesResident() {
+      return resource.data.get('ownerUid',  '') == request.auth.uid
+        || resource.data.get('centreId',  '') == request.auth.uid
+        || resource.data.get('createdBy', '') == request.auth.uid;
+    }
+
+    function joinRequestPath(requestId) {
+      return /databases/$(database)/documents/centre_requests/$(requestId);
+    }
+
+    // A manager approving a senior's own request to join their centre
+    // (profile.html, F45) — the one way a centre comes to manage a record it
+    // did not create. Only in the batch that turns that pending request to
+    // approved; only a senior with a login of their own who is in no centre
+    // yet (approving must never move someone out of another centre); and only
+    // the centre link itself: centreId (this manager), communityId and
+    // communityName (the request's), updatedAt.
+    function joinApprovalLinks(residentId) {
+      let requestId = resource.data.get('ownerUid', '') + '_' + request.resource.data.get('communityId', '');
+      return role() == 'community_manager'
+        // Approving gives the centre the senior's whole record. Only a manager
+        // the admin console has checked may do that.
+        && isApproved()
+        && resource.data.get('ownerUid', '') != ''
+        && resource.data.get('centreId', '') == ''
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['centreId', 'communityId', 'communityName', 'updatedAt'])
+        && request.resource.data.get('centreId', '') == request.auth.uid
+        && request.resource.data.get('updatedAt', null) == request.time
+        && exists(joinRequestPath(requestId))
+        && get(joinRequestPath(requestId)).data.get('status', '') == 'pending'
+        && getAfter(joinRequestPath(requestId)).data.get('status', '') == 'approved'
+        && getAfter(joinRequestPath(requestId)).data.get('managerUid', '') == request.auth.uid
+        && getAfter(joinRequestPath(requestId)).data.get('residentId', '') == residentId
+        && getAfter(joinRequestPath(requestId)).data.get('communityName', '')
+             == request.resource.data.get('communityName', '');
+    }
+
+    // A centre letting a senior go: the link fields only, back to nothing.
+    // Only on a record a senior owns, and only by the manager it is linked to.
+    // This is what a manager's "remove" and a manager's account deletion do to
+    // a senior's own record — they never delete it (see the delete rule
+    // below). The manager's own provider assignments go in the same flow.
+    // The senior cannot do it themselves yet: an assignment that centre made
+    // would outlive the link and keep a provider reading the record. Leaving
+    // goes through Techable until that is built (privacy.html says so).
+    function centreLinkReleased() {
+      return resource.data.get('ownerUid', '') != ''
+        && resource.data.get('centreId', '') != ''
+        && request.auth.uid == resource.data.get('centreId', '')
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['centreId', 'communityId', 'communityName', 'updatedAt'])
+        && request.resource.data.get('centreId', '') == ''
+        && request.resource.data.get('communityId', '') == ''
+        && request.resource.data.get('communityName', '') == ''
+        && request.resource.data.get('updatedAt', null) == request.time;
+    }
+
+    match /residents/{residentId} {
+      // registration_<regId> is the id an approval creates. Anyone else taking
+      // it first would make that approval fail for good.
+      allow create: if signedIn()
+        && (!residentId.matches('^registration_.+')
+            || registrationSentTo(residentId.replace('^registration_', '')))
+        && residentOwnershipValidOnCreate(request.resource.data)
+        && residentValuesValid(request.resource.data, request.resource.data.keys());
+
+      allow update: if signedIn()
+        && (
+          (managesResident()
+            && residentOwnershipFieldKept('ownerUid')
+            && residentOwnershipFieldKept('centreId')
+            && residentOwnershipFieldKept('createdBy')
+            && residentValuesValid(request.resource.data,
+                 request.resource.data.diff(resource.data).affectedKeys()))
+          || joinApprovalLinks(residentId)
+          || centreLinkReleased()
+        );
+
+      // A record a senior owns — their profile, memories, life story — is
+      // theirs to delete. A centre that manages it (since they asked to join)
+      // may release it but never delete it. Records a centre created for
+      // someone with no login of their own (ownerUid empty) stay the centre's.
+      allow delete: if signedIn() && managesResident()
+        && resource.data.get('ownerUid', '') in ['', request.auth.uid];
+
+      // Owner / centre, plus family linked to them and assigned providers.
+      allow read: if signedIn()
+        && (
+          resource.data.get('ownerUid',  '') == request.auth.uid
+          || resource.data.get('centreId',  '') == request.auth.uid
+          || resource.data.get('createdBy', '') == request.auth.uid
+          // FIX: the old family clause read
+          //   request.auth.uid in ...linkedResidentIds == false
+          // which parses as ((uid in list) == false) — a no-op that was always
+          // true, and it threw outright for any family user whose doc had no
+          // linkedResidentIds field, denying them every resident. Dropped.
+          || (role() == 'family'          && residentId in linkedResidents())
+          || hasFamilyConnection(residentId)
+          || (hasProviderRole()
+              && (residentId in assignedResidents() || providerAssignedTo(residentId)))
+        );
+    }
+
+    // ── Sessions (chat + Guess My Day check-ins) ──────────────
+    // NEW: this collection had no rule at all, so Firestore denied every read
+    // and write by default. app.js writes here on save, and the manager,
+    // family and provider dashboards all query it — those were failing
+    // silently (app.js catches and warns, the dashboards show "no sessions").
+    //
+    // Reads are authorised from fields on the session document itself rather
+    // than a get() on the resident, because dashboards query these in batches
+    // and a per-row lookup would be both slow and liable to hit the rules
+    // document-access limit.
+    // Binding ownerUid to the caller was not enough: residentId was any string,
+    // so anyone could file a check-in — escalation included — against any
+    // senior, and every family, manager and provider dashboard reading that
+    // resident rendered it as fact. The resident must exist and be one the
+    // caller owns (the senior) or manages (the centre that created it).
+    function residentPath(residentId) {
+      return /databases/$(database)/documents/residents/$(residentId);
+    }
+
+    function writesForResident(residentId) {
+      return residentId is string
+        && residentId != ''
+        && exists(residentPath(residentId))
+        && (
+          get(residentPath(residentId)).data.get('ownerUid',  '') == request.auth.uid
+          || get(residentPath(residentId)).data.get('createdBy', '') == request.auth.uid
+          || get(residentPath(residentId)).data.get('centreId',  '') == request.auth.uid
+        );
+    }
+
+    match /sessions/{sessionId} {
+      // The shape app.js persistSession() writes (checkin.js saves through it).
+      // centreId decides which manager may read the row, so it must be the
+      // resident's own: its centreId, or — what app.js falls back to for a
+      // self-registered senior — its communityId, or nothing.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'residentId', 'ownerUid', 'centreId', 'savedAt', 'durationSecs',
+          'messageCount', 'wellnessScore', 'topicsDiscussed', 'kind', 'checkIn'
+        ])
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && writesForResident(request.resource.data.get('residentId', ''))
+        && request.resource.data.get('centreId', '') in [
+          '',
+          get(residentPath(request.resource.data.residentId)).data.get('centreId', ''),
+          get(residentPath(request.resource.data.residentId)).data.get('communityId', '')
+        ]
+        && request.resource.data.get('savedAt', null) is timestamp
+        && request.resource.data.get('kind', 'chat') in ['chat', 'checkin']
+        // Rendered on the provider and family dashboards (X2-c).
+        && (request.resource.data.get('wellnessScore', null) == null
+            || (request.resource.data.wellnessScore is number
+                && request.resource.data.wellnessScore >= 0
+                && request.resource.data.wellnessScore <= 10))
+        && (request.resource.data.get('checkIn', null) == null
+            || request.resource.data.checkIn is map);
+
+      // residentId is read with .get(): a legacy row without one used to throw
+      // here, and one throwing row denies a whole dashboard query (R12).
+      allow read: if signedIn()
+        && (
+          resource.data.get('ownerUid', '') == request.auth.uid
+          || resource.data.get('centreId', '') == request.auth.uid
+          || (role() == 'family'           && resource.data.get('residentId', '') in linkedResidents())
+          || hasFamilyConnection(resource.data.get('residentId', ''))
+          || (hasProviderRole()
+              && (resource.data.get('residentId', '') in assignedResidents()
+                  || providerAssignedTo(resource.data.get('residentId', ''))))
+        );
+
+      // A check-in records what the senior reported at a point in time,
+      // escalations included. It must never be rewritten into saying something
+      // else, by anyone, ever.
+      allow update: if false;
+
+      // Erasure is not falsification. "Delete my account" has to take the
+      // conversations with it, or the transcripts outlive the account that
+      // owns them — so the owner, and only the owner, may remove their own
+      // records. They can be destroyed but never edited, which keeps the
+      // history trustworthy for as long as it exists.
+      allow delete: if signedIn()
+        && resource.data.get('ownerUid', '') == request.auth.uid;
+    }
+
+    // ── Family-to-senior connections ─────────────────────────
+    // A senior publishes SHA-256 lookup keys for their email and optional
+    // username, and only while they have "Let my family find me" on (F32,
+    // finding 3). Raw identifiers are never stored here.
+    match /senior_link_directory/{directoryKey} {
+      // The hash collection itself cannot be enumerated.
+      allow read, write: if false;
+
+      match /matches/{seniorUid} {
+        // No browser reads it — not a family account, not the senior. The keys
+        // are an unsalted hash, so a family account that could read a match by
+        // its exact key could test email guesses, offline and unthrottled
+        // (finding 2). api/find-senior.js reads it with the service account:
+        // a signed-in family account, a few lookups a minute, findable seniors.
+        allow read: if false;
+
+        allow create: if signedIn()
+          && role() == 'resident'
+          && seniorUid == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+            'seniorUid', 'residentId', 'managerUid', 'kind', 'updatedAt'
+          ])
+          && request.resource.data.get('seniorUid', '') == request.auth.uid
+          && request.resource.data.get('residentId', '') is string
+          && textField(request.resource.data.get('managerUid', ''), 128)
+          && request.resource.data.get('kind', '') in ['email', 'username']
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && exists(/databases/$(database)/documents/residents/$(request.resource.data.residentId))
+          && (
+            get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('ownerUid', '') == request.auth.uid
+            || get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('createdBy', '') == request.auth.uid
+          )
+          && request.resource.data.get('managerUid', '')
+               == get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('centreId', '')
+          // Published only while the senior has "Let my family find me" on.
+          && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('findable', false) == true;
+
+        allow update: if signedIn()
+          && role() == 'resident'
+          && seniorUid == request.auth.uid
+          && resource.data.get('seniorUid', '') == request.auth.uid
+          && request.resource.data.keys().hasOnly([
+            'seniorUid', 'residentId', 'managerUid', 'kind', 'updatedAt'
+          ])
+          && request.resource.data.get('seniorUid', '') == request.auth.uid
+          && request.resource.data.get('residentId', '') is string
+          && textField(request.resource.data.get('managerUid', ''), 128)
+          && request.resource.data.get('kind', '') in ['email', 'username']
+          && request.resource.data.get('updatedAt', null) is timestamp
+          && exists(/databases/$(database)/documents/residents/$(request.resource.data.residentId))
+          && (
+            get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('ownerUid', '') == request.auth.uid
+            || get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('createdBy', '') == request.auth.uid
+          )
+          && request.resource.data.get('managerUid', '')
+               == get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('centreId', '')
+          // Published only while the senior has "Let my family find me" on.
+          && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('findable', false) == true;
+
+        // Their own entry, there or not: turning the setting off clears every
+        // key it might be under, an old one included. The entry's id is the
+        // senior's uid, so this tells nobody anything about anyone else.
+        allow delete: if signedIn()
+          && seniorUid == request.auth.uid
+          && (resource == null || resource.data.get('seniorUid', '') == request.auth.uid);
+      }
+    }
+
+    match /family_links/{linkId} {
+      allow create: if signedIn()
+        && role() == 'family'
+        && request.resource.data.keys().hasOnly([
+          'familyUid', 'familyName', 'seniorUid', 'residentId', 'directoryKey',
+          'managerUid', 'status', 'createdAt'
+        ])
+        && request.resource.data.get('familyUid', '') == request.auth.uid
+        && request.resource.data.get('familyName', '') == profile().get('displayName', '')
+        && textField(request.resource.data.get('familyName', ''), 120)
+        && request.resource.data.get('residentId', '') is string
+        && request.resource.data.get('directoryKey', '') is string
+        && textField(request.resource.data.get('managerUid', ''), 128)
+        && request.resource.data.get('createdAt', null) is timestamp
+        && linkId == request.auth.uid + '_' + request.resource.data.residentId
+        && exists(/databases/$(database)/documents/senior_link_directory/$(request.resource.data.directoryKey)/matches/$(request.resource.data.seniorUid))
+        && get(/databases/$(database)/documents/senior_link_directory/$(request.resource.data.directoryKey)/matches/$(request.resource.data.seniorUid)).data.get('residentId', '') == request.resource.data.residentId
+        && exists(/databases/$(database)/documents/residents/$(request.resource.data.residentId))
+        && request.resource.data.get('managerUid', '')
+             == get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('centreId', '')
+        // A request, never a grant (audits/F32, finding 1). A senior in no
+        // centre used to be linked active on the spot, from nothing but their
+        // email address: their profile, chats, check-ins and life story went
+        // to whoever typed it. Now every link waits for the senior's yes — or,
+        // for a senior in a centre, their manager's.
+        && request.resource.data.get('status', '') == 'pending'
+        // Someone the senior said no to and blocked cannot ask again. The same
+        // list the family inbox uses (residents.messageBlocked).
+        && !(request.auth.uid in get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('messageBlocked', []))
+        // Nor anyone at all once the senior has turned "Let my family find me"
+        // off, whatever directory entry is left from before.
+        && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('findable', false) == true
+        && (
+          get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('ownerUid', '') == request.resource.data.seniorUid
+          || get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('createdBy', '') == request.resource.data.seniorUid
+        );
+
+      // The family member, the routed manager, and the senior it points at,
+      // who sees every request and every connection on the Family screen.
+      allow read: if signedIn()
+        && (resource.data.get('familyUid', '') == request.auth.uid
+            || resource.data.get('managerUid', '') == request.auth.uid
+            || resource.data.get('seniorUid', '') == request.auth.uid);
+
+      allow update: if signedIn()
+        && role() == 'community_manager'
+        && resource.data.get('managerUid', '') == request.auth.uid
+        && resource.data.get('status', '') == 'pending'
+        // Only while the senior is still in this centre. managerUid is fixed
+        // when the request is made; a centre that has since released the
+        // senior must not be able to grant a family member their record
+        // (bug hunt 2026-10-22, BUG-004). Read stays with the stored
+        // managerUid: profile.html lists links with a query, which a
+        // per-document get() would refuse. Delete is limited the same way as
+        // this update, further down.
+        && get(/databases/$(database)/documents/residents/$(resource.data.residentId)).data.get('centreId', '') == request.auth.uid
+        && request.resource.data.get('status', '') in ['active', 'rejected']
+        && request.resource.data.get('reviewedBy', '') == request.auth.uid
+        && request.resource.data.get('reviewedAt', null) == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'reviewedBy', 'reviewedAt']);
+
+      // The senior answers a request for their own record: yes or no, once,
+      // as themselves, on the server's clock, and nothing else changes.
+      allow update: if signedIn()
+        && role() == 'resident'
+        && resource.data.get('seniorUid', '') == request.auth.uid
+        && resource.data.get('status', '') == 'pending'
+        && request.resource.data.get('status', '') in ['active', 'rejected']
+        && request.resource.data.get('reviewedBy', '') == request.auth.uid
+        && request.resource.data.get('reviewedAt', null) == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'reviewedBy', 'reviewedAt']);
+
+      // The senior can remove anyone, at any time — the links made before
+      // anyone asked them included (F32, finding 4). The family member can
+      // withdraw or clear their own; a block stops them asking again.
+      // The routed manager only while the senior is still in their centre:
+      // a centre the senior has left must not cut off a family member the
+      // senior approved (BUG-004, QA review). Account deletion leaves such a
+      // link where it is (account-deletion.js).
+      allow delete: if signedIn()
+        && (resource.data.get('familyUid', '') == request.auth.uid
+            || resource.data.get('seniorUid', '') == request.auth.uid
+            || (resource.data.get('managerUid', '') == request.auth.uid
+                && get(/databases/$(database)/documents/residents/$(resource.data.residentId)).data.get('centreId', '') == request.auth.uid));
+    }
+
+    // ── Centres ───────────────────────────────────────────────
+    // NEW: also had no rule. dashboard.html reads and writes centres/{uid}
+    // for the manager's own centre profile, and elderly-profile.html reads a
+    // centre by id — both were denied.
+    match /centres/{centreId} {
+      // The document id IS the owning manager's uid (setDoc(doc(db,'centres',uid))).
+      allow create, update: if isSelf(centreId)
+        && request.resource.data.get('ownerId', '') == request.auth.uid;
+      allow delete: if isSelf(centreId);
+
+      // The owner, and an account whose profile points at this centre (what
+      // elderly-profile.html reads). users.centreId cannot be self-assigned —
+      // see linkageFieldsEmpty() and the users update rule — so this is not
+      // "every signed-in account", which exposed every centre's phone and
+      // address to anyone who signed up.
+      allow read: if isSelf(centreId)
+        || (hasProfile() && profile().get('centreId', '') == centreId);
+    }
+
+    // ── Communities ───────────────────────────────────────────
+    match /communities/{communityId} {
+      allow read: if resource.data.get('isPublic', false) == true
+        || (signedIn() && resource.data.get('managerUid', '') == request.auth.uid);
+      // `verified`, `verifiedName` and `verifiedAt` are written only by the
+      // admin console (api/admin-verifications.js) when it approves the
+      // manager. Only a verified centre can post news to seniors, and its name
+      // — the one heading that news — cannot be changed from a browser.
+      // Deleting and recreating a centre (or adding a new one) gives an
+      // unverified centre, which goes back to the admin queue.
+      allow create: if signedIn()
+        && request.resource.data.get('managerUid', '') == request.auth.uid
+        && !('verified' in request.resource.data)
+        && !('verifiedName' in request.resource.data)
+        && !('verifiedAt' in request.resource.data);
+      allow update: if signedIn()
+        && resource.data.get('managerUid', '') == request.auth.uid
+        && request.resource.data.get('verified', false) == resource.data.get('verified', false)
+        && request.resource.data.get('verifiedName', '') == resource.data.get('verifiedName', '')
+        && request.resource.data.get('verifiedAt', null) == resource.data.get('verifiedAt', null)
+        && (resource.data.get('verified', false) != true
+            || (request.resource.data.get('name', '') == resource.data.get('name', '')
+                && request.resource.data.get('managerUid', '') == resource.data.get('managerUid', '')));
+      allow delete: if signedIn()
+        && resource.data.get('managerUid', '') == request.auth.uid;
+    }
+
+    // ── Provider directory and manager-approved assignments ───
+    // Approved providers publish only the small identity card a centre manager
+    // needs in order to assign care. The full users document stays private.
+    function providerDirectoryValid(providerId, d) {
+      return d.keys().hasOnly([
+          'providerUid', 'displayName', 'organisation', 'providerType',
+          'createdAt', 'updatedAt'
+        ])
+        && d.providerUid == providerId
+        && d.providerUid == request.auth.uid
+        && hasProviderRole()
+        && isApproved()
+        && textField(d.get('displayName', ''), 120)
+        && textField(d.get('organisation', ''), 120)
+        && textField(d.get('providerType', ''), 80)
+        && d.get('displayName', '') == profile().get('displayName', '')
+        && d.get('organisation', '') == profile().get('organisation', '')
+        && d.get('providerType', '') == profile().get('providerType', '');
+    }
+
+    match /provider_directory/{providerId} {
+      // Its own card for the provider (and for account deletion's
+      // providerUid query, which every account runs); the list only for a
+      // manager the admin console has approved, the same gate as assigning.
+      // isSelf first: resource is null when the card does not exist yet, and
+      // provider-dashboard.html reads it before deciding to create it.
+      allow read: if isSelf(providerId)
+        || (signedIn()
+          && (resource.data.get('providerUid', '') == request.auth.uid
+              || role() == 'resident'
+              || (role() == 'community_manager' && isApproved())));
+      allow create: if signedIn() && providerDirectoryValid(providerId, request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if signedIn() && providerDirectoryValid(providerId, request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isSelf(providerId);
+    }
+
+    function managerOwnsResident(residentId) {
+      return residentId is string && residentId != ''
+        && exists(residentPath(residentId))
+        && (
+          get(residentPath(residentId)).data.get('centreId', '') == request.auth.uid
+          || get(residentPath(residentId)).data.get('createdBy', '') == request.auth.uid
+        );
+    }
+
+    match /provider_assignments/{assignmentId} {
+      // Reading one's own rows needs no approval: providerAssignedTo() is what
+      // grants access, and it checks isApproved(). Account deletion queries
+      // providerUid for every account, so this must be provable for anyone.
+      allow read: if signedIn()
+        && (resource.data.get('providerUid', '') == request.auth.uid
+            || resource.data.get('managerUid', '') == request.auth.uid);
+      // A self-registered, unreviewed manager must not hand a verified
+      // provider access to residents it typed in.
+      allow create: if signedIn() && role() == 'community_manager' && isApproved()
+        && request.resource.data.keys().hasOnly([
+          'providerUid', 'residentId', 'managerUid', 'createdAt'
+        ])
+        && request.resource.data.managerUid == request.auth.uid
+        && assignmentId == request.resource.data.providerUid + '_' + request.resource.data.residentId
+        && exists(/databases/$(database)/documents/provider_directory/$(request.resource.data.providerUid))
+        && providerIsApproved(request.resource.data.providerUid)
+        && managerOwnsResident(request.resource.data.residentId)
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.get('managerUid', '') == request.auth.uid
+            || resource.data.get('providerUid', '') == request.auth.uid);
+    }
+
+    // ── Centre news and provider programmes (announcements.js) ─
+    // Read by any signed-in account: it is what a centre would pin on its wall.
+    // Written only by an account the admin console has approved — a scam post
+    // ("free iPad, send your details") from an unchecked account would reach
+    // every senior at once. verificationStatus can never be set to approved
+    // from a browser (see verificationFieldsValidOnUpdate), so this holds.
+    // Posts are never edited; the author may delete their own.
+    function isApproved() {
+      return hasProfile() && profile().get('verificationStatus', '') == 'approved';
+    }
+
+    function managesCommunity(communityId) {
+      return communityId is string
+        && exists(/databases/$(database)/documents/communities/$(communityId))
+        && get(/databases/$(database)/documents/communities/$(communityId)).data.get('managerUid', '') == request.auth.uid;
+    }
+
+    function verifiedCommunity(communityId) {
+      return get(/databases/$(database)/documents/communities/$(communityId)).data.get('verified', false) == true;
+    }
+
+    function validAnnouncement() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['source', 'communityId', 'communityName', 'organisation',
+                               'authorUid', 'authorName', 'title', 'body', 'eventDate', 'link', 'createdAt'])
+        && d.authorUid == request.auth.uid
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 120
+        && d.get('body', '') is string && d.get('body', '').size() <= 2000
+        && d.get('authorName', '') is string && d.get('authorName', '').size() <= 120
+        && d.get('eventDate', '') is string
+        && (d.get('eventDate', '') == '' || d.get('eventDate', '').matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'))
+        && d.get('link', '') is string && d.get('link', '').size() <= 500
+        && (d.get('link', '') == '' || d.get('link', '').matches('https://[^ ]+'))
+        && d.createdAt == request.time;
+    }
+
+    // Reviewed blank templates and answers are private to sender and recipient.
+    match /center_forms/{formId} {
+      function formParty() {
+        return resource.data.get('authorUid','') == request.auth.uid
+          || resource.data.get('seniorUid','') == request.auth.uid;
+      }
+      allow get: if signedIn() && ((resource == null && role() == 'community_manager' && isApproved()) || formParty());
+      allow list: if signedIn() && formParty();
+      allow create: if signedIn() && role() == 'community_manager' && isApproved()
+        && request.resource.data.keys().hasOnly(['authorUid','residentId','seniorUid','title','questionsJson','answersJson','reviewed','createdAt','completedAt'])
+        && request.resource.data.authorUid == request.auth.uid
+        && requiredText(request.resource.data.residentId,1500)
+        && requiredText(request.resource.data.seniorUid,128)
+        && requiredText(request.resource.data.title,120)
+        && requiredText(request.resource.data.questionsJson,24000)
+        && request.resource.data.answersJson == ''
+        && request.resource.data.reviewed == false
+        && request.resource.data.completedAt == null
+        && request.resource.data.createdAt == request.time
+        && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('centreId','') == request.auth.uid
+        && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('ownerUid','') == request.resource.data.seniorUid
+        && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('status','active') == 'active';
+      allow update: if signedIn() && resource.data.seniorUid == request.auth.uid && role() == 'resident'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answersJson','reviewed','completedAt'])
+        && requiredText(request.resource.data.answersJson,40000)
+        && request.resource.data.reviewed == true
+        && request.resource.data.completedAt == request.time;
+      allow delete: if signedIn() && formParty();
+    }
+
+    // An approved directory membership permits only private deliveries, not
+    // resident profile reads/edits. Its follow must still be active at send.
+    function connectedMemberDelivery(d) {
+      let id = d.get('connectionId', '');
+      let path = /databases/$(database)/documents/center_connections/$(id);
+      return id is string && id.size() > 0 && id.size() <= 300
+        && exists(path)
+        && get(path).data.status == 'approved'
+        && get(path).data.managerUid == request.auth.uid
+        && get(path).data.residentId == d.residentId
+        && get(path).data.seniorUid == d.seniorUid
+        && exists(/databases/$(database)/documents/follows/$(d.seniorUid + '_' + get(path).data.communityId));
+    }
+
+    function providerMemberDelivery(d) {
+      let id = d.get('providerConnectionId', '');
+      let path = /databases/$(database)/documents/provider_connections/$(id);
+      return id is string && id.size() > 0 && id.size() <= 300
+        && id == d.seniorUid + '_' + request.auth.uid
+        && exists(path)
+        && get(path).data.status == 'approved'
+        && get(path).data.providerUid == request.auth.uid
+        && get(path).data.residentId == d.residentId
+        && get(path).data.seniorUid == d.seniorUid;
+    }
+
+    // Private deliveries never enter the publicly readable announcements feed.
+    match /member_announcements/{deliveryId} {
+      function party() {
+        return resource.data.get('authorUid','') == request.auth.uid
+          || resource.data.get('seniorUid','') == request.auth.uid;
+      }
+      allow get: if signedIn() && ((resource == null && (role() == 'community_manager' || hasProviderRole()) && isApproved()) || party());
+      allow list: if signedIn() && party();
+      allow create: if signedIn() && role() == 'community_manager' && isApproved()
+        && request.resource.data.keys().hasOnly(['authorUid','residentId','seniorUid','title','body','createdAt','connectionId'])
+        && request.resource.data.authorUid == request.auth.uid
+        && requiredText(request.resource.data.residentId,1500)
+        && requiredText(request.resource.data.seniorUid,128)
+        && requiredText(request.resource.data.title,120)
+        && requiredText(request.resource.data.body,2000)
+        && request.resource.data.createdAt == request.time
+        && (('connectionId' in request.resource.data && connectedMemberDelivery(request.resource.data))
+          || (!('connectionId' in request.resource.data)
+            && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('centreId','') == request.auth.uid
+            && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('ownerUid','') == request.resource.data.seniorUid
+            && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.get('status','active') == 'active'));
+      allow update: if false;
+      allow create: if signedIn() && hasProviderRole() && isApproved()
+        && request.resource.data.keys().hasOnly(['authorUid','residentId','seniorUid','title','body','createdAt','providerConnectionId'])
+        && request.resource.data.keys().hasAll(['authorUid','residentId','seniorUid','title','body','createdAt','providerConnectionId'])
+        && request.resource.data.authorUid == request.auth.uid
+        && requiredText(request.resource.data.residentId,1500)
+        && requiredText(request.resource.data.seniorUid,128)
+        && requiredText(request.resource.data.title,120)
+        && requiredText(request.resource.data.body,2000)
+        && request.resource.data.createdAt == request.time
+        && providerMemberDelivery(request.resource.data);
+      allow delete: if signedIn() && party();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && isApproved() && validAnnouncement()
+        && (
+          (request.resource.data.source == 'community'
+            && role() == 'community_manager'
+            && managesCommunity(request.resource.data.get('communityId', null))
+            && verifiedCommunity(request.resource.data.communityId)
+            // Headed by the centre's real (reviewed, frozen) name, not free text.
+            && request.resource.data.get('communityName', '')
+                 == get(/databases/$(database)/documents/communities/$(request.resource.data.communityId)).data.get('name', ''))
+          || (request.resource.data.source == 'provider'
+            && hasProviderRole()
+            && !('communityId' in request.resource.data)
+            // Headed by the organisation the admin reviewed, not free text.
+            && request.resource.data.get('organisation', '') == profile().get('organisation', ''))
+        );
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.get('authorUid', '') == request.auth.uid;
+    }
+
+    // A senior opting in to a public centre's news: one doc per senior and
+    // centre, id <uid>_<communityId>. The senior sees and removes their own;
+    // the centre's manager may read them (to count followers) but not write.
+    match /follows/{followId} {
+      allow read: if signedIn()
+        && (resource.data.get('uid', '') == request.auth.uid
+            || managesCommunity(resource.data.get('communityId', null)));
+      allow create: if signedIn()
+        && role() == 'resident'
+        && request.resource.data.keys().hasOnly(['uid', 'communityId', 'communityName', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.communityId is string
+        && followId == request.auth.uid + '_' + request.resource.data.communityId
+        && request.resource.data.get('communityName', '') is string
+        && request.resource.data.get('communityName', '').size() <= 120
+        && exists(/databases/$(database)/documents/communities/$(request.resource.data.communityId))
+        && get(/databases/$(database)/documents/communities/$(request.resource.data.communityId)).data.get('isPublic', false) == true
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.get('uid', '') == request.auth.uid;
+    }
+
+    // A senior's opt-in program subscription. It grants no resident/profile
+    // access and is not a provider assignment. Only its owner can read it.
+    // Provider service applications share the name only, not a care assignment.
+    match /provider_connections/{connectionId} {
+      allow read, delete: if signedIn() &&
+        (resource.data.seniorUid == request.auth.uid || resource.data.providerUid == request.auth.uid);
+      allow create: if signedIn() && role() == 'resident'
+        && request.resource.data.keys().hasOnly(['seniorUid','residentId','seniorName','providerUid','status','consentVersion','createdAt'])
+        && request.resource.data.keys().hasAll(['seniorUid','residentId','seniorName','providerUid','status','consentVersion','createdAt'])
+        && request.resource.data.seniorUid == request.auth.uid
+        && request.resource.data.residentId is string && request.resource.data.residentId.size() > 0 && request.resource.data.residentId.size() <= 128
+        && request.resource.data.providerUid is string && request.resource.data.providerUid.size() > 0 && request.resource.data.providerUid.size() <= 128
+        && connectionId == request.auth.uid + '_' + request.resource.data.providerUid
+        && request.resource.data.seniorName is string && request.resource.data.seniorName.size() > 0 && request.resource.data.seniorName.size() <= 120
+        && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.ownerUid == request.auth.uid
+        && get(/databases/$(database)/documents/residents/$(request.resource.data.residentId)).data.name == request.resource.data.seniorName
+        && providerIsApproved(request.resource.data.providerUid)
+        && exists(/databases/$(database)/documents/provider_directory/$(request.resource.data.providerUid))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.consentVersion == '2026-10-27-provider-membership'
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && hasProviderRole() && isApproved()
+        && resource.data.providerUid == request.auth.uid && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt'])
+        && request.resource.data.status in ['approved','declined']
+        && request.resource.data.reviewedBy == request.auth.uid && request.resource.data.reviewedAt == request.time;
+    }
+
+    match /provider_follows/{followId} {
+      allow read, delete: if signedIn() && resource.data.get('uid', '') == request.auth.uid;
+      allow create: if signedIn() && role() == 'resident'
+        && request.resource.data.keys().hasOnly(['uid', 'providerUid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.providerUid is string
+        && request.resource.data.providerUid.size() > 0
+        && request.resource.data.providerUid.size() <= 128
+        && followId == request.auth.uid + '_' + request.resource.data.providerUid
+        && exists(/databases/$(database)/documents/provider_directory/$(request.resource.data.providerUid))
+        && providerIsApproved(request.resource.data.providerUid)
+        && get(/databases/$(database)/documents/users/$(request.resource.data.providerUid)).data.get('verificationStatus', '') == 'approved'
+        && request.resource.data.createdAt == request.time;
+      allow update: if false;
+    }
+
+    // ── Site metrics ──────────────────────────────────────────
+    // A single public counter, bumped by the landing page.
+    //
+    // Writable without signing in, on purpose: the number it exists to report
+    // is how many people reached the site, and almost none of them have an
+    // account. The shape is therefore pinned hard so an open write cannot be
+    // turned into free storage — only these two fields, and `visits` may only
+    // ever move up by exactly one, so the worst a script can do is inflate a
+    // vanity number it could inflate by reloading anyway.
+    match /metrics/{metricId} {
+      allow read: if true;
+
+      allow create: if metricId == 'site'
+        && request.resource.data.keys().hasOnly(['visits', 'updatedAt'])
+        && request.resource.data.visits == 1;
+
+      allow update: if metricId == 'site'
+        && request.resource.data.keys().hasOnly(['visits', 'updatedAt'])
+        && request.resource.data.visits is int
+        && request.resource.data.visits == resource.data.get('visits', 0) + 1;
+
+      allow delete: if false;
+    }
+
+    // ── Registrations ─────────────────────────────────────────
+    // join.html is a public sign-up form for seniors who have no account, so
+    // create stays open to signed-out visitors — but no longer `if true`. It
+    // carries national ID number, date of birth, address and emergency
+    // contacts, so, like metrics/site, the shape is pinned hard: exactly the
+    // fields join.html submitRegistration() writes, typed and size-capped,
+    // server timestamps, consent given, and status 'pending' so a row cannot
+    // arrive pre-approved. It must go to the manager who actually runs the
+    // community it names, so nobody can push rows into another manager's
+    // queue. (Rate-limiting anonymous writes needs App Check — a console
+    // setting, see audits/MANUAL-ACTIONS.md Part 2.)
+    function registrationShapeValid(d) {
+      return d.keys().hasOnly(registrationFields())
+        && d.keys().hasAll(registrationFields())
+        && requiredText(d.centreId, 128)
+        && requiredText(d.communityId, 128)
+        && textField(d.communityName, 200)
+        && requiredText(d.name, 200)
+        && textField(d.firstName, 100)
+        && textField(d.lastName, 100)
+        && d.age is int && d.age >= 65 && d.age <= 120
+        && textField(d.dob, 10)
+        && (d.dob == '' || d.dob.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && textField(d.gender, 20)
+        && textField(d.nationality, 100)
+        && textField(d.icNumber, 40)
+        && requiredText(d.phone, 40)
+        && textField(d.email, 254)
+        && textField(d.address, 500)
+        && textField(d.emergencyName, 200)
+        && textField(d.emergencyRelation, 20)
+        && textField(d.emergencyPhone, 40)
+        && d.privacyConsent == true
+        && d.privacyConsentAt == request.time
+        && textField(d.privacyPolicyVersion, 20)
+        && d.status == 'pending'
+        && d.createdAt == request.time
+        && d.updatedAt == request.time;
+    }
+
+    function registrationFields() {
+      return [
+        'centreId', 'communityId', 'communityName',
+        'name', 'firstName', 'lastName', 'age', 'dob', 'gender', 'nationality', 'icNumber',
+        'phone', 'email', 'address',
+        'emergencyName', 'emergencyRelation', 'emergencyPhone',
+        'privacyConsent', 'privacyConsentAt', 'privacyPolicyVersion',
+        'status', 'createdAt', 'updatedAt'
+      ];
+    }
+
+    // The resident an approval creates in the same batch, on this manager's
+    // roster and under the id derived from the registration.
+    function rosterResidentWritten(regId) {
+      return request.resource.data.get('residentId', '') == 'registration_' + regId
+        && existsAfter(residentPath(request.resource.data.residentId))
+        && getAfter(residentPath(request.resource.data.residentId)).data.get('centreId', '') == request.auth.uid
+        && getAfter(residentPath(request.resource.data.residentId)).data.get('createdBy', '') == request.auth.uid;
+    }
+
+    match /registrations/{regId} {
+      allow create: if registrationShapeValid(request.resource.data)
+        && exists(/databases/$(database)/documents/communities/$(request.resource.data.communityId))
+        // Only a verified centre may collect a senior's IC number, date of birth
+        // and address: anyone can create a public community (BUG-001, 2026-10-22).
+        && verifiedCommunity(request.resource.data.communityId)
+        && get(/databases/$(database)/documents/communities/$(request.resource.data.communityId)).data.get('managerUid', '')
+             == request.resource.data.centreId;
+      allow read, delete: if signedIn()
+        && resource.data.get('centreId', '') == request.auth.uid;
+      // A registration is decided once. Approval stores the deterministic
+      // resident id created in the same client batch; rejection creates none.
+      // A registration approved before approvals created a resident (status
+      // approved, no residentId) may be given its roster resident once.
+      allow update: if signedIn()
+        && resource.data.get('centreId', '') == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && (
+          (resource.data.get('status', '') == 'pending'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'updatedAt', 'residentId'])
+            && (
+              (request.resource.data.status == 'approved' && rosterResidentWritten(regId))
+              || (request.resource.data.status == 'rejected'
+                && !('residentId' in request.resource.data))
+            ))
+          || (resource.data.get('status', '') == 'approved'
+            && !('residentId' in resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['updatedAt', 'residentId'])
+            && rosterResidentWritten(regId))
+        );
+    }
+
+    // ── Visit Requests ────────────────────────────────────────
+    // A standalone senior asks to visit a community centre. The request is
+    // created by the senior and decided by that community's manager, so both
+    // sides are bound to their own uid at write time.
+    match /visit_requests/{visitId} {
+      // The shape communities.html writes, and nothing else: the queue used
+      // to take any document up to 1 MiB addressed to any uid (BUG-010).
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'residentUid', 'residentName', 'residentEmail', 'communityId', 'communityName',
+          'managerUid', 'managerName', 'visitDate', 'startAt', 'endAt', 'note',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.get('residentUid', '') == request.auth.uid
+        && requiredText(request.resource.data.get('managerUid', ''), 128)
+        && requiredText(request.resource.data.get('communityId', ''), 128)
+        && exists(/databases/$(database)/documents/communities/$(request.resource.data.communityId))
+        && get(/databases/$(database)/documents/communities/$(request.resource.data.communityId)).data.get('managerUid', '')
+             == request.resource.data.managerUid
+        && textField(request.resource.data.get('residentName', ''), 120)
+        && textField(request.resource.data.get('residentEmail', ''), 254)
+        && textField(request.resource.data.get('communityName', ''), 200)
+        && textField(request.resource.data.get('managerName', ''), 120)
+        && textField(request.resource.data.get('note', ''), 1000)
+        && request.resource.data.get('visitDate', '') is string
+        && request.resource.data.visitDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.get('startAt', null) is timestamp
+        && request.resource.data.get('endAt', null) is timestamp
+        && request.resource.data.endAt > request.resource.data.startAt
+        && request.resource.data.get('createdAt', null) is timestamp
+        && request.resource.data.get('updatedAt', null) is timestamp
+        && request.resource.data.get('status', '') == 'pending';
+
+      allow read: if signedIn()
+        && (
+          resource.data.get('residentUid', '') == request.auth.uid
+          || resource.data.get('managerUid', '')  == request.auth.uid
+        );
+
+      // The manager accepts or rejects; the senior may only cancel their own
+      // request. Neither side can rewrite who the request belongs to.
+      allow update: if signedIn()
+        && request.resource.data.get('residentUid', '') == resource.data.get('residentUid', '')
+        && request.resource.data.get('managerUid', '')  == resource.data.get('managerUid', '')
+        && (
+          // ...and the date, time and note stay as the senior sent them.
+          (resource.data.get('managerUid', '') == request.auth.uid
+            && request.resource.data.get('status', '') in ['accepted', 'rejected']
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'decidedAt', 'updatedAt']))
+          || (resource.data.get('residentUid', '') == request.auth.uid
+            && request.resource.data.get('status', '') == 'cancelled'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status', 'updatedAt']))
+        );
+
+      allow delete: if signedIn()
+        && resource.data.get('residentUid', '') == request.auth.uid;
+    }
+
+    // ── Community Centre Attendance ──────────────────────────
+    // Opening a membership link, or explicitly signing in at a connected
+    // directory center, records one deterministic entry per
+    // resident per day. The resident may create and read their own record;
+    // the centre manager named on it may read it for the attendance register.
+    //
+    // The shape alone used to be checked, so any account could put rows in any
+    // manager's register for any resident and any day; the "is this senior a
+    // member of this centre" test lived only in app.js. Now the row has to be
+    // true to its relationships:
+    //   • the resident is the caller's own; a link needs approved membership,
+    //     while a button/voice visit needs a current verified-center follow;
+    //   • managerUid is the manager of that community;
+    //   • the id is the deterministic <community>_<resident>_<day> one that
+    //     app.js recordAutomaticAttendance() builds (same character cleaning),
+    //     so there is one row per resident per day and `update: false` holds;
+    //   • day is the caller's current local day — anywhere from UTC-12 to
+    //     UTC+14 — and checkedInAt is the server's clock.
+    function cleanAttendanceKey(s) {
+      return s.replace('[^a-zA-Z0-9_-]', '_');
+    }
+
+    function attendanceDayIsCurrent(day) {
+      let start = timestamp.date(int(day[0:4]), int(day[5:7]), int(day[8:10]));
+      return request.time >= start - duration.value(14, 'h')
+        && request.time < start + duration.value(36, 'h');
+    }
+
+    function communityPath(communityId) {
+      return /databases/$(database)/documents/communities/$(communityId);
+    }
+
+    // Directory connections allow visits to several verified centers without
+    // granting any of them access to the senior's private resident record.
+    function directoryAttendance(communityId) {
+      let c = get(communityPath(communityId)).data;
+      let follow = /databases/$(database)/documents/follows/$(request.auth.uid + '_' + communityId);
+      return role() == 'resident'
+        && c.get('isPublic', false) == true
+        && c.get('verified', false) == true
+        && get(/databases/$(database)/documents/users/$(c.managerUid)).data.get('verificationStatus', '') == 'approved'
+        && exists(follow)
+        && get(follow).data.get('uid', '') == request.auth.uid
+        && get(follow).data.get('communityId', '') == communityId;
+    }
+
+    match /attendance/{attendanceId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'communityId', 'communityName', 'managerUid', 'residentId',
+          'residentName', 'ownerUid', 'day', 'method', 'checkedInAt'
+        ])
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && requiredText(request.resource.data.get('managerUid', ''), 128)
+        && requiredText(request.resource.data.get('communityId', ''), 128)
+        && requiredText(request.resource.data.get('residentId', ''), 128)
+        && textField(request.resource.data.get('communityName', ''), 200)
+        && textField(request.resource.data.get('residentName', ''), 200)
+        && request.resource.data.get('method', '') in ['centre_link', 'centre_button', 'centre_voice']
+        && request.resource.data.get('checkedInAt', null) == request.time
+        && request.resource.data.get('day', '') is string
+        && request.resource.data.day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && attendanceDayIsCurrent(request.resource.data.day)
+        && attendanceId == cleanAttendanceKey(request.resource.data.communityId)
+             + '_' + cleanAttendanceKey(request.resource.data.residentId)
+             + '_' + request.resource.data.day
+        && exists(residentPath(request.resource.data.residentId))
+        && get(residentPath(request.resource.data.residentId)).data.get('ownerUid', '') == request.auth.uid
+        && exists(communityPath(request.resource.data.communityId))
+        && get(communityPath(request.resource.data.communityId)).data.get('managerUid', '') == request.resource.data.managerUid
+        && (
+          (request.resource.data.method == 'centre_link'
+            && get(residentPath(request.resource.data.residentId)).data.get('communityId', '') == request.resource.data.communityId
+            && get(residentPath(request.resource.data.residentId)).data.get('centreId', '') == request.resource.data.managerUid)
+          || (request.resource.data.method in ['centre_button', 'centre_voice']
+            && directoryAttendance(request.resource.data.communityId))
+        );
+
+      // The app checks the deterministic daily id before creating it. A
+      // signed-in user may learn that a guessed id does not exist; existing
+      // records still reveal their data only to the owner and manager.
+      allow get: if signedIn()
+        && (
+          !exists(/databases/$(database)/documents/attendance/$(attendanceId))
+          || resource.data.get('ownerUid', '') == request.auth.uid
+          || resource.data.get('managerUid', '') == request.auth.uid
+        );
+
+      allow list: if signedIn()
+        && (
+          resource.data.get('ownerUid', '') == request.auth.uid
+          || resource.data.get('managerUid', '') == request.auth.uid
+        );
+
+      allow delete: if signedIn()
+        && (
+          resource.data.get('ownerUid', '') == request.auth.uid
+          || resource.data.get('managerUid', '') == request.auth.uid
+        );
+
+      allow update: if false;
+    }
+
+    // Private two-way chat. Sending needs an active link and senior consent.
+    function familyChatAllowed(d) {
+      let resident = get(residentPath(d.residentId)).data;
+      let link = get(/databases/$(database)/documents/family_links/$(d.familyUid + '_' + d.residentId)).data;
+      return resident.get('ownerUid','') == d.seniorUid
+        && link.get('status','') == 'active'
+        && link.get('familyUid','') == d.familyUid
+        && link.get('seniorUid','') == d.seniorUid
+        && link.get('residentId','') == d.residentId
+        && d.familyUid in resident.get('messageFrom',[])
+        && !(d.familyUid in resident.get('messageBlocked',[]));
+    }
+    match /family_chat/{messageId} {
+      function chatReader() {
+        // Original participants keep their delivered history and can clean up
+        // their account. Revoking a link stops all NEW messages in both directions.
+        return resource.data.get('seniorUid','') == request.auth.uid
+          || resource.data.get('familyUid','') == request.auth.uid;
+      }
+      // Missing UUID lookup is needed to retry a transaction after a lost response.
+      allow get: if signedIn() && ((resource == null && role() in ['family','resident']) || chatReader());
+      allow list: if signedIn() && chatReader();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['residentId','seniorUid','familyUid','senderUid','text','createdAt'])
+        && requiredText(request.resource.data.residentId,1500)
+        && requiredText(request.resource.data.seniorUid,128)
+        && requiredText(request.resource.data.familyUid,128)
+        && request.resource.data.senderUid == request.auth.uid
+        && ((role() == 'family' && request.resource.data.familyUid == request.auth.uid)
+          || (role() == 'resident' && request.resource.data.seniorUid == request.auth.uid))
+        && requiredText(request.resource.data.text,1000)
+        && request.resource.data.text.trim().size() > 0
+        && request.resource.data.createdAt == request.time
+        && familyChatAllowed(request.resource.data);
+      allow update: if false;
+      allow delete: if signedIn() && chatReader();
+    }
+
+    function videoPartPath(id, index) {
+      return /databases/$(database)/documents/family_contribution_media/$(id + '_' + string(index));
+    }
+    function videoPartsExist(id, count) {
+      return existsAfter(videoPartPath(id,0))
+        && (count < 2 || existsAfter(videoPartPath(id,1)))
+        && (count < 3 || existsAfter(videoPartPath(id,2)))
+        && (count < 4 || existsAfter(videoPartPath(id,3)))
+        && (count < 5 || existsAfter(videoPartPath(id,4)))
+        && (count < 6 || existsAfter(videoPartPath(id,5)))
+        && (count < 7 || existsAfter(videoPartPath(id,6)))
+        && (count < 8 || existsAfter(videoPartPath(id,7)));
+    }
+    function videoPartsDeleted(id, count) {
+      return !existsAfter(videoPartPath(id,0))
+        && (count < 2 || !existsAfter(videoPartPath(id,1)))
+        && (count < 3 || !existsAfter(videoPartPath(id,2)))
+        && (count < 4 || !existsAfter(videoPartPath(id,3)))
+        && (count < 5 || !existsAfter(videoPartPath(id,4)))
+        && (count < 6 || !existsAfter(videoPartPath(id,5)))
+        && (count < 7 || !existsAfter(videoPartPath(id,6)))
+        && (count < 8 || !existsAfter(videoPartPath(id,7)));
+    }
+    function videoMetaValid(v) {
+      return v is map && v.keys().hasOnly(['mime','bytes','duration','chunks','length'])
+        && v.mime in ['video/mp4','video/webm']
+        && v.bytes is int && v.bytes > 0 && v.bytes <= 3000000
+        && v.duration is number && v.duration > 0 && v.duration <= 60
+        && v.chunks is int && v.chunks > 0 && v.chunks <= 8
+        && v.length is int && v.length > (v.chunks - 1) * 500000
+        && v.length <= v.chunks * 500000 && v.length <= 4000000;
+    }
+    match /family_contribution_media/{partId} {
+      function participant() {
+        return resource.data.get('familyUid','') == request.auth.uid
+          || resource.data.get('seniorUid','') == request.auth.uid;
+      }
+      allow read: if signedIn() && participant();
+      allow delete: if signedIn() && (participant() || (resource == null && role() in ['family','resident']));
+      allow update: if false;
+      allow create: if signedIn() && role() == 'family'
+        && request.resource.data.keys().hasOnly(['contributionId','familyUid','seniorUid','index','data','createdAt'])
+        && request.resource.data.familyUid == request.auth.uid
+        && requiredText(request.resource.data.contributionId,128)
+        && request.resource.data.index is int && request.resource.data.index >= 0 && request.resource.data.index < 8
+        && partId == request.resource.data.contributionId + '_' + string(request.resource.data.index)
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.kind == 'video'
+        && getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.familyUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.seniorUid == request.resource.data.seniorUid
+        && request.resource.data.index < getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.video.chunks
+        && request.resource.data.data is string
+        && request.resource.data.data.size() == (request.resource.data.index == getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.video.chunks - 1
+          ? getAfter(/databases/$(database)/documents/family_contributions/$(request.resource.data.contributionId)).data.video.length - request.resource.data.index * 500000 : 500000)
+        && request.resource.data.data.matches('[A-Za-z0-9+/]+=*');
+    }
+
+    // F62: family proposals are NOT AI memories until the senior reviews them.
+    match /family_contributions/{contributionId} {
+      function participant() {
+        return resource.data.get('seniorUid','') == request.auth.uid
+          || resource.data.get('familyUid','') == request.auth.uid;
+      }
+      allow get: if signedIn() && ((resource == null && role() in ['family','resident']) || participant());
+      allow list: if signedIn() && participant();
+      allow delete: if signedIn() && participant()
+        && (resource.data.kind != 'video' || videoPartsDeleted(contributionId,resource.data.video.chunks));
+      allow create: if signedIn() && role() == 'family'
+        && request.resource.data.keys().hasOnly(['residentId','seniorUid','familyUid','text','photo','kind','status','reviewedText','createdAt','video'])
+        && request.resource.data.keys().hasAll(['residentId','seniorUid','familyUid','text','photo','kind','status','reviewedText','createdAt'])
+        && request.resource.data.familyUid == request.auth.uid
+        && requiredText(request.resource.data.residentId,1500)
+        && requiredText(request.resource.data.seniorUid,128)
+        && requiredText(request.resource.data.text,2000)
+        && request.resource.data.text.trim().size() > 0
+        && request.resource.data.status == 'pending'
+        && request.resource.data.reviewedText == ''
+        && request.resource.data.photo is string
+        && request.resource.data.photo.size() <= 350000
+        && ((request.resource.data.kind == 'story' && request.resource.data.photo == '' && !('video' in request.resource.data))
+          || (request.resource.data.kind == 'photo' && request.resource.data.photo.matches('data:image/jpeg;base64,[A-Za-z0-9+/]+=*') && !('video' in request.resource.data))
+          || (request.resource.data.kind == 'video' && request.resource.data.photo == ''
+            && videoMetaValid(request.resource.data.video) && videoPartsExist(contributionId,request.resource.data.video.chunks)))
+        && request.resource.data.createdAt == request.time
+        && familyChatAllowed(request.resource.data);
+      allow update: if signedIn() && role() == 'resident'
+        && resource.data.seniorUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedText','reviewedAt','videoReviewed'])
+        && request.resource.data.reviewedAt == request.time
+        && ((request.resource.data.status == 'declined' && request.resource.data.reviewedText == '')
+          || (request.resource.data.status == 'approved'
+            && (resource.data.kind != 'video' || request.resource.data.videoReviewed == true)
+            && requiredText(request.resource.data.reviewedText,500)
+            && request.resource.data.reviewedText.trim().size() > 0
+            && familyChatAllowed(resource.data)
+            && getAfter(residentPath(resource.data.residentId)).data.memories.hasAll([
+              {'id':'family-' + contributionId,'text':request.resource.data.reviewedText,'tag':'family'}
+            ])));
+    }
+
+    // ── Family Messages ───────────────────────────────────────
+    match /family_messages/{msgId} {
+      // Bind both ends: only a linked family member can write, and managerUid
+      // must be the manager on that resident record. That gives the centre an
+      // inbox without exposing messages across centres.
+      allow create: if signedIn() && role() == 'family'
+        && request.resource.data.keys().hasOnly([
+          'residentId', 'managerUid', 'fromUid', 'fromName', 'text', 'createdAt'
+        ])
+        && request.resource.data.get('fromUid', '') == request.auth.uid
+        && request.resource.data.get('fromName', '') == profile().get('displayName', '')
+        && (request.resource.data.get('residentId', '') in linkedResidents()
+            || hasFamilyConnection(request.resource.data.get('residentId', '')))
+        && exists(residentPath(request.resource.data.residentId))
+        && request.resource.data.get('managerUid', '')
+             == get(residentPath(request.resource.data.residentId)).data.get('centreId', '')
+        && requiredText(request.resource.data.get('managerUid', ''), 128)
+        && textField(request.resource.data.get('fromName', ''), 120)
+        && requiredText(request.resource.data.get('text', ''), 2000)
+        && request.resource.data.createdAt == request.time;
+
+      // The author and the one routed centre manager may read it. The old
+      // unscoped `|| isManager()` exposed every family's messages to every
+      // centre; managerUid now makes the inbox centre-specific.
+      allow read: if signedIn()
+        && (resource.data.get('fromUid', '') == request.auth.uid
+            || resource.data.get('managerUid', '') == request.auth.uid);
+
+      allow update: if false;
+      allow delete: if signedIn()
+        && (resource.data.get('fromUid', '') == request.auth.uid
+            || resource.data.get('managerUid', '') == request.auth.uid);
+    }
+
+    // ── Family notes to a senior (F50) ───────────────────────
+    // A linked family member sends a written message, a voice recording or a
+    // photo to a senior with a login of their own (family-dashboard.html);
+    // the senior's companion reads it out or plays it and writes heardAt
+    // (app.js). The bytes live apart in family_note_media under the same id,
+    // written in the same batch, so the senior's inbox query stays light.
+    //
+    // Readable by exactly two people: the sender and the senior. Not the
+    // centre, not other family. Either of them may delete it.
+    function familyNoteFields() {
+      return ['residentId', 'seniorUid', 'fromUid', 'fromName', 'relation',
+              'kind', 'text', 'mediaType', 'durationSecs', 'createdAt'];
+    }
+
+    function familyNoteRelations() {
+      return ['', 'daughter', 'son', 'granddaughter', 'grandson', 'grandchild',
+              'wife', 'husband', 'partner', 'sister', 'brother', 'niece', 'nephew',
+              'cousin', 'friend', 'neighbour', 'carer', 'other'];
+    }
+
+    function familyNoteMediaPath(noteId) {
+      return /databases/$(database)/documents/family_note_media/$(noteId);
+    }
+
+    function familyNotePath(noteId) {
+      return /databases/$(database)/documents/family_notes/$(noteId);
+    }
+
+    // What the note is: a written message with no bytes, or a recording or
+    // photo whose bytes arrive in the same batch.
+    function familyNoteKindValid(d, noteId) {
+      return (d.kind == 'text'
+          && d.text.trim().size() > 0
+          && d.mediaType == ''
+          && d.durationSecs == 0)
+        || (d.kind == 'voice'
+          && d.mediaType in ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg']
+          && existsAfter(familyNoteMediaPath(noteId)))
+        || (d.kind == 'photo'
+          && d.mediaType == 'image/jpeg'
+          && d.durationSecs == 0
+          && existsAfter(familyNoteMediaPath(noteId)));
+    }
+
+    match /family_notes/{noteId} {
+      allow create: if signedIn() && role() == 'family'
+        && request.resource.data.keys().hasOnly(familyNoteFields())
+        && request.resource.data.keys().hasAll(familyNoteFields())
+        && request.resource.data.fromUid == request.auth.uid
+        // The name the family page already shows, never free text.
+        && request.resource.data.fromName == profile().get('displayName', '')
+        && textField(request.resource.data.fromName, 120)
+        && request.resource.data.residentId is string
+        && (request.resource.data.residentId in linkedResidents()
+            || hasFamilyConnection(request.resource.data.residentId))
+        && exists(residentPath(request.resource.data.residentId))
+        // Only to a senior with a login of their own, and only that login.
+        && requiredText(request.resource.data.seniorUid, 128)
+        && request.resource.data.seniorUid
+             == get(residentPath(request.resource.data.residentId)).data.get('ownerUid', '')
+        // Never from someone the senior has blocked. Someone they have not yet
+        // allowed may send: the companion keeps it back and asks the senior
+        // whether they know them first (app.js), and shows nothing until then.
+        && !(request.auth.uid in get(residentPath(request.resource.data.residentId)).data.get('messageBlocked', []))
+        && request.resource.data.relation in familyNoteRelations()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 1000
+        && request.resource.data.durationSecs is int
+        && request.resource.data.durationSecs >= 0
+        && request.resource.data.durationSecs <= 120
+        && request.resource.data.createdAt == request.time
+        && familyNoteKindValid(request.resource.data, noteId);
+
+      allow read: if signedIn()
+        && (resource.data.get('fromUid', '') == request.auth.uid
+            || resource.data.get('seniorUid', '') == request.auth.uid);
+
+      // The senior marks it heard, once, on the server's clock. Nothing else
+      // about a message ever changes after it is sent.
+      allow update: if signedIn()
+        && resource.data.get('seniorUid', '') == request.auth.uid
+        && !('heardAt' in resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['heardAt'])
+        && request.resource.data.heardAt == request.time;
+
+      // `resource == null`: the other side may have deleted it first, and a
+      // batch that also deletes the note's bytes must not fail on that.
+      allow delete: if signedIn()
+        && (resource == null
+            || resource.data.get('fromUid', '') == request.auth.uid
+            || resource.data.get('seniorUid', '') == request.auth.uid);
+    }
+
+    match /family_note_media/{noteId} {
+      // Only together with its note, from the same sender, about the same
+      // senior, of the note's own type — and a data: URL of that type.
+      allow create: if signedIn() && role() == 'family'
+        && request.resource.data.keys().hasOnly(['residentId', 'seniorUid', 'fromUid', 'mediaType', 'data', 'createdAt'])
+        && request.resource.data.keys().hasAll(['residentId', 'seniorUid', 'fromUid', 'mediaType', 'data', 'createdAt'])
+        && request.resource.data.fromUid == request.auth.uid
+        && existsAfter(familyNotePath(noteId))
+        && getAfter(familyNotePath(noteId)).data.fromUid == request.auth.uid
+        && getAfter(familyNotePath(noteId)).data.kind in ['voice', 'photo']
+        && request.resource.data.residentId == getAfter(familyNotePath(noteId)).data.residentId
+        && request.resource.data.seniorUid == getAfter(familyNotePath(noteId)).data.seniorUid
+        && request.resource.data.mediaType == getAfter(familyNotePath(noteId)).data.mediaType
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 900000
+        && request.resource.data.data.size() > ('data:' + request.resource.data.mediaType + ';base64,').size()
+        && request.resource.data.data[0:('data:' + request.resource.data.mediaType + ';base64,').size()]
+             == 'data:' + request.resource.data.mediaType + ';base64,'
+        && request.resource.data.createdAt == request.time;
+
+      allow read: if signedIn()
+        && (resource.data.get('fromUid', '') == request.auth.uid
+            || resource.data.get('seniorUid', '') == request.auth.uid);
+
+      allow update: if false;
+
+      allow delete: if signedIn()
+        && (resource == null
+            || resource.data.get('fromUid', '') == request.auth.uid
+            || resource.data.get('seniorUid', '') == request.auth.uid);
+    }
+
+    // F68: limited directory connections, separate from care-profile membership.
+    match /center_connections/{connectionId} {
+      function party() {
+        return resource.data.get('seniorUid','') == request.auth.uid
+          || resource.data.get('managerUid','') == request.auth.uid;
+      }
+      allow read, delete: if signedIn() && party();
+      allow create: if signedIn() && role() == 'resident'
+        && request.resource.data.keys().hasOnly(['seniorUid','residentId','seniorName','communityId','communityName','managerUid','status','consentVersion','createdAt'])
+        && request.resource.data.keys().hasAll(['seniorUid','residentId','seniorName','communityId','communityName','managerUid','status','consentVersion','createdAt'])
+        && request.resource.data.seniorUid == request.auth.uid
+        && requiredText(request.resource.data.residentId,1500)
+        && requiredText(request.resource.data.seniorName,120)
+        && requiredText(request.resource.data.communityId,128)
+        && requiredText(request.resource.data.communityName,200)
+        && requiredText(request.resource.data.managerUid,128)
+        && connectionId == request.auth.uid + '_' + request.resource.data.communityId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.consentVersion == '2026-10-26-center-connection'
+        && request.resource.data.createdAt == request.time
+        && verifiedCommunity(request.resource.data.communityId)
+        && get(communityPath(request.resource.data.communityId)).data.get('isPublic',false) == true
+        && get(communityPath(request.resource.data.communityId)).data.get('managerUid','') == request.resource.data.managerUid
+        && get(communityPath(request.resource.data.communityId)).data.get('name','') == request.resource.data.communityName
+        && get(residentPath(request.resource.data.residentId)).data.get('ownerUid','') == request.auth.uid
+        && existsAfter(/databases/$(database)/documents/follows/$(connectionId));
+      allow update: if signedIn() && role() == 'community_manager' && isApproved()
+        && resource.data.managerUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt'])
+        && request.resource.data.status in ['approved','declined']
+        && request.resource.data.reviewedBy == request.auth.uid
+        && request.resource.data.reviewedAt == request.time
+        && exists(/databases/$(database)/documents/follows/$(connectionId));
+    }
+
+    // ── Asking a centre to join (F45) ────────────────────────
+    // centre_requests/{seniorUid}_{communityId}. The senior asks (app.js, the
+    // first visit or the centre card) for their own record, which must be in
+    // no centre yet; the centre is a public one, named as it names itself and
+    // routed to its own manager. That manager decides once (profile.html):
+    // declined, or approved — and approved only in the same batch that links
+    // the senior's record (residents: joinApprovalLinks).
+    function centreRequestFields() {
+      return ['seniorUid', 'residentId', 'seniorName', 'communityId', 'communityName',
+              'managerUid', 'status', 'createdAt'];
+    }
+
+    match /centre_requests/{requestId} {
+      allow create: if signedIn() && role() == 'resident'
+        && request.resource.data.keys().hasOnly(centreRequestFields())
+        && request.resource.data.keys().hasAll(centreRequestFields())
+        && request.resource.data.seniorUid == request.auth.uid
+        && requiredText(request.resource.data.communityId, 128)
+        && requestId == request.auth.uid + '_' + request.resource.data.communityId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && textField(request.resource.data.seniorName, 120)
+        && textField(request.resource.data.communityName, 200)
+        && requiredText(request.resource.data.managerUid, 128)
+        && exists(communityPath(request.resource.data.communityId))
+        && get(communityPath(request.resource.data.communityId)).data.get('isPublic', false) == true
+        // Joining hands the centre the senior's whole record, so only a centre
+        // the admin console has verified can be asked (the same gate as news).
+        && verifiedCommunity(request.resource.data.communityId)
+        && get(communityPath(request.resource.data.communityId)).data.get('managerUid', '') == request.resource.data.managerUid
+        && get(communityPath(request.resource.data.communityId)).data.get('name', '') == request.resource.data.communityName
+        && request.resource.data.residentId is string
+        && exists(residentPath(request.resource.data.residentId))
+        && get(residentPath(request.resource.data.residentId)).data.get('ownerUid', '') == request.auth.uid
+        && get(residentPath(request.resource.data.residentId)).data.get('centreId', '') == '';
+
+      allow read: if signedIn()
+        && (resource.data.get('seniorUid', '') == request.auth.uid
+            || resource.data.get('managerUid', '') == request.auth.uid);
+
+      allow update: if signedIn() && role() == 'community_manager' && isApproved()
+        && resource.data.get('managerUid', '') == request.auth.uid
+        && resource.data.get('status', '') == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedBy', 'reviewedAt'])
+        && request.resource.data.reviewedBy == request.auth.uid
+        && request.resource.data.reviewedAt == request.time
+        && (request.resource.data.status == 'declined'
+            || (request.resource.data.status == 'approved'
+                && getAfter(residentPath(resource.data.get('residentId', ''))).data.get('centreId', '') == request.auth.uid
+                && getAfter(residentPath(resource.data.get('residentId', ''))).data.get('communityId', '')
+                     == resource.data.get('communityId', '')));
+
+      // The senior cancels or clears their own; the manager clears their queue.
+      // No `resource == null` here: request ids are predictable, and a delete
+      // that succeeded on a missing one would tell anyone whether senior X had
+      // asked centre C.
+      allow delete: if signedIn()
+        && (resource.data.get('seniorUid', '') == request.auth.uid
+            || resource.data.get('managerUid', '') == request.auth.uid);
+    }
+
+    // ── Care Notes ────────────────────────────────────────────
+    match /care_notes/{noteId} {
+      // Same authorship binding as family messages.
+      allow create: if signedIn() && hasProviderRole()
+        && request.resource.data.get('providerUid', '') == request.auth.uid
+        && (request.resource.data.get('residentId', '') in assignedResidents()
+            || providerAssignedTo(request.resource.data.get('residentId', '')))
+        // The shape provider-dashboard.html writes, capped (BUG-011).
+        && request.resource.data.keys().hasOnly(['residentId', 'providerUid', 'providerName', 'text', 'createdAt'])
+        && requiredText(request.resource.data.get('text', ''), 4000)
+        && textField(request.resource.data.get('providerName', ''), 120)
+        && request.resource.data.get('createdAt', null) is timestamp;
+
+      // Author only, for the same reason as family_messages: `|| isManager()`
+      // exposed every clinical note at every centre and served no page.
+      allow read: if signedIn()
+        && resource.data.get('providerUid', '') == request.auth.uid;
+
+      // No update: nothing edits a note, and an open update let the author
+      // move it to any residentId or grow it past the cap (BUG-011).
+      allow delete: if signedIn()
+        && resource.data.get('providerUid', '') == request.auth.uid;
+    }
+
+  }
+}

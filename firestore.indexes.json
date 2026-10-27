@@ -1,0 +1,105 @@
+{
+  "//": "Composite indexes required by the dashboard queries. Firestore builds single-field indexes automatically, but any query that filters on one field and orders by another needs an entry here. Without these the queries fail at runtime with 'The query requires an index'.",
+  "indexes": [
+    {
+      "collectionGroup": "family_chat", "queryScope": "COLLECTION",
+      "fields": [{"fieldPath":"familyUid","order":"ASCENDING"},{"fieldPath":"residentId","order":"ASCENDING"},{"fieldPath":"seniorUid","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]
+    },
+    {
+      "collectionGroup": "center_forms", "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "seniorUid", "order": "ASCENDING" },{ "fieldPath": "createdAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "center_forms", "queryScope": "COLLECTION",
+      "fields": [{ "fieldPath": "authorUid", "order": "ASCENDING" },{ "fieldPath": "createdAt", "order": "DESCENDING" }]
+    },
+    {
+      "collectionGroup": "member_announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "seniorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "dashboard.html: sessions explicitly scoped to the signed-in manager and resident batch",
+      "collectionGroup": "sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "centreId", "order": "ASCENDING" },
+        { "fieldPath": "residentId", "order": "ASCENDING" },
+        { "fieldPath": "savedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "family-dashboard.html, provider-dashboard.html, dashboard.html: where('residentId','in',[...]) + orderBy('savedAt','desc')",
+      "collectionGroup": "sessions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "residentId", "order": "ASCENDING" },
+        { "fieldPath": "savedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "provider-dashboard.html: where('residentId','==') + where('providerUid','==') + orderBy('createdAt','desc')",
+      "collectionGroup": "care_notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "residentId", "order": "ASCENDING" },
+        { "fieldPath": "providerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "announcements.js provider feed: newest verified-provider programmes",
+      "collectionGroup": "announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "source", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "announcements.js followed-centre feed: newest posts across selected centres",
+      "collectionGroup": "announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "communityId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "announcements.js composer: newest posts by the current author",
+      "collectionGroup": "announcements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "authorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "profile.html family-message inbox: newest messages for this manager",
+      "collectionGroup": "family_messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "managerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "family_contributions", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "familyUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "family_contributions", "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "seniorUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

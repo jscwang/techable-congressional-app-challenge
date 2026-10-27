@@ -1,0 +1,60 @@
+# Local secrets — never commit these
+# NOTE: leading slash scopes this to the repo root only. Without it, the
+# pattern "config.js" also matches api/config.js (the serverless function
+# that MUST be committed), silently excluding it from the repo.
+/config.js
+
+# Dependencies
+node_modules/
+
+# Firebase emulator artefacts (written when running tests/)
+firestore-debug.log
+firebase-debug.log
+ui-debug.log
+.firebase/
+
+# Vercel
+.vercel/
+# `vercel env pull` writes the project's env vars here — never commit it.
+.env
+.env*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Google Cloud service-account keys (GOOGLE_TTS_SA_KEY).
+# The downloaded file is a private key, and a committed one is a rotate-and-
+# revoke incident rather than a bad diff.
+#
+# Name patterns alone are not enough: Google names the download after the
+# project and key id — techable-tts-1a2b3c4d.json — which matches nothing
+# obvious. So the repo root, where a download actually gets dropped, allows only
+# the .json files that belong there. Add to the allowlist below if you add one.
+/*.json
+!/firestore.indexes.json
+!/firebase.json
+!/vercel.json
+# And the obvious names, for a key dropped in a subdirectory instead.
+*-key.json
+*credential*.json
+*service-account*.json
+*serviceaccount*.json
+gcp-*.json
+*.pem
+*.p12
+
+# Claude Code feature-hardening kit: local artefacts
+.claude/tsc.log
+audits/screens/
+scratch/
+
+# Handoff: keep all environment files private. Only the blank example is tracked.
+.env*
+!.env.example

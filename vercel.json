@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "framework": null,
+  "functions": {
+    "api/family-updates.js": {
+      "maxDuration": 30
+    },
+    "api/form-extract.js": {
+      "maxDuration": 30
+    },
+    "api/chat.js": {
+      "maxDuration": 30
+    },
+    "api/transcribe.js": {
+      "maxDuration": 30
+    },
+    "api/tts.js": {
+      "maxDuration": 25
+    },
+    "api/understand.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/__/auth/:path*",
+      "destination": "https://techable-qa.firebaseapp.com/__/auth/:path*"
+    }
+  ]
+}

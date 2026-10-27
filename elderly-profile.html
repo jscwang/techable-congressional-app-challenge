@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Techable — My Home</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-lt:#E07A55;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--cream:#FAF6F0;--cream2:#F2EAE0;--white:#FFFFFF;
+  --border:rgba(180,156,136,.18);--border2:rgba(180,156,136,.32);
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --green:#3A7D5C;--green-bg:#EBF5EF;
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --shadow-sm:0 2px 8px rgba(26,18,8,.07);--shadow:0 4px 20px rgba(26,18,8,.09);
+  --r:14px;--r-lg:20px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,textarea{font-family:inherit;outline:none}
+#auth-loading{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:1000}
+.spin{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* HEADER — large, accessible */
+.hdr{background:var(--white);border-bottom:1px solid var(--border);height:68px;display:flex;align-items:center;padding:0 24px;gap:14px;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(26,18,8,.06)}
+.hdr-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.hdr-name{font-family:'Fraunces',serif;font-size:18px;font-weight:400;color:var(--ink)}
+.hdr-space{flex:1}
+.signout-btn{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;background:var(--cream2);color:var(--ink2);border:1.5px solid var(--border);transition:all .18s}
+.signout-btn:hover{border-color:var(--rust);color:var(--rust);background:var(--rust-pale)}
+
+/* PAGE */
+.page{max-width:640px;margin:0 auto;padding:28px 20px 60px}
+
+/* WELCOME CARD */
+.welcome-card{background:linear-gradient(135deg,var(--navy) 0%,#1A2E42 100%);border-radius:var(--r-lg);padding:28px;margin-bottom:20px;position:relative;overflow:hidden}
+.welcome-card::before{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(196,154,42,.2) 0%,transparent 70%);right:-40px;top:50%;transform:translateY(-50%)}
+.wc-inner{display:flex;align-items:center;gap:18px;position:relative;z-index:1}
+.wc-av{width:72px;height:72px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:26px;flex-shrink:0;overflow:hidden;border:3px solid rgba(255,255,255,.2)}
+.wc-av img{width:100%;height:100%;object-fit:cover}
+.wc-info{flex:1}
+.wc-greeting{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.wc-name{font-family:'Fraunces',serif;font-size:24px;font-weight:300;color:#fff;line-height:1.2}
+.wc-sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:5px}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
+.card-title{font-family:'Fraunces',serif;font-size:16px;font-weight:400;color:var(--navy);margin-bottom:16px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none;padding-bottom:0}
+.ir-label{font-size:13px;color:var(--ink3);font-weight:300}
+.ir-val{font-size:14px;font-weight:500;color:var(--ink)}
+
+/* FIELD */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--cream);color:var(--ink);font-size:15px;transition:border-color .18s}
+.field input:focus{border-color:var(--gold);background:var(--white)}
+
+/* CENTRE LINKED */
+.centre-card{background:var(--gold-bg);border:1.5px solid rgba(196,154,42,.3);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px}
+.cc-icon{font-size:28px;flex-shrink:0}
+.cc-name{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:3px}
+.cc-detail{font-size:12px;color:var(--ink3)}
+.no-centre{background:var(--cream2);border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px;text-align:center;font-size:13px;color:var(--ink3);line-height:1.65}
+
+/* BIG BUTTON */
+.big-btn{width:100%;padding:16px;border-radius:var(--r);font-size:15px;font-weight:500;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;text-decoration:none}
+.big-btn-gold{background:var(--gold);color:#fff;box-shadow:0 3px 12px rgba(196,154,42,.3)}
+.big-btn-gold:hover{opacity:.9}
+.big-btn-ghost{background:var(--cream2);color:var(--ink2);border:1.5px solid var(--border)}
+.big-btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+/* MSG */
+.msg{padding:10px 14px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:none}
+.msg.success{background:var(--green-bg);color:var(--green);border:1px solid rgba(58,125,92,.2)}
+.msg.show{display:block}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2);white-space:nowrap;animation:tIn .2s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+@media(max-width:480px){.page{padding:18px 14px 60px}.wc-av{width:56px;height:56px;font-size:20px}.wc-name{font-size:20px}}
+</style>
+</head>
+<body>
+
+<div id="auth-loading"><div class="spin"></div></div>
+
+<header class="hdr">
+  <a class="hdr-logo" href="index.html">
+    <img class="brand-mark" src="assets/techable-icon.png" alt="" width="31" height="36">
+    <span class="hdr-name">Techable</span>
+  </a>
+  <div class="hdr-space"></div>
+  <button class="signout-btn" onclick="TechableAuth.signOut()">Sign Out</button>
+</header>
+
+<div class="page" id="page-content" style="display:none">
+
+  <!-- WELCOME -->
+  <div class="welcome-card">
+    <div class="wc-inner">
+      <div class="wc-av" id="wc-av">?</div>
+      <div class="wc-info">
+        <div class="wc-greeting">Good to see you,</div>
+        <div class="wc-name" id="wc-name">Loading…</div>
+        <div class="wc-sub" id="wc-sub">Elderly User · Techable</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY PROFILE -->
+  <div class="card">
+    <div class="card-title">My Profile</div>
+    <div class="msg success" id="profile-msg"></div>
+    <div class="field"><label>Your Name</label><input type="text" id="e-name" placeholder="Your full name"/></div>
+    <div class="field"><label>Age</label><input type="number" id="e-age" placeholder="e.g. 82"/></div>
+    <div class="field"><label>Room Number</label><input type="text" id="e-room" placeholder="e.g. Room 7"/></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px">
+      <button style="padding:9px 18px;border-radius:var(--r);font-size:13px;font-weight:500;background:var(--gold);color:#fff;transition:all .18s;border:none;cursor:pointer" onclick="saveElderlyProfile()">Save Profile</button>
+    </div>
+  </div>
+
+  <!-- MY CENTRE -->
+  <div class="card">
+    <div class="card-title">My Senior Center</div>
+    <div id="centre-display">
+      <div class="no-centre">
+        You are not linked to a senior center yet.<br/>
+        Your care staff will link your account when the program begins.
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPANION -->
+  <div class="card">
+    <div class="card-title">My AI Companion</div>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65;font-weight:300">Your personalized AI companion is set up by your care center. When it is ready, your care staff will let you know how to start a conversation.</p>
+    <div style="background:var(--cream2);border-radius:var(--r);padding:16px;text-align:center">
+      <div style="font-size:32px;margin-bottom:8px">🤖</div>
+      <div style="font-size:13px;color:var(--ink3);font-weight:300">Companion sessions will appear here once your profile is set up by your care team.</div>
+    </div>
+  </div>
+
+  <!-- FAMILY CONTACT -->
+  <div class="card">
+    <div class="card-title">Family Contact</div>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.65;font-weight:300">Family members can contribute memories to your AI companion to make conversations more personal.</p>
+    <div class="info-row"><span class="ir-label">Memory contributions</span><span class="ir-val" id="e-mem-count">—</span></div>
+    <div class="info-row"><span class="ir-label">Last session</span><span class="ir-val">Not yet started</span></div>
+  </div>
+
+</div>
+
+<script>
+  window._cfg = fetch('/api/config')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d?.firebase?.apiKey) window.TECHABLE_CONFIG = d })
+    .catch(() => {})
+    .then(() => new Promise(res => setTimeout(() => res(window.TECHABLE_CONFIG), 80)))
+</script>
+<script src="config.js" onerror="void 0"></script>
+<script type="module" src="auth.js"></script>
+
+<script type="module">
+import { initializeApp, getApps }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js"
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+await window._cfg
+const cfg = window.TECHABLE_CONFIG
+if (!cfg?.firebase?.apiKey) throw new Error('No config')
+
+const app = getApps().length ? getApps()[0] : initializeApp(cfg.firebase)
+const db  = getFirestore(app)
+
+let _uid = null
+
+async function loadElderlyProfile(user) {
+  _uid = user.uid
+  const initials = (user.displayName||user.email||'?').split(/[\s@]/).map(w=>w[0]).slice(0,2).join('').toUpperCase()
+  const av = document.getElementById('wc-av')
+  if (user.photoURL) av.innerHTML = `<img src="${esc(user.photoURL)}" alt="avatar"/>`
+  else av.textContent = initials
+
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid))
+    const d = snap.data() || {}
+    const name = d.displayName || user.displayName || 'Friend'
+    document.getElementById('wc-name').textContent = name
+    document.getElementById('e-name').value = name
+    document.getElementById('e-age').value  = d.age  || ''
+    document.getElementById('e-room').value = d.room || ''
+    document.getElementById('e-mem-count').textContent = d.memoryCount || '0 memories'
+
+    // Linked centre
+    if (d.centreId) {
+      const cSnap = await getDoc(doc(db, 'centres', d.centreId))
+      if (cSnap.exists()) {
+        const c = cSnap.data()
+        document.getElementById('centre-display').innerHTML = `
+          <div class="centre-card">
+            <div class="cc-icon">🏥</div>
+            <div>
+              <div class="cc-name">${esc(c.name||'Your Center')}</div>
+              <div class="cc-detail">${esc([c.address,c.city].filter(Boolean).join(', ')||'Address not set')}</div>
+              ${c.phone ? `<div class="cc-detail" style="margin-top:3px">📞 ${esc(c.phone)}</div>` : ''}
+            </div>
+          </div>`
+      }
+    }
+  } catch(e) { console.error('Load error:', e) }
+}
+
+window.saveElderlyProfile = async () => {
+  if (!_uid) return
+  const name = document.getElementById('e-name').value.trim()
+  try {
+    await setDoc(doc(db, 'users', _uid), {
+      displayName:      name,
+      displayNameLower: name.toLowerCase(),
+      age:              parseInt(document.getElementById('e-age').value)  || null,
+      room:             document.getElementById('e-room').value.trim(),
+      updatedAt:        serverTimestamp()
+    }, { merge: true })
+    if (name) document.getElementById('wc-name').textContent = name
+    const msg = document.getElementById('profile-msg')
+    msg.textContent = 'Profile saved ✓'
+    msg.className = 'msg success show'
+    setTimeout(() => msg.className = 'msg success', 2500)
+  } catch(e) { alert('Save error: ' + e.message) }
+}
+
+function esc(t) { return String(t ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;') }
+
+function waitForAuth() {
+  if (window.TechableAuth?.ready !== undefined) {
+    window.TechableAuth.guardRole(['elderly'], loadElderlyProfile)
+  } else { setTimeout(waitForAuth, 50) }
+}
+waitForAuth()
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+Application source commit: 45c394ade934999da829012fefdd7cc7dbec385d
+Handoff checkpoint commit: 5ee3c03d29872d6548bf07c6ba7575335ae9f007
+Tested QA deployment: dpl_5ZKwZ5eo7zszsjgQ92f4Q8wqwZUt
+Prepared: 2026-10-27 (Asia/Shanghai)

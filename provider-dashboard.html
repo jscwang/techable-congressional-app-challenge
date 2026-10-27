@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Service Provider Dashboard</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --accent:#5B4DA8;--accent-lt:#7B6EC4;--accent-pale:#ECEAF7;
+  --navy:#0D1B2A;--cream:#FAF6F0;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --border:rgba(180,156,136,.22);--border2:rgba(180,156,136,.38);
+  --rust:#C4552B;--rust-pale:#FDF0EB;
+  --green:#2D6A4F;--green-bg:#EBF5EF;--green-pale:#E6F4ED;
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --r:12px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,textarea,select{font-family:inherit}
+button{cursor:pointer;border:none}
+#auth-loading{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:100}
+.spinner-lg{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#page-content{display:none}
+
+/* NAV */
+.nav{background:var(--navy);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.nav-logo-name{font-family:'Fraunces',serif;color:#fff;font-size:18px;font-weight:400}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-badge{background:rgba(91,77,168,.3);color:#B0A8E0;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase}
+.nav-user{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.7);font-size:13px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.signout-btn{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer;transition:all .15s;border:none;white-space:nowrap}
+.signout-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+
+/* MAIN */
+.main{max-width:1020px;margin:0 auto;padding:36px 24px 60px}
+.page-header{margin-bottom:32px}
+.page-header h1{font-family:'Fraunces',serif;font-size:28px;font-weight:300;color:var(--navy);letter-spacing:-.01em;margin-bottom:4px}
+.page-header p{font-size:14px;color:var(--ink3);font-weight:300}
+
+/* STATS */
+/* Urgent disclosures. Above the statistics on purpose — a number that moved
+   can wait, a person who reported a fall cannot. */
+.esc-alert{margin-bottom:24px;padding:14px 18px;background:var(--rust-pale);
+  border:1.5px solid rgba(196,85,43,.35);border-left:5px solid var(--rust);border-radius:14px}
+.esc-alert-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-family:'Fraunces',serif;font-size:15px;color:var(--rust);margin-bottom:8px}
+.esc-alert-count{font-size:11px;color:var(--rust);text-transform:uppercase;letter-spacing:.06em}
+.esc-alert-row{display:flex;gap:10px;align-items:baseline;padding:7px 0;
+  border-top:1px solid rgba(196,85,43,.18);font-size:13px;line-height:1.5;color:var(--navy)}
+.esc-alert-row:first-child{border-top:0}
+.esc-alert-who{font-weight:600;flex-shrink:0}
+.esc-alert-when{font-size:11px;color:var(--ink3);margin-left:auto;flex-shrink:0;white-space:nowrap}
+.esc-alert-quote{color:var(--ink2);font-style:italic}
+.esc-alert-foot{margin-top:9px;font-size:11px;color:var(--ink3);line-height:1.5}
+
+/* The check-ins could not be read. This page cannot tell whether anything was
+   raised, and must not look like it can. */
+.esc-unknown{margin-bottom:24px;padding:16px 18px;background:var(--gold-bg);
+  border:1.5px solid rgba(196,154,42,.4);border-left:5px solid var(--gold);border-radius:14px}
+.esc-unknown-head{font-family:'Fraunces',serif;font-size:16px;color:var(--navy);margin-bottom:6px}
+.esc-unknown-body{font-size:14px;line-height:1.6;color:var(--ink2);margin-bottom:12px}
+.esc-unknown-btn{padding:10px 20px;min-height:44px;border-radius:var(--r);background:var(--navy);color:#fff;font-size:14px;font-weight:600}
+.esc-unknown-btn:hover{background:#1B2E44}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.stat{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px 22px}
+.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:8px}
+.stat-value{font-family:'Fraunces',serif;font-size:32px;font-weight:300;color:var(--navy);letter-spacing:-.02em}
+.stat-sub{font-size:12px;color:var(--ink4);margin-top:4px}
+
+/* EMPTY */
+.empty-state{background:var(--white);border:1.5px dashed var(--border2);border-radius:16px;padding:48px 32px;text-align:center;margin-bottom:28px}
+.empty-icon{font-size:48px;margin-bottom:16px}
+.empty-title{font-family:'Fraunces',serif;font-size:20px;font-weight:400;color:var(--navy);margin-bottom:8px}
+.empty-desc{font-size:14px;color:var(--ink3);line-height:1.7;max-width:440px;margin:0 auto;font-weight:300}
+
+/* SECTION */
+.section-title{font-family:'Fraunces',serif;font-size:18px;font-weight:400;color:var(--navy);margin-bottom:14px;letter-spacing:-.01em}
+
+/* RESIDENT CARDS */
+.residents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-bottom:32px}
+.resident-card{background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:22px;transition:box-shadow .18s}
+.resident-card:hover{box-shadow:0 6px 24px rgba(26,18,8,.08)}
+.rc-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.rc-avatar{width:48px;height:48px;border-radius:50%;background:var(--accent-pale);color:var(--accent);font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Fraunces',serif}
+.rc-name{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.rc-meta{font-size:12px;color:var(--ink3)}
+.status-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;margin-bottom:12px}
+.status-active{background:var(--green-bg);color:var(--green)}
+.status-pending{background:var(--gold-bg);color:var(--gold)}
+.status-inactive{background:rgba(180,156,136,.15);color:var(--ink3)}
+.wellbeing-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.wb-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);flex-shrink:0}
+.wb-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.wb-fill{height:100%;background:linear-gradient(90deg,var(--green),#52A57A);border-radius:3px}
+.wb-score{font-size:12px;font-weight:700;color:var(--green);flex-shrink:0}
+.rc-background{font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* NOTES */
+.notes-section{border-top:1px solid var(--border);padding-top:14px}
+.notes-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px}
+.note-form{display:flex;flex-direction:column;gap:7px}
+.note-textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--ink);resize:none;min-height:64px;line-height:1.5}
+.note-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,77,168,.07)}
+.note-textarea::placeholder{color:var(--ink4)}
+.note-submit{align-self:flex-end;padding:7px 16px;background:var(--accent);color:#fff;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.note-submit:hover{background:var(--accent-lt)}
+.note-submit:disabled{opacity:.6;cursor:not-allowed}
+.note-flash{font-size:12px;padding:6px 10px;border-radius:7px;display:none}
+.note-flash.ok{display:block;background:var(--green-bg);color:var(--green)}
+.note-flash.err{display:block;background:#FEF2EF;color:#9B2C2C}
+.existing-note{background:var(--accent-pale);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--accent);line-height:1.55;margin-bottom:8px;position:relative}
+.existing-note-date{font-size:10px;color:var(--accent-lt);margin-top:4px}
+
+/* SESSIONS TABLE */
+.sessions-table{background:var(--white);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:28px}
+.table-head{display:grid;grid-template-columns:140px 1fr 80px 90px;gap:12px;padding:12px 18px;background:var(--cream);border-bottom:1px solid var(--border);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3)}
+.table-row{display:grid;grid-template-columns:140px 1fr 80px 90px;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);align-items:center;font-size:13px}
+.table-row:last-child{border-bottom:none}
+.table-row:hover{background:rgba(91,77,168,.03)}
+.topic-tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;background:var(--accent-pale);color:var(--accent);margin:0 3px 3px 0;font-weight:500}
+.score-badge{font-size:13px;font-weight:700;color:var(--green)}
+
+@media(max-width:720px){
+  .stats{grid-template-columns:1fr 1fr}
+  .table-head,.table-row{grid-template-columns:100px 1fr 70px}
+  .table-head>:last-child,.table-row>:last-child{display:none}
+}
+@media(max-width:500px){.stats{grid-template-columns:1fr}}
+/* F35: on a phone "Sign out" stuck out past the right edge. Tighten the
+   header, make its buttons 44px targets and drop the PROVIDER badge on
+   small phones (the page itself says whose dashboard it is). */
+@media(max-width:560px){
+  .nav{padding:0 14px}
+  .nav-right{gap:8px}
+  .signout-btn{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;font-size:13px}
+}
+@media(max-width:420px){
+  .nav-badge{display:none}
+}
+@media(max-width:350px){
+  .nav{padding:0 10px}
+  .nav-right{gap:6px}
+  .nav-logo{gap:8px}
+  .nav-logo-name{font-size:16px}
+  .signout-btn{padding:0 10px}
+}
+.programmes{background:var(--white,#fff);border:1px solid var(--border,rgba(180,156,136,.22));border-radius:16px;padding:20px 22px;margin:0 0 24px}
+.programmes .section-title{margin-top:0}
+.provider-news-form{display:grid;gap:12px;margin-top:16px}.provider-news-form>div{display:grid;gap:10px}.provider-news-form label{display:block;line-height:1.6}.provider-news-form input:not([type=checkbox]),.provider-news-form textarea{width:100%;min-height:44px;border:1px solid var(--border,#ddd);border-radius:10px;padding:12px;font:inherit;box-sizing:border-box}.provider-news-form input[type=checkbox]{width:20px;height:20px;vertical-align:middle}.provider-news-form button{justify-self:start;border:0;cursor:pointer}.provider-news-form :disabled{opacity:.6;cursor:not-allowed}
+.verification-link{display:inline-flex;align-items:center;min-height:44px;padding:10px 16px;border-radius:10px;background:var(--accent);color:#fff;text-decoration:none;font-size:14px;font-weight:600}
+.programmes-sub{font-size:14px;color:var(--ink2,#4A3828);line-height:1.6;margin:0 0 14px}
+</style>
+</head>
+<body>
+
+<div id="auth-loading"><div class="spinner-lg"></div></div>
+
+<div id="page-content">
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">
+      <img class="brand-mark" src="assets/techable-icon.png" alt="" width="29" height="34">
+      <div class="nav-logo-name">Techable</div>
+    </a>
+    <div class="nav-right">
+      <span class="nav-badge">Provider</span>
+      <div class="nav-user">
+        <div class="avatar" id="nav-avatar">?</div>
+      </div>
+      <a class="signout-btn" href="faq.html" style="text-decoration:none">FAQ</a>
+      <button class="signout-btn" onclick="TechableAuth.signOut()">Sign out</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="page-header">
+      <h1 id="welcome-heading">Provider Dashboard</h1>
+      <p id="provider-role-line">Your assigned residents and care notes.</p>
+    </div>
+
+    <!-- A check-in that trips the safety rules tells the senior it has been
+         written down for their care team. A service provider IS that care
+         team, and this page showed them a wellbeing number and nothing else —
+         no check-ins, no escalations, no sign anything had been raised. -->
+    <!-- A failed read is not an empty one (README.txt, "A FAILED READ IS NOT AN
+         EMPTY ONE"): with the alert box hidden, a read that failed looked
+         exactly like a week with no emergencies. -->
+    <div class="esc-unknown" id="esc-unknown" style="display:none" role="alert">
+      <div class="esc-unknown-head" id="esc-unknown-head">We couldn't load the latest check-ins</div>
+      <p class="esc-unknown-body">
+        So we can't tell right now whether anything needs your attention. This
+        does not mean there is nothing urgent. Please try again before relying
+        on this page.
+      </p>
+      <button class="esc-unknown-btn" type="button" onclick="location.reload()">Try again</button>
+    </div>
+
+    <div class="esc-alert" id="esc-alert" style="display:none" role="alert" aria-live="assertive">
+      <div class="esc-alert-head">
+        <span>⚠️ Needs a person</span>
+        <span class="esc-alert-count" id="esc-alert-count"></span>
+      </div>
+      <div class="esc-alert-body" id="esc-alert-body"></div>
+      <div class="esc-alert-foot">
+        Raised by a daily check-in. Nobody is notified automatically — these are
+        seen only here.
+      </div>
+    </div>
+
+    <section class="programmes" id="provider-members" aria-label="Provider Applicants and Members"></section>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Assigned Residents</div>
+        <div class="stat-value" id="stat-residents">—</div>
+        <div class="stat-sub">under your care</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Sessions This Week</div>
+        <div class="stat-value" id="stat-sessions">—</div>
+        <div class="stat-sub">AI companion sessions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Avg. Well-being</div>
+        <div class="stat-value" id="stat-wellbeing">—</div>
+        <div class="stat-sub">out of 10</div>
+      </div>
+    </div>
+
+    <section class="programmes" aria-labelledby="verification-title">
+      <div class="section-title" id="verification-title">Account verification</div>
+      <p class="programmes-sub">View your review status and submit organization documents when private uploads are available.</p>
+      <a href="verification.html" class="verification-link">Verification documents →</a>
+    </section>
+
+    <!-- Programmes for seniors (F42, announcements.js): free phones, canes,
+         paid drivers. Shown to every senior once this account is approved. -->
+    <section class="programmes" aria-labelledby="programmes-title">
+      <div class="section-title" id="programmes-title">📣 Programmes for Seniors</div>
+      <p class="programmes-sub">Announce a programme or benefit — who qualifies and how to apply. Seniors see it in their news on the Community Centres page.</p>
+      <div id="programme-composer"></div>
+    </section>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="empty-state" style="display:none">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No residents assigned yet</div>
+      <div class="empty-desc">Contact the community center manager to be assigned to specific residents. Once linked, their profiles, sessions, and well-being data will appear here.</div>
+    </div>
+
+    <!-- Residents -->
+    <div id="residents-section" style="display:none">
+      <div class="section-title">Your Assigned Residents</div>
+      <div class="residents-grid" id="residents-grid"></div>
+
+      <div class="section-title">Recent Sessions</div>
+      <div class="sessions-table">
+        <div class="table-head">
+          <div>Date</div>
+          <div>Topics Discussed</div>
+          <div>Resident</div>
+          <div>Well-being</div>
+        </div>
+        <div id="sessions-body">
+          <div style="padding:20px 18px;font-size:13px;color:var(--ink4);font-style:italic">Loading sessions…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+window._cfg = (async function(){
+  try {
+    const res = await fetch('/api/config', { cache: 'no-store' })
+    if (res.ok) { const d = await res.json(); if (d?.firebase?.apiKey) { window.TECHABLE_CONFIG = d; return d } }
+  } catch (_) {}
+  await new Promise(res => { const s = document.createElement('script'); s.src = 'config.js'; s.onload = res; s.onerror = res; document.head.appendChild(s) })
+  return window.TECHABLE_CONFIG || null
+})()
+</script>
+<script type="module" src="auth.js"></script>
+<script type="module">
+await window._cfg
+
+import {
+  getFirestore, doc, getDoc, getDocs, collection,
+  query, where, orderBy, limit, addDoc, setDoc, deleteDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+import { mountComposer } from "./announcements.js"
+import {mountProviderMembers} from './provider-members.mjs'
+import * as membershipFs from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+let _db, _user, _assignedIds = [], _residents = []
+
+// SECURITY: escape Firestore-sourced strings before injecting into innerHTML.
+// Resident names, rooms, background and existing notes are entered by other
+// users; unescaped they allow stored XSS in the provider's session.
+const esc = v => String(v ?? '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+
+// A wellbeing score is a number or nothing. sessions.wellnessScore and
+// residents.wellnessScore are fields other signed-in users can write, and
+// `${score}/10` printed whatever was there as markup in a clinician's session.
+function scoreNum(v) {
+  const n = typeof v === 'number' ? v : (typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN)
+  return Number.isFinite(n) ? n : null
+}
+
+// Urgent disclosures raised by a daily check-in. Emergencies first, then most
+// recent: a provider scanning this reads the top line and stops, so the top
+// line has to be the one that matters most.
+function renderEscalations(list) {
+  const box = document.getElementById('esc-alert')
+  if (!box) return
+  if (!list.length) { box.style.display = 'none'; return }
+
+  const sorted = list.slice().sort((a, b) => {
+    if ((a.level === 'emergency') !== (b.level === 'emergency')) return a.level === 'emergency' ? -1 : 1
+    return (b.when?.getTime() || 0) - (a.when?.getTime() || 0)
+  })
+
+  const ago = d => {
+    if (!d) return ''
+    const mins = Math.round((Date.now() - d.getTime()) / 60000)
+    if (mins < 60) return mins <= 1 ? 'just now' : mins + ' min ago'
+    const hrs = Math.round(mins / 60)
+    return hrs < 24 ? hrs + 'h ago' : Math.round(hrs / 24) + 'd ago'
+  }
+
+  const urgent = sorted.filter(e => e.level === 'emergency').length
+  document.getElementById('esc-alert-count').textContent =
+    sorted.length + (sorted.length === 1 ? ' disclosure' : ' disclosures') +
+    (urgent ? ' · ' + urgent + ' urgent' : '')
+
+  // Their own words, not a category. "discomfort" is not what a provider needs
+  // in order to decide whether to pick up the phone.
+  document.getElementById('esc-alert-body').innerHTML = sorted.slice(0, 8).map(e => `
+    <div class="esc-alert-row">
+      <span class="esc-alert-who">${esc(e.name)}</span>
+      <span class="esc-alert-quote">${e.quote ? '“' + esc(String(e.quote ?? '').slice(0, 160)) + '”' : esc(e.flags.join(', ') || 'flagged')}</span>
+      <span class="esc-alert-when">${esc(ago(e.when))}</span>
+    </div>`).join('')
+
+  box.style.display = 'block'
+}
+
+// A read failed, so the page cannot say whether anything was raised. Shown in
+// place of the all-clear, never alongside it.
+function showCouldNotCheck(heading) {
+  const box = document.getElementById('esc-unknown')
+  if (!box) return
+  if (heading) document.getElementById('esc-unknown-head').textContent = heading
+  box.style.display = 'block'
+}
+
+TechableAuth.guardRole(['service_provider'], async (user, role) => {
+  _user = user
+  _db   = TechableAuth.db
+
+  document.getElementById('nav-avatar').textContent = TechableAuth.initials(user)
+  const name = TechableAuth.userName(user)
+  document.getElementById('welcome-heading').textContent = 'Welcome, ' + name.split(' ')[0]
+
+  // Load provider user doc
+  const userSnap = await getDoc(doc(_db, 'users', user.uid)).catch(() => null)
+  const userData = userSnap?.data() || {}
+  mountProviderMembers(document.getElementById('provider-members'),{fs:membershipFs,db:_db,user,profile:userData})
+
+  // null is a failed read (a missing document still comes back as a
+  // snapshot). Not knowing who is assigned is not "nobody is assigned".
+  if (!userSnap) {
+    showCouldNotCheck("We couldn't load your assigned residents")
+    document.getElementById('stat-residents').textContent = '—'
+    document.getElementById('stat-sessions').textContent = '—'
+    document.getElementById('stat-wellbeing').textContent = '—'
+    return
+  }
+
+  // Publish only the small verified provider card managers need for the
+  // assignment picker. The full users document (email, review metadata, etc.)
+  // remains private. Rejection removes the card on the provider's next visit.
+  const directoryRef = doc(_db, 'provider_directory', user.uid)
+  try {
+    const existingDirectory = await getDoc(directoryRef)
+    if (userData.verificationStatus === 'approved') {
+      const publicProfile = {
+        providerUid: user.uid,
+        displayName: userData.displayName || '',
+        organisation: userData.organisation || '',
+        providerType: userData.providerType || '',
+        updatedAt: serverTimestamp()
+      }
+      if (!existingDirectory.exists()) publicProfile.createdAt = serverTimestamp()
+      await setDoc(directoryRef, publicProfile, { merge: existingDirectory.exists() })
+    } else if (existingDirectory.exists()) {
+      await deleteDoc(directoryRef)
+    }
+  } catch (e) {
+    console.warn('[provider] directory sync failed:', e.code || e.message)
+  }
+
+  // Dedicated assignment documents let a manager grant and revoke access
+  // without editing another user's protected profile. Keep legacy ids during
+  // migration so existing deployments do not lose assignments.
+  try {
+    const ids = new Set(Array.isArray(userData.assignedResidentIds) ? userData.assignedResidentIds : [])
+    if (userData.verificationStatus === 'approved') {
+      const assigned = await getDocs(query(collection(_db, 'provider_assignments'), where('providerUid', '==', user.uid)))
+      assigned.forEach(d => { const id = d.data().residentId; if (id) ids.add(id) })
+    }
+    // Keep embedded assignments working during the migration to the dedicated
+    // collection. Access rules already validate both assignment sources.
+    _assignedIds = [...ids]
+  } catch (e) {
+    showCouldNotCheck("We couldn't load your assigned residents")
+    document.getElementById('stat-residents').textContent = '—'
+    document.getElementById('stat-sessions').textContent = '—'
+    document.getElementById('stat-wellbeing').textContent = '—'
+    return
+  }
+
+  if (userData.providerType || userData.organisation) {
+    const parts = [providerLabel(userData.providerType), userData.organisation].filter(Boolean)
+    document.getElementById('provider-role-line').textContent = parts.join(' · ')
+  }
+
+  // The programmes card is an extra: whatever goes wrong in it must not stop
+  // the assigned residents and their check-ins from loading below.
+  try {
+    mountComposer(document.getElementById('programme-composer'), {
+      fs: { collection, doc, getDoc, getDocs, query, where, orderBy, limit, addDoc, setDoc, deleteDoc, serverTimestamp },
+      db: _db, user, profile: userData, source: 'provider',
+      organisation: userData.organisation || '', authorName: name
+    })
+  } catch (e) { console.warn('[provider] programmes card failed:', e.message) }
+
+  document.getElementById('stat-residents').textContent = _assignedIds.length
+
+  if (_assignedIds.length === 0) {
+    document.getElementById('empty-state').style.display = 'block'
+    document.getElementById('stat-sessions').textContent = '0'
+    document.getElementById('stat-wellbeing').textContent = '—'
+    return
+  }
+
+  document.getElementById('residents-section').style.display = 'block'
+  await loadResidents()
+  await loadSessions()
+})
+
+async function loadResidents() {
+  const grid = document.getElementById('residents-grid')
+  grid.innerHTML = ''
+  _residents = []
+  let totalScore = 0, scoredCount = 0
+
+  for (const id of _assignedIds) {
+    const snap = await getDoc(doc(_db, 'residents', id)).catch(() => null)
+    if (!snap?.exists()) continue
+    const r = { id: snap.id, ...snap.data() }
+    _residents.push(r)
+
+    const score = scoreNum(r.wellnessScore)
+    if (score != null) { totalScore += score; scoredCount++ }
+
+    // load existing care notes for this resident from this provider
+    const notesSnap = await getDocs(
+      query(collection(_db, 'care_notes'),
+        where('residentId', '==', r.id),
+        where('providerUid', '==', _user.uid),
+        orderBy('createdAt', 'desc'),
+        limit(3))
+    ).catch(() => ({ empty: true, forEach: () => {} }))
+
+    const existingNotes = []
+    notesSnap.forEach(n => existingNotes.push(n.data()))
+
+    const initials = (r.name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase()
+    const pct      = score != null ? Math.min(100, Math.max(0, Math.round(score * 10))) : null
+    // Free text on the resident document. Only a status the stylesheet knows
+    // becomes a class, and String() keeps a non-text value from throwing on
+    // .charAt and taking every card after it down with it.
+    const status   = String(r.status || 'active')
+    const statusCls = ['active', 'pending', 'inactive'].includes(status) ? status : 'inactive'
+
+    const card = document.createElement('div')
+    card.className = 'resident-card'
+    card.innerHTML = `
+      <div class="rc-header">
+        <div class="rc-avatar">${esc(initials)}</div>
+        <div>
+          <div class="rc-name">${esc(r.name || 'Unnamed')}</div>
+          <div class="rc-meta">${r.age ? 'Age ' + esc(r.age) : ''} ${r.room ? '· Room ' + esc(r.room) : ''}</div>
+        </div>
+      </div>
+      <span class="status-pill status-${statusCls}">● ${esc(status.charAt(0).toUpperCase() + status.slice(1))}</span>
+      ${pct != null ? `
+        <div class="wellbeing-row">
+          <span class="wb-label">Well-being</span>
+          <div class="wb-bar"><div class="wb-fill" style="width:${pct}%"></div></div>
+          <span class="wb-score">${esc(score)}/10</span>
+        </div>` : ''}
+      ${r.background ? `<div class="rc-background">${esc(r.background)}</div>` : ''}
+      <div class="notes-section">
+        <div class="notes-title">Care Notes</div>
+        ${existingNotes.map(n => `
+          <div class="existing-note">
+            ${esc(n.text)}
+            <div class="existing-note-date">${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : ''}</div>
+          </div>`).join('')}
+        <div class="note-form">
+          <textarea class="note-textarea" id="note-${esc(r.id)}" placeholder="Add a clinical note…" rows="2" maxlength="4000"></textarea>
+          <div class="note-flash" id="flash-${esc(r.id)}"></div>
+          <button class="note-submit" data-resident-id="${esc(r.id)}">Save Note</button>
+        </div>
+      </div>
+    `
+    grid.appendChild(card)
+  }
+
+  if (scoredCount > 0) {
+    document.getElementById('stat-wellbeing').textContent = (totalScore / scoredCount).toFixed(1)
+  }
+}
+
+function sessionChunks(ids) {
+  const unique = [...new Set((ids || []).filter(Boolean))]
+  const chunks = []
+  for (let i = 0; i < unique.length; i += 10) chunks.push(unique.slice(i, i + 10))
+  return chunks
+}
+
+function sessionTime(docSnap) {
+  const value = docSnap?.data?.()?.savedAt
+  if (value?.toMillis) return value.toMillis()
+  if (value?.toDate) return value.toDate().getTime()
+  return new Date(value || 0).getTime() || 0
+}
+
+async function fetchSessionDocs(ids, maxRows) {
+  const snapshots = await Promise.all(sessionChunks(ids).map(chunk => getDocs(query(
+    collection(_db, 'sessions'),
+    where('residentId', 'in', chunk),
+    orderBy('savedAt', 'desc'),
+    limit(maxRows)
+  ))))
+  const docs = snapshots.flatMap(snapshot => snapshot.docs || [])
+  return docs.sort((a, b) => sessionTime(b) - sessionTime(a)).slice(0, maxRows)
+}
+
+async function loadSessions() {
+  if (_assignedIds.length === 0) return
+  const body = document.getElementById('sessions-body')
+  body.innerHTML = ''
+
+  try {
+    const sessionDocs = await fetchSessionDocs(_assignedIds, 10)
+    document.getElementById('stat-sessions').textContent = sessionDocs.length
+
+    if (sessionDocs.length === 0) {
+      body.innerHTML = '<div style="padding:20px 18px;font-size:13px;color:var(--ink4);font-style:italic">No sessions recorded yet.</div>'
+      return
+    }
+
+    // build resident name lookup
+    const nameMap = {}
+    _residents.forEach(r => { nameMap[r.id] = r.name || 'Unknown' })
+
+    // Same rows, already loaded. The escalation was arriving on every one of
+    // these documents and being dropped on the floor.
+    const escalations = []
+
+    sessionDocs.forEach(s => {
+      const d      = s.data()
+      const date   = d.savedAt?.toDate ? d.savedAt.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '—'
+      const topics = (d.topicsDiscussed || []).slice(0, 3)
+      const rName  = nameMap[d.residentId] || '—'
+      const score  = scoreNum(d.wellnessScore)
+
+      const flagged = d.checkIn?.escalation
+      if (flagged) {
+        escalations.push({
+          name: rName, when: d.savedAt?.toDate ? d.savedAt.toDate() : null,
+          level: flagged.level, flags: flagged.flags || [], quote: flagged.quote || ''
+        })
+      }
+
+      const row = document.createElement('div')
+      row.className = 'table-row'
+      row.innerHTML = `
+        <div style="color:var(--ink3)">${esc(date)}</div>
+        <div>${flagged ? '<span class="topic-tag" style="background:var(--rust-pale);color:var(--rust)">⚠️ needs a person</span>' : ''}${topics.map(t => `<span class="topic-tag">${esc(t)}</span>`).join('') || (flagged ? '' : '<span style="color:var(--ink4)">Chat session</span>')}</div>
+        <div style="color:var(--ink2);font-size:12px">${esc(rName)}</div>
+        <div>${score != null ? `<span class="score-badge">${esc(score)}/10</span>` : '<span style="color:var(--ink4)">—</span>'}</div>
+      `
+      body.appendChild(row)
+    })
+
+    renderEscalations(escalations)
+  } catch (e) {
+    // Not "no emergencies": nothing could be read.
+    console.warn('[provider-dashboard] sessions load failed:', e?.code || e?.message)
+    document.getElementById('stat-sessions').textContent = '—'
+    showCouldNotCheck()
+    body.innerHTML = '<div style="padding:20px 18px;font-size:13px;color:var(--ink4);font-style:italic">Could not load sessions.</div>'
+  }
+}
+
+window.saveNote = async function(residentId) {
+  const ta    = document.getElementById('note-' + residentId)
+  const flash = document.getElementById('flash-' + residentId)
+  const btn   = ta.parentElement.querySelector('.note-submit')
+  const text  = ta.value.trim()
+  flash.className = 'note-flash'
+
+  if (!text) { flash.className = 'note-flash err'; flash.textContent = 'Note is empty.'; return }
+
+  btn.disabled = true
+  btn.textContent = 'Saving…'
+
+  try {
+    await addDoc(collection(_db, 'care_notes'), {
+      residentId,
+      providerUid:  _user.uid,
+      providerName: String(TechableAuth.userName(_user) || '').slice(0, 120),
+      text,
+      createdAt: serverTimestamp()
+    })
+    flash.className   = 'note-flash ok'
+    flash.textContent = 'Note saved.'
+    ta.value = ''
+  } catch (e) {
+    flash.className   = 'note-flash err'
+    flash.textContent = 'Could not save — try again.'
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Save Note'
+    setTimeout(() => { flash.className = 'note-flash' }, 3000)
+  }
+}
+
+// Save Note is bound here rather than as onclick="saveNote('<id>')" in the
+// card: a resident id inside a handler attribute is parsed as JavaScript after
+// the HTML parser has already turned &#039; back into a quote.
+document.addEventListener('click', e => {
+  const btn = e.target?.closest?.('button.note-submit[data-resident-id]')
+  if (btn) saveNote(btn.dataset.residentId)
+})
+
+function providerLabel(type) {
+  return {
+    doctor:'Doctor', nurse:'Nurse', therapist:'Therapist',
+    physiotherapist:'Physiotherapist', occupational_therapist:'Occupational Therapist',
+    social_worker:'Social Worker', dietitian:'Dietitian', caregiver:'Caregiver'
+  }[type] || type || ''
+}
+</script>
+</body>
+</html>

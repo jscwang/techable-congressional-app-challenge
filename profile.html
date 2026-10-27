@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Manager Dashboard</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="stylesheet" href="center-setup.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-lt:#E07A55;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--navy2:#1A2E42;
+  --green:#2D6A4F;--green-lt:#3A7D5C;--green-pale:#E6F4ED;--green-bg:#EBF5EF;
+  --cream:#FAF6F0;--cream2:#F2EAE0;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;--ink4:#C4B4A4;
+  --border:rgba(180,156,136,.18);--border2:rgba(180,156,136,.3);
+  --gold:#C49A2A;--gold-bg:#FBF4E3;
+  --danger:#B3261E;--danger-bg:#FEF2EF;
+  --shadow-sm:0 2px 8px rgba(26,18,8,.06);
+  --shadow-md:0 8px 28px rgba(26,18,8,.09);
+  --shadow-lg:0 20px 56px rgba(26,18,8,.13);
+  --r:12px;--r-lg:18px;--r-xl:24px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+button{cursor:pointer;border:none;outline:none}
+input,select,textarea{outline:none}
+
+/* ── AUTH LOADING ── */
+#auth-loading{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:14px}
+.spin{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#auth-loading p{font-size:13px;color:var(--ink3);font-weight:300}
+
+/* ── NAV ── */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  height:60px;padding:0 24px;
+  display:flex;align-items:center;gap:12px;
+}
+.nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none}
+.nav-name{font-family:'Fraunces',serif;font-size:17px;font-weight:400;color:var(--navy)}
+.nav-pill{background:var(--green-pale);color:var(--green);font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid rgba(45,106,79,.2);letter-spacing:.04em;text-transform:uppercase}
+.nav-space{flex:1}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{font-size:13px;font-weight:500;color:var(--ink3);text-decoration:none;padding:7px 14px;border-radius:8px;transition:all .18s}
+.nav-link:hover{background:var(--cream2);color:var(--ink)}
+.nav-link.active{background:var(--green-pale);color:var(--green)}
+.nav-signout{font-size:13px;font-weight:500;color:var(--ink3);background:none;border:1.5px solid var(--border2);padding:7px 14px;border-radius:8px;transition:all .18s}
+.nav-signout:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+
+/* ── PAGE WRAPPER ── */
+#page-content{display:none}
+
+/* ── HERO BANNER ── */
+.hero-banner{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);
+  position:relative;overflow:hidden;
+}
+.hero-banner::before{
+  content:'';position:absolute;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(45,106,79,.22),transparent 70%);
+  right:-100px;bottom:-150px;pointer-events:none;
+}
+.hero-banner::after{
+  content:'';position:absolute;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(196,85,43,.14),transparent 70%);
+  left:-60px;top:-80px;pointer-events:none;
+}
+.hero-inner{
+  max-width:860px;margin:0 auto;padding:36px 24px 40px;
+  display:flex;align-items:center;gap:28px;position:relative;z-index:1;flex-wrap:wrap;
+}
+.hero-avatar{
+  width:88px;height:88px;border-radius:50%;
+  background:var(--cream);overflow:hidden;
+  border:3px solid rgba(255,255,255,.25);
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+  flex-shrink:0;
+}
+.hero-avatar img{width:100%;height:100%;object-fit:cover}
+.hero-text{flex:1}
+.hero-name{font-family:'Fraunces',serif;font-size:clamp(22px,3vw,32px);font-weight:400;color:#fff;letter-spacing:-.01em;margin-bottom:6px}
+.hero-email{font-size:13px;color:rgba(255,255,255,.45);margin-bottom:12px}
+.hero-badges{display:flex;gap:8px;flex-wrap:wrap}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+.hero-badge.manager{background:rgba(45,106,79,.3);color:#6EE7A8;border:1px solid rgba(110,231,168,.2)}
+.hero-badge.centre{background:rgba(255,255,255,.1);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.15)}
+.hero-badge.google{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1)}
+.hero-stats{display:flex;gap:24px;margin-left:auto}
+.hero-stat{text-align:center}
+.hero-stat-n{font-family:'Fraunces',serif;font-size:26px;font-weight:300;color:#fff;line-height:1}
+.hero-stat-l{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── CENTERED CONTENT ── */
+.content{max-width:860px;margin:0 auto;padding:28px 24px 80px}
+
+/* ── TABS ── */
+.tab-nav{
+  display:flex;gap:2px;
+  background:var(--white);border:1px solid var(--border);
+  border-radius:14px;padding:5px;margin-bottom:24px;
+  box-shadow:var(--shadow-sm);
+}
+.tab-btn{
+  flex:1;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:500;
+  color:var(--ink3);background:transparent;border:none;cursor:pointer;
+  transition:all .2s;white-space:nowrap;
+}
+.tab-btn.active{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(45,106,79,.25)}
+.tab-btn:hover:not(.active){background:var(--cream2);color:var(--ink)}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:tabIn .25s ease}
+@keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── CARDS ── */
+.card{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:26px 28px;
+  box-shadow:var(--shadow-sm);margin-bottom:16px;
+  transition:box-shadow .2s;
+}
+.card:hover{box-shadow:var(--shadow-md)}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.card-title{font-family:'Fraunces',serif;font-size:17px;font-weight:400;color:var(--navy);display:flex;align-items:center;gap:8px}
+.card-sub{font-size:12px;color:var(--ink3);margin-top:3px}
+
+/* ── OVERVIEW STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.stat-card{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:20px 22px;box-shadow:var(--shadow-sm);
+  transition:all .2s;
+}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat-n{font-family:'Fraunces',serif;font-size:32px;font-weight:300;color:var(--navy);line-height:1}
+.stat-n.green{color:var(--green)}
+.stat-l{font-size:11px;color:var(--ink3);margin-top:5px;text-transform:uppercase;letter-spacing:.07em}
+
+/* ── SETUP PROMPT ── */
+.setup-prompt{
+  background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);
+  border-radius:var(--r-xl);padding:28px 32px;margin-bottom:16px;
+  display:flex;align-items:flex-start;gap:20px;position:relative;overflow:hidden;
+}
+.setup-prompt::after{content:'';position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(45,106,79,.2),transparent 70%);right:-40px;bottom:-60px;pointer-events:none}
+.setup-prompt-icon{font-size:40px;flex-shrink:0;margin-top:2px}
+.setup-prompt h3{font-family:'Fraunces',serif;font-size:20px;font-weight:300;color:#fff;margin-bottom:6px}
+.setup-prompt p{font-size:13px;color:rgba(255,255,255,.55);line-height:1.65;font-weight:300;max-width:480px}
+.setup-prompt-btn{
+  margin-top:14px;padding:9px 20px;border-radius:10px;
+  background:var(--green);color:#fff;font-size:13px;font-weight:600;
+  border:none;cursor:pointer;transition:all .2s;display:inline-block;
+}
+.setup-prompt-btn:hover{background:var(--green-lt);transform:translateY(-1px)}
+
+/* ── QUICK ACTIONS ── */
+.quick-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.qa-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 18px;border-radius:10px;font-size:13px;font-weight:500;
+  border:1.5px solid var(--border);background:var(--white);color:var(--ink2);
+  cursor:pointer;transition:all .2s;text-decoration:none;
+}
+.qa-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-pale);transform:translateY(-1px)}
+.qa-btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.qa-btn.primary:hover{background:var(--green-lt);border-color:var(--green-lt)}
+
+/* ── FORM ELEMENTS ── */
+.field{margin-bottom:18px}
+.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink3);margin-bottom:6px}
+.field input,.field textarea,.field select{
+  width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r);
+  background:var(--cream);font-size:14px;color:var(--ink);transition:all .2s;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  border-color:var(--green);background:var(--white);
+  box-shadow:0 0 0 3px rgba(45,106,79,.1);
+}
+.field input[readonly]{background:var(--cream2);color:var(--ink3);cursor:default}
+.field textarea{resize:vertical;min-height:80px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:0}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 22px;font-size:14px;font-weight:600;border-radius:40px;cursor:pointer;transition:all .2s;border:none}
+.btn-primary{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(45,106,79,.25)}
+.btn-primary:hover{background:var(--green-lt);transform:translateY(-1px);box-shadow:0 4px 16px rgba(45,106,79,.3)}
+.btn-secondary{background:var(--cream);color:var(--ink2);border:1.5px solid var(--border2)}
+.btn-secondary:hover{border-color:var(--green);color:var(--green)}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1.5px solid rgba(179,38,30,.2)}
+.btn-danger:hover{background:#fce4e0;border-color:var(--danger)}
+.btn-block{width:100%;justify-content:center}
+.btn[hidden]{display:none}
+.btn-group{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+/* ── TOGGLE ── */
+.toggle{width:46px;height:26px;background:var(--border2);border-radius:30px;cursor:pointer;transition:background .2s;position:relative;flex-shrink:0;border:none}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.toggle.on::after{transform:translateX(20px)}
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.pref-row:last-child{border-bottom:none;padding-bottom:0}
+.pref-label{font-size:14px;font-weight:500;color:var(--ink)}
+.pref-desc{font-size:12px;color:var(--ink3);margin-top:2px}
+
+/* ── INFO ROWS ── */
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none;padding-bottom:0}
+.info-label{color:var(--ink3)}
+.info-val{font-weight:500;color:var(--ink);text-align:right;word-break:break-all;max-width:60%}
+
+/* ── MEMBER LIST ── */
+.member-item{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+}
+.member-item:last-child{border-bottom:none}
+.centre-request-row{flex-wrap:wrap;overflow-wrap:anywhere}
+.centre-request-row .member-info{min-width:0;flex-basis:180px}
+.centre-request-row .btn-group{margin-top:0}
+.centre-request-row button{min-height:44px;min-width:44px}
+.centre-request-row button:focus-visible{outline:3px solid var(--rust);outline-offset:3px}
+.member-av{width:40px;height:40px;border-radius:50%;overflow:hidden;background:var(--cream2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.member-av img{width:100%;height:100%;object-fit:cover}
+.member-info{flex:1}
+.member-name{font-size:14px;font-weight:500;color:var(--ink)}
+.member-meta{font-size:12px;color:var(--ink3);margin-top:1px}
+.member-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--green-pale);color:var(--green)}
+
+/* ── COMMUNITY RECORDS ── */
+.centre-record{
+  background:var(--cream);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:18px 20px;margin-bottom:12px;
+}
+.centre-record-name{font-family:'Fraunces',serif;font-size:16px;font-weight:400;color:var(--navy);margin-bottom:4px}
+.centre-record-meta{font-size:12px;color:var(--ink3);line-height:1.6}
+.centre-record-actions{display:flex;gap:8px;margin-top:12px}
+.cr-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .18s;border:1.5px solid var(--border);background:var(--white);color:var(--ink2)}
+.cr-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-pale)}
+.cr-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+
+/* ── INVITE CARD ── */
+.invite-card{
+  background:linear-gradient(135deg,var(--green-pale),var(--cream));
+  border:1px solid rgba(45,106,79,.2);border-radius:var(--r-xl);
+  padding:22px 26px;display:flex;align-items:center;gap:20px;
+  margin-bottom:16px;
+}
+.invite-icon{font-size:32px;flex-shrink:0}
+.invite-text h4{font-family:'Fraunces',serif;font-size:16px;font-weight:400;color:var(--navy);margin-bottom:4px}
+.invite-text p{font-size:12px;color:var(--ink3);line-height:1.5}
+.invite-link{
+  display:flex;align-items:center;gap:8px;margin-top:10px;
+  background:var(--white);border:1px solid var(--border2);border-radius:8px;
+  padding:8px 12px;font-size:12px;color:var(--ink2);font-family:monospace;
+  transition:all .18s;cursor:pointer;
+}
+.invite-link:hover{border-color:var(--green);color:var(--green)}
+
+/* ── DANGER ZONE ── */
+.danger-zone{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.danger-title{font-size:11px;font-weight:700;color:var(--danger);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── MESSAGES ── */
+.msg{padding:11px 14px;border-radius:var(--r);font-size:13px;margin-bottom:14px;display:none}
+.msg.err{display:block;background:var(--danger-bg);color:var(--danger);border:1px solid rgba(179,38,30,.2)}
+.msg.ok{display:block;background:var(--green-bg);color:var(--green);border:1px solid rgba(45,106,79,.2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 22px;border-radius:40px;font-size:13px;font-weight:500;z-index:9999;box-shadow:var(--shadow-lg);animation:toastIn .22s ease}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty-title{font-family:'Fraunces',serif;font-size:20px;font-weight:300;color:var(--navy);margin-bottom:8px}
+.empty-desc{font-size:13px;color:var(--ink3);line-height:1.65}
+
+/* ── SECTION DIVIDER ── */
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:680px){
+  .nav-links{display:none}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .field-row{grid-template-columns:1fr}
+  .hero-stats{display:none}
+  .hero-inner{gap:18px}
+  .content{padding:20px 16px 60px}
+  .card{padding:18px 16px}
+  .tab-btn{font-size:12px;padding:9px 8px}
+  .quick-actions{gap:8px}
+  .invite-card{flex-direction:column;gap:12px}
+}
+@media(max-width:440px){
+  .stats-row{grid-template-columns:1fr}
+}
+.person-link{background:none;border:0;color:var(--green2,#26694f);text-decoration:underline;text-align:left;font:inherit;min-height:44px;padding:8px 0;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- AUTH LOADING -->
+<div id="auth-loading">
+  <div class="spin"></div>
+  <p>Loading your dashboard…</p>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="index.html">
+    <img class="brand-mark" src="assets/techable-icon.png" alt="" width="28" height="32">
+    <span class="nav-name">Techable</span>
+  </a>
+  <span class="nav-pill">Manager</span>
+  <div class="nav-space"></div>
+  <div class="nav-links">
+    <a class="nav-link" href="dashboard.html">Dashboard</a>
+    <a class="nav-link" href="dashboard.html#reg-section">Applicants</a>
+    <a class="nav-link" href="communities.html">Directory</a>
+    <a class="nav-link" href="faq.html">FAQ</a>
+  </div>
+  <button class="nav-signout" onclick="doSignOut()">Sign Out</button>
+</nav>
+
+<!-- PAGE -->
+<div id="page-content">
+
+  <!-- HERO BANNER -->
+  <div class="hero-banner">
+    <div class="hero-inner">
+      <div class="hero-avatar" id="hero-avatar">
+        <img id="hero-avatar-img" src="" alt="avatar" />
+      </div>
+      <div class="hero-text">
+        <div class="hero-name" id="hero-name">Loading…</div>
+        <div class="hero-email" id="hero-email"></div>
+        <div class="hero-badges">
+          <span class="hero-badge manager">🏘️ Community Manager</span>
+          <span class="hero-badge centre" id="hero-centre" style="display:none"></span>
+          <span class="hero-badge google" id="hero-method"></span>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-n" id="hs-members">—</div>
+          <div class="hero-stat-l">Members</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-n" id="hs-centres">—</div>
+          <div class="hero-stat-l">Centers</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <section id="center-setup-progress" aria-label="Center registration progress"></section>
+
+    <!-- TAB NAV -->
+    <div class="tab-nav" role="tablist">
+      <button class="tab-btn active" data-tab="tab-overview" role="tab">Overview</button>
+      <button class="tab-btn" data-tab="tab-centre" role="tab">Center Profile</button>
+      <button class="tab-btn" data-tab="tab-applicants" role="tab">Applicants</button>
+      <button class="tab-btn" data-tab="tab-members" role="tab">Members</button>
+      <button class="tab-btn" data-tab="tab-settings" role="tab">Settings</button>
+    </div>
+
+    <!-- ── OVERVIEW TAB ── -->
+    <div class="tab-panel active" id="tab-overview">
+
+      <!-- Setup prompt (shown when no centre exists) -->
+      <div id="setup-prompt" style="display:none" class="setup-prompt">
+        <div class="setup-prompt-icon">🏘️</div>
+        <div>
+          <h3>Set up your community center</h3>
+          <p>Your center profile will appear in the Techable community directory so seniors and families can find and join you. Fill in your details on the Center Profile tab.</p>
+          <button class="setup-prompt-btn" onclick="switchTab('tab-centre')">Set Up Center Profile →</button>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="quick-actions">
+        <button class="qa-btn primary" onclick="switchTab('tab-centre')">✏️ Edit Center Profile</button>
+        <button class="qa-btn primary" onclick="switchTab('tab-applicants')">📋 Applicants</button>
+        <button class="qa-btn primary" onclick="switchTab('tab-members')">👥 Members</button>
+        <a class="qa-btn" href="communities.html">🗺️ Community Directory</a>
+        <a class="qa-btn" href="verification.html">📄 Verification documents</a>
+      </div>
+
+      <!-- Centre summary -->
+      <div class="card" id="centre-summary-card" style="display:none">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">🏘️ Your Center</div>
+            <div class="card-sub">Live on the Techable directory</div>
+          </div>
+          <button class="qa-btn" onclick="switchTab('tab-centre')" style="margin:0">Edit</button>
+        </div>
+        <div id="centre-summary-body"></div>
+      </div>
+
+      <!-- Invite link -->
+      <div class="invite-card" id="invite-card" style="display:none">
+        <div class="invite-icon">🔗</div>
+        <div class="invite-text">
+          <h4>Invite seniors to join</h4>
+          <p>Share this link with seniors or families so they can register directly with your center.</p>
+          <div class="invite-link" id="invite-link-btn" onclick="copyInviteLink()">
+            <span id="invite-url"></span>
+            <span style="margin-left:auto;color:var(--green);font-family:'DM Sans',sans-serif;font-weight:600">Copy</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- News & events for seniors (F42, announcements.js) -->
+      <div class="card" id="news-card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">📣 News &amp; Events for Seniors</div>
+            <div class="card-sub" id="news-followers">Seniors who follow your centre see your posts on the Community Centres page.</div>
+          </div>
+        </div>
+        <div id="news-composer"><div class="card-sub">Loading…</div></div>
+      </div>
+
+    </div>
+
+    <!-- ── CENTRE PROFILE TAB ── -->
+    <div class="tab-panel" id="tab-centre">
+      <div class="card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">🏘️ Center Profile</div>
+            <div class="card-sub">Step 2: Add your center details and business contact. Public centers appear in the Techable community directory. Verification is reviewed separately by Techable.</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:12px;padding:7px 14px;border-radius:8px" onclick="clearCentreForm()">+ New</button>
+        </div>
+        <div class="msg" id="centre-msg"></div>
+        <input type="hidden" id="c-id" />
+
+        <div class="field">
+          <label for="c-name">Center Name *</label>
+          <input id="c-name" maxlength="120" placeholder="e.g. Sunrise Community Center" />
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <textarea id="c-details" rows="3" placeholder="Tell seniors what your center offers and who it serves…"></textarea>
+        </div>
+
+        <div class="section-label">Location</div>
+        <div class="field-row">
+          <div class="field"><label for="c-address">Address</label><input id="c-address" placeholder="Street address" /></div>
+          <div class="field"><label for="c-city">City</label><input id="c-city" placeholder="City" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Country</label><input id="c-country" placeholder="Country" /></div>
+          <div class="field"><label>Google Maps URL</label><input id="c-map" placeholder="https://maps.google.com/…" /></div>
+        </div>
+
+        <div class="section-label">Contact</div>
+        <p class="card-sub" id="center-contact-help" style="margin-bottom:14px">Use business contact details only. For a public center, the contact person and title appear in the public directory. You can save a draft with these fields blank; add them before continuing to verification.</p>
+        <div class="field-row">
+          <div class="field"><label for="c-contact-name">Contact person name</label><input id="c-contact-name" maxlength="120" autocomplete="off" aria-describedby="center-contact-help" placeholder="e.g. Jordan Example" /></div>
+          <div class="field"><label for="c-contact-title">Contact person title</label><input id="c-contact-title" maxlength="80" autocomplete="off" aria-describedby="center-contact-help" placeholder="e.g. Program Director" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Website</label><input id="c-website" placeholder="https://…" /></div>
+          <div class="field"><label for="c-email">Contact Email</label><input type="email" maxlength="254" id="c-email" placeholder="hello@center.org" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="c-phone">Phone</label><input type="tel" maxlength="40" id="c-phone" placeholder="+1 …" /></div>
+          <div class="field">
+            <label>Category</label>
+            <select id="c-category">
+              <option value="community">Community Center</option>
+              <option value="senior_living">Senior Living</option>
+              <option value="care_home">Care Home</option>
+              <option value="activity_group">Activity Group</option>
+              <option value="support_group">Support Group</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-label">Programs & Capacity</div>
+        <div class="field">
+          <label>Programs Offered</label>
+          <textarea id="c-programmes" rows="2" placeholder="e.g. Daily exercise, Arts and crafts, Cooking classes, Music sessions, Health checks…"></textarea>
+        </div>
+        <div class="field">
+          <label>Upcoming Activities, Events and Announcements</label>
+          <textarea id="c-upcoming" rows="5" placeholder="One item per line, for example:&#10;2026-10-04 | Chair yoga | 10:00 AM in the activity room&#10;2026-10-08 | Benefits clinic | Bring identification and current benefit letters"></textarea>
+          <div class="card-sub" style="margin-top:6px">Use one line per item. Add a date, title and details separated by |. Saved items appear in the community directory.</div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Opening Hours</label><input id="c-hours" placeholder="e.g. Mon–Fri 9am–5pm" /></div>
+          <div class="field"><label>Capacity</label><input id="c-capacity" type="number" placeholder="e.g. 50" min="1" /></div>
+        </div>
+
+        <div class="section-label">Branding & Visibility</div>
+        <div class="field">
+          <label>Center Logo / Image URL</label>
+          <input id="c-logo" placeholder="https://… (shown in the directory listing)" />
+        </div>
+        <div class="field">
+          <label>Visibility</label>
+          <select id="c-public">
+            <option value="true">Public — appears in the community directory</option>
+            <option value="false">Private — only you can see it</option>
+          </select>
+        </div>
+
+        <div class="btn-group">
+          <button id="save-center" class="btn btn-secondary" onclick="saveCentre()">Save Center Profile</button>
+          <button id="continue-center" class="btn btn-primary" onclick="continueCenterSetup()">Save and continue →</button>
+          <button class="btn btn-secondary" onclick="clearCentreForm()">Clear Form</button>
+        </div>
+      </div>
+
+      <!-- Saved centres list -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">📚 Saved Centers</div>
+        </div>
+        <div id="centre-list"><div class="card-sub">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── MEMBERS TAB ── -->
+    <div class="tab-panel" id="tab-applicants">
+      <div class="card"><div class="card-hd"><div><div class="card-title">Center connection applicants</div><div class="card-sub">Seniors who pressed Connect and agreed to share their name. Approving adds them to Members for center announcements; it does not give you their private profile, health records or chat history.</div></div></div><div id="connection-applicant-status" class="card-sub" role="status"></div><div id="connection-applicants">Loading…</div></div>
+      <div class="card" id="centre-requests-card">
+        <div class="card-hd"><div>
+          <div class="card-title">Seniors asking to join</div>
+          <div class="card-sub">Approving connects their own account to your centre: you can see and change their profile, memories, life story and forms, and see their chat summaries and check-ins, like any member. You can remove them later, but their record stays theirs — it cannot be deleted from here.</div>
+        </div></div>
+        <div class="msg" id="centre-request-msg" role="status" aria-live="polite"></div>
+        <div id="centre-request-list"><div class="card-sub">Loading…</div></div>
+      </div>
+
+      <p><a class="qa-btn" href="dashboard.html#reg-section">Review registration form applicants →</a></p>
+    </div>
+
+    <div class="tab-panel" id="tab-members">
+      <div class="invite-card">
+        <div class="invite-icon">🔗</div>
+        <div class="invite-text">
+          <h4>Invite seniors to join</h4>
+          <p>Share this registration link so seniors can sign up directly with your center.</p>
+          <div class="invite-link" onclick="copyInviteLink()">
+            <span id="invite-url-2"></span>
+            <span style="margin-left:auto;color:var(--green);font-family:'DM Sans',sans-serif;font-weight:600">Copy</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">👥 Members</div>
+            <div class="card-sub" id="members-count">Loading…</div>
+          </div>
+        </div>
+        <div id="members-list"></div>
+        <p><a href="center-forms.html" class="back">Upload forms / view reviewed answers →</a></p>
+        <div id="member-announcement-composer"></div>
+      </div>
+
+      <div class="card" id="family-link-requests-card">
+        <div class="card-hd"><div>
+          <div class="card-title">Family Connection Requests</div>
+          <div class="card-sub">Approve access only when you recognise the family member and senior.</div>
+        </div></div>
+        <div class="msg" id="family-link-msg" role="status"></div>
+        <div id="family-link-list"><div class="card-sub">Loading…</div></div>
+      </div>
+
+      <div class="card" id="provider-assignments-card">
+        <div class="card-hd"><div>
+          <div class="card-title">Provider Assignments</div>
+          <div class="card-sub">Choose which verified provider may view and add care notes for a senior.</div>
+        </div></div>
+        <div class="field-row">
+          <div class="field"><label for="assignment-resident">Senior</label><select id="assignment-resident"></select></div>
+          <div class="field"><label for="assignment-provider">Verified provider</label><select id="assignment-provider"></select></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" type="button" id="assign-provider-btn" onclick="assignProvider()">Assign Provider</button></div>
+        <div class="msg" id="assignment-msg" role="status"></div>
+        <div id="assignment-list" style="margin-top:16px"></div>
+      </div>
+
+      <div class="card" id="family-messages-card">
+        <div class="card-hd"><div>
+          <div class="card-title">💌 Family Messages</div>
+          <div class="card-sub">Messages sent by linked family members for your center team.</div>
+        </div></div>
+        <div id="family-message-list"><div class="card-sub">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS TAB ── -->
+    <div class="tab-panel" id="tab-settings">
+
+      <!-- Personal profile -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">👤 Personal Profile</div>
+        </div>
+        <div class="msg" id="profile-msg"></div>
+        <div style="display:flex;align-items:center;gap:18px;margin-bottom:22px">
+          <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:var(--cream2);flex-shrink:0;border:2px solid var(--border)">
+            <img id="settings-avatar-img" src="" alt="avatar" style="width:100%;height:100%;object-fit:cover" />
+          </div>
+          <div style="flex:1">
+            <div class="field-row" style="margin-bottom:0">
+              <div class="field">
+                <label>Avatar Style</label>
+                <select id="avatar-style" onchange="previewAvatar()">
+                  <option value="lorelei-neutral">Friendly Face</option>
+                  <option value="adventurer">Adventurer</option>
+                  <option value="micah">Simple Face</option>
+                  <option value="personas">Personas</option>
+                  <option value="bottts">Robot</option>
+                  <option value="thumbs">Thumbs</option>
+                  <option value="pixel-art">Pixel Art</option>
+                  <option value="fun-emoji">Fun Emoji</option>
+                  <option value="shapes">Abstract Shapes</option>
+                  <option value="initials">Initials</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Avatar Seed</label>
+                <input id="avatar-seed" placeholder="Auto generated" oninput="previewAvatar()" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Display Name</label>
+          <input id="name" placeholder="Your full name" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <input id="disp-email" type="text" readonly />
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+          <button class="btn btn-secondary" onclick="randomAvatar()">Random Avatar</button>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="card">
+        <div class="card-hd"><div class="card-title">🎛️ Preferences</div></div>
+        <div class="pref-row">
+          <div><div class="pref-label">OpenAI</div><div class="pref-desc">Use OpenAI for smarter conversations</div></div>
+          <button class="toggle on" id="ai-toggle" onclick="toggleAI()"></button>
+        </div>
+        <div class="pref-row">
+          <div><div class="pref-label">Voice Output</div><div class="pref-desc">Read AI responses aloud</div></div>
+          <button class="toggle on" id="voice-toggle" onclick="toggleVoice()"></button>
+        </div>
+      </div>
+
+      <!-- Account info -->
+      <div class="card">
+        <div class="card-hd"><div class="card-title">📋 Account Details</div></div>
+        <div class="info-row"><span class="info-label">User ID</span><span class="info-val" id="u-uid" style="font-family:monospace;font-size:11px">—</span></div>
+        <div class="info-row"><span class="info-label">Created</span><span class="info-val" id="u-created">—</span></div>
+        <div class="info-row"><span class="info-label">Last sign in</span><span class="info-val" id="u-signin">—</span></div>
+        <div class="info-row"><span class="info-label">Sign-in method</span><span class="info-val" id="u-method">—</span></div>
+      </div>
+
+      <!-- Account actions -->
+      <div class="card">
+        <div class="card-hd"><div class="card-title">🔐 Account Actions</div></div>
+        <button class="btn btn-secondary btn-block" onclick="doSignOut()">Sign Out</button>
+        <div class="danger-zone">
+          <div class="danger-title">⚠️ Danger Zone</div>
+          <div class="msg" id="danger-msg" role="alert" aria-live="assertive"></div>
+          <button class="btn btn-danger btn-block" id="delete-account-btn" onclick="confirmDelete()">Delete Account Permanently</button>
+          <button class="btn btn-secondary btn-block" id="danger-reauth-btn" hidden onclick="doSignOut()" style="margin-top:8px">Sign out and sign in again</button>
+          <p style="font-size:12px;color:var(--ink3);margin-top:10px">This cannot be undone. It deletes your sign-in and profile, your centres and the registrations sent to them, the residents you created with their saved conversations and check-ins, and attendance records. Seniors who joined your centre with their own login keep their records; they are only taken off your members list. If anything cannot be removed, your account is kept so you can try again. Identity documents uploaded when you registered are not yet removed automatically — contact Techable to have them erased.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+window._cfg = (async function(){
+  try {
+    const r = await fetch('/api/config', { cache:'no-store' })
+    if (r.ok) { const d = await r.json(); if (d?.firebase?.apiKey) { window.TECHABLE_CONFIG = d; return d } }
+  } catch(_) {}
+  await new Promise(res => { const s = document.createElement('script'); s.src='config.js'; s.onload=res; s.onerror=res; document.head.appendChild(s) })
+  return window.TECHABLE_CONFIG || null
+})()
+</script>
+
+<script type="module" src="auth.js"></script>
+
+<script type="module">
+import {
+  collection, doc, getDoc, getDocs, query, where, orderBy,
+  addDoc, setDoc, deleteDoc, serverTimestamp, limit, writeBatch, updateDoc, runTransaction
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+import { mountComposer, followerCount } from "./announcements.js"
+import { connectionMembers, reviewConnection } from './center-connections.mjs'
+import * as connectionFs from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js'
+import { mountMemberComposer } from "./member-news.mjs"
+import * as memberNewsFs from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+import {createPersonDetails,loadPersonRecord} from './person-details.mjs'
+import {centerSetupState,mountCenterSetup,centerDetailsIssues} from './center-setup.mjs'
+
+let user = null, userDoc = {}, companionSettings = {}, db = null
+let centres = [], members = [], providerDirectory = [], providerAssignments = [], familyLinkRequests = [], initialized = false
+let personDetailView=null,memberComposerControl=null
+let centerSaveBusy=false,centersKnown=false
+let setupSelectedId=new URLSearchParams(window.location.search).get('centre')||''
+
+const $ = id => document.getElementById(id)
+
+const esc = v => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')
+
+const AVATAR_STYLES = ['lorelei-neutral','adventurer','micah','personas','bottts','thumbs','pixel-art','fun-emoji','shapes','initials']
+const safeStyle = s => AVATAR_STYLES.includes(s) ? s : 'lorelei-neutral'
+
+function dice(seed, style='lorelei-neutral'){
+  const p = new URLSearchParams({seed:seed||'user',radius:'50',backgroundColor:'fdf0eb,faf6f0,ebf5ef',backgroundType:'solid',randomizeIds:'true'})
+  return `https://api.dicebear.com/9.x/${safeStyle(style)}/svg?${p}`
+}
+
+function toast(msg){
+  const t = document.createElement('div'); t.className='toast'; t.textContent=msg
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 2600)
+}
+
+function showMsg(id,txt,type){
+  const el=$(id); if(!el) return
+  el.textContent=txt||''; el.className='msg '+(type||'')
+}
+
+function fmtDate(v){
+  if(!v) return '—'
+  const d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})
+}
+
+function displayName(){ return userDoc.displayName || user?.displayName || user?.email?.split('@')[0] || 'Manager' }
+
+function setHero(centreCount=0){
+  const name = displayName()
+  const seed = userDoc.avatarSeed || user?.uid
+  const style = safeStyle(userDoc.avatarStyle || 'lorelei-neutral')
+  const avatarUrl = dice(seed, style)
+  $('hero-avatar-img').src = avatarUrl
+  $('settings-avatar-img').src = avatarUrl
+  $('hero-name').textContent = name
+  $('hero-email').textContent = user?.email || ''
+  const providers = user?.providerData?.map(p=>p.providerId) || []
+  $('hero-method').textContent = providers.includes('google.com') ? '🔵 Google' : '✉️ Email'
+  $('hs-centres').textContent = centreCount
+}
+
+function updateHeroStats(members, centreCount){
+  $('hs-members').textContent = members
+  $('hs-centres').textContent = centreCount
+}
+
+// ── TAB SWITCHING ──
+window.switchTab = function(tabId){
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tabId))
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id===tabId))
+}
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab))
+})
+
+// ── AVATAR ──
+window.previewAvatar = function(){
+  const seed = $('avatar-seed').value || user?.uid
+  const style = safeStyle($('avatar-style').value)
+  const url = dice(seed, style)
+  $('hero-avatar-img').src = url
+  $('settings-avatar-img').src = url
+}
+
+window.randomAvatar = function(){
+  const styles = AVATAR_STYLES.filter(s=>s!=='initials')
+  $('avatar-style').value = styles[Math.floor(Math.random()*styles.length)]
+  $('avatar-seed').value = 'mgr-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)
+  previewAvatar()
+}
+
+// ── INVITE LINK ──
+// The link went out as a bare /join.html, naming no centre at all. So the
+// senior a manager had texted their "personalised" link to arrived at the
+// generic form anyway, and had to find that centre by name among every public
+// centre on the platform. join.html reads ?centre=<id> and chooses it for
+// them. The id is centres[0] — the centre the rest of this page already
+// treats as theirs, in the hero badge and the summary card.
+function inviteUrl(){
+  const base = window.location.origin + '/join.html'
+  const id = centres[0]?.id
+  return id ? base + '?centre=' + encodeURIComponent(id) : base
+}
+
+function setInviteLinks(){
+  const url = inviteUrl()
+  if($('invite-url')) $('invite-url').textContent = url
+  if($('invite-url-2')) $('invite-url-2').textContent = url
+}
+
+window.copyInviteLink = function(){
+  navigator.clipboard.writeText(inviteUrl()).then(()=>toast('Invite link copied ✓'))
+}
+
+// ── SAVE PROFILE ──
+window.saveProfile = async function(){
+  if(!user||!db) return
+  const name = $('name').value.trim()
+  if(!name){ showMsg('profile-msg','Please enter a display name.','err'); return }
+  const avatarSeed = $('avatar-seed').value.trim() || user.uid
+  const avatarStyle = safeStyle($('avatar-style').value)
+  try {
+    await setDoc(doc(db,'users',user.uid),{
+      displayName:name, displayNameLower:name.toLowerCase(),
+      avatarSeed, avatarStyle, updatedAt:serverTimestamp()
+    },{merge:true})
+    userDoc = {...userDoc,displayName:name,avatarSeed,avatarStyle}
+    setHero(centres.length)
+    showMsg('profile-msg','','')
+    toast('Profile saved ✓')
+  } catch(e){ showMsg('profile-msg','Could not save: '+e.message,'err') }
+}
+
+function renderCenterSetup(){
+ const state=centerSetupState({user,centers:centres,centersKnown,selectedId:setupSelectedId,verificationStatus:userDoc.verificationStatus||'',storageEnabled:window.TECHABLE_CONFIG?.storageEnabled===true})
+ mountCenterSetup($('center-setup-progress'),state,{onDetails:openCenterSetupDetails,onVerification:()=>{window.location.href='verification.html?setup=center&centre='+encodeURIComponent(state.center.id)},onRetry:async()=>{try{const snap=await connectionFs.getDocFromServer(doc(db,'users',user.uid));userDoc=snap.exists()&&!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites?snap.data():{}}catch{userDoc={}}await loadCentres()}})
+}
+function openCenterSetupDetails(){
+ if(!$('c-name').value.trim()&&!$('c-id').value){const saved=centres.find(c=>c.id===setupSelectedId)||(!setupSelectedId?centres[0]:null);if(saved)editCentre(saved)}
+ switchTab('tab-centre');$('c-name').focus()
+}
+window.continueCenterSetup=async function(){
+ if(centerSaveBusy)return
+ const issues=centerDetailsIssues({name:$('c-name').value,address:$('c-address').value,city:$('c-city').value,contactPersonName:$('c-contact-name').value,contactPersonTitle:$('c-contact-title').value,contactEmail:$('c-email').value,phone:$('c-phone').value})
+ if(issues.length){showMsg('centre-msg','Before continuing, add or correct: '+issues.join(', ')+'. You can still save a draft.','err');return}
+ if(await saveCentre())window.location.href='verification.html?setup=center&centre='+encodeURIComponent($('c-id').value)
+}
+
+// ── CENTRE FORM ──
+window.clearCentreForm = function(){
+  ['c-id','c-name','c-details','c-address','c-city','c-country','c-map',
+   'c-contact-name','c-contact-title','c-website','c-email','c-phone','c-programmes','c-upcoming','c-hours','c-capacity','c-logo'].forEach(id => { if($(id)) $(id).value='' })
+  if($('c-category')) $('c-category').value='community'
+  if($('c-public')) $('c-public').value='true'
+  showMsg('centre-msg','','')
+}
+
+window.saveCentre = async function(){
+  if(!user||!db||centerSaveBusy) return false
+  const name = $('c-name').value.trim()
+  if(!name){ showMsg('centre-msg','Center name is required.','err'); return }
+  const contactPersonName = $('c-contact-name').value.trim(), contactPersonTitle = $('c-contact-title').value.trim()
+  if(contactPersonName.length>120 || contactPersonTitle.length>80 || /[\u0000-\u001f\u007f]/.test(contactPersonName+contactPersonTitle)){showMsg('centre-msg','Contact person name must be at most 120 characters and title at most 80, each on one line.','err');return}
+  const payload = {
+    contactPersonName, contactPersonTitle,
+    name, nameLower:name.toLowerCase(),
+    details:$('c-details').value.trim(), address:$('c-address').value.trim(),
+    city:$('c-city').value.trim(), country:$('c-country').value.trim(),
+    mapUrl:$('c-map').value.trim(), website:$('c-website').value.trim(),
+    contactEmail:$('c-email').value.trim(), phone:$('c-phone').value.trim(),
+    category:$('c-category').value, programmes:$('c-programmes').value.trim(),
+    upcomingActivities:$('c-upcoming').value.trim(),
+    openingHours:$('c-hours').value.trim(),
+    capacity:parseInt($('c-capacity').value)||null,
+    logoUrl:$('c-logo').value.trim(),
+    isPublic:$('c-public').value==='true',
+    managerUid:user.uid, managerName:displayName(),
+    updatedAt:serverTimestamp()
+  }
+  const id = $('c-id').value
+  centerSaveBusy=true
+  if($('save-center')) $('save-center').disabled=true
+  if($('continue-center')) $('continue-center').disabled=true
+  try {
+    if(id) await setDoc(doc(db,'communities',id),payload,{merge:true})
+    else {const saved=await addDoc(collection(db,'communities'),{...payload,createdAt:serverTimestamp()});$('c-id').value=saved.id}
+    setupSelectedId=$('c-id').value
+    await loadCentres()
+    showMsg('centre-msg','Center details saved. Continue to check verification.','ok')
+    toast('Center saved ✓')
+    return true
+  } catch(e){ showMsg('centre-msg','Could not save: '+e.message,'err');return false }
+  finally {centerSaveBusy=false;if($('save-center'))$('save-center').disabled=false;if($('continue-center'))$('continue-center').disabled=false}
+}
+
+window.editCentre = function(c){
+  $('c-id').value=c.id||''
+  $('c-name').value=c.name||''
+  $('c-details').value=c.details||''
+  $('c-address').value=c.address||''
+  $('c-city').value=c.city||''
+  $('c-country').value=c.country||''
+  $('c-map').value=c.mapUrl||''
+  $('c-website').value=c.website||''
+  $('c-contact-name').value=typeof c.contactPersonName==='string'?c.contactPersonName:''
+  $('c-contact-title').value=typeof c.contactPersonTitle==='string'?c.contactPersonTitle:''
+  $('c-email').value=c.contactEmail||''
+  $('c-phone').value=c.phone||''
+  $('c-category').value=c.category||'community'
+  $('c-programmes').value=c.programmes||''
+  $('c-upcoming').value=c.upcomingActivities||''
+  $('c-hours').value=c.openingHours||''
+  $('c-capacity').value=c.capacity||''
+  $('c-logo').value=c.logoUrl||''
+  $('c-public').value=String(c.isPublic!==false)
+  showMsg('centre-msg','','')
+  switchTab('tab-centre')
+  window.scrollTo({top:0,behavior:'smooth'})
+}
+
+window.deleteCentre = async function(id){
+  // Deleting the centre does not clean up what points at it: resident records,
+  // join-form registrations and visit requests all keep a communityId that no
+  // longer resolves, so those seniors show a blank centre from then on. Saying
+  // "Delete this centre permanently?" and nothing else made that invisible
+  // until afterwards. Cascading the delete is the real fix and needs the
+  // membership model; naming the consequence costs nothing and is honest.
+  const c = centres.find(x => x.id === id)
+  const name = c?.name ? `“${c.name}”` : 'this center'
+  if(!confirm(
+    `Delete ${name} permanently?\n\n` +
+    'Seniors already registered to it keep their profiles and their history, ' +
+    'but will no longer show a center. Join requests and visit requests for it ' +
+    'stay on record.\n\nThis cannot be undone.'
+  )) return
+  try {
+    await deleteDoc(doc(db,'communities',id))
+    await loadCentres()
+    await loadMembers()   // the roster is scoped by centre; it has just changed
+    toast('Center deleted ✓')
+  } catch(e){ toast('Could not delete: '+e.message) }
+}
+
+async function loadCentres(){
+  const list = $('centre-list')
+  list.innerHTML = '<div class="card-sub">Loading…</div>'
+  try {
+    centersKnown=false
+    const snap = await connectionFs.getDocsFromServer(query(collection(db,'communities'),where('managerUid','==',user.uid)))
+    centersKnown=!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites
+    centres = []
+    snap.forEach(d=>centres.push({...d.data(),id:d.id}))
+    centres.sort((a,b)=>(a.name||'').localeCompare(b.name||''))
+    renderCenterSetup()
+
+    // The link cannot name the centre until this query has come back with an
+    // id, and init() paints it before that. Without this a manager who had
+    // just created their first centre would go on copying a link that named
+    // nothing until they next reloaded the page.
+    setInviteLinks()
+    // Rebuilt with every reload of the list, so a centre created a moment ago
+    // can be picked in the news composer without reloading the page.
+    loadNews()
+
+    const publicCount = centres.filter(c=>c.isPublic!==false).length
+    $('hs-centres').textContent = centres.length
+
+    // Setup prompt
+    $('setup-prompt').style.display = centres.length===0 ? 'flex' : 'none'
+
+    // Centre summary card (overview tab)
+    if(centres.length>0){
+      const first = centres[0]
+      $('centre-summary-card').style.display='block'
+      $('centre-summary-body').innerHTML = `
+        <div class="info-row"><span class="info-label">Name</span><span class="info-val">${esc(first.name||'—')}</span></div>
+        <div class="info-row"><span class="info-label">Location</span><span class="info-val">${esc([first.city,first.country].filter(Boolean).join(', ')||'—')}</span></div>
+        <div class="info-row"><span class="info-label">Contact person</span><span class="info-val">${esc(first.contactPersonName||'—')}${first.contactPersonTitle?' · '+esc(first.contactPersonTitle):''}</span></div>
+        <div class="info-row"><span class="info-label">Category</span><span class="info-val">${esc({community:'Community Center',senior_living:'Senior Living',care_home:'Care Home',activity_group:'Activity Group',support_group:'Support Group'}[first.category]||'—')}</span></div>
+        <div class="info-row"><span class="info-label">Visibility</span><span class="info-val">${first.isPublic!==false?'🌍 Public':'🔒 Private'}</span></div>
+      `
+      // Show centre badge in hero
+      $('hero-centre').textContent = '🏘️ ' + first.name
+      $('hero-centre').style.display = 'inline-flex'
+      // Show invite in overview
+      $('invite-card').style.display = 'flex'
+    }
+
+    // Render centre list
+    if(!centres.length){
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🏘️</div><div class="empty-title">No centers yet</div><div class="empty-desc">Create your first community center profile to appear in the directory.</div></div>`
+      return
+    }
+    list.innerHTML = centres.map(c=>`
+      <div class="centre-record">
+        <div class="centre-record-name">${esc(c.name||'Unnamed')}</div>
+        <div class="centre-record-meta">${esc([c.city,c.country,{community:'Community Center',senior_living:'Senior Living',care_home:'Care Home',activity_group:'Activity Group',support_group:'Support Group'}[c.category]||''].filter(Boolean).join(' · '))} · ${c.isPublic!==false?'🌍 Public':'🔒 Private'}</div>
+        ${c.contactPersonName||c.contactPersonTitle?`<div class="centre-record-meta">Contact: ${esc(c.contactPersonName||'')}${c.contactPersonTitle?' · '+esc(c.contactPersonTitle):''}</div>`:''}
+        ${c.details?`<div class="centre-record-meta" style="margin-top:4px">${esc(c.details.slice(0,100)+(c.details.length>100?'…':''))}</div>`:''}
+        <div class="centre-record-actions">
+          <button class="cr-btn" data-edit="${esc(c.id)}">✏️ Edit</button>
+          <button class="cr-btn danger" data-del="${esc(c.id)}">🗑 Delete</button>
+          ${safeUrl(c.website)?`<a class="cr-btn" href="${esc(safeUrl(c.website))}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">🌐 Website</a>`:''}
+        </div>
+      </div>
+    `).join('')
+
+    // Bound after render instead of inlined into onclick attributes.
+    //
+    // Edit used to embed the whole centre as JSON inside a single-quoted
+    // onclick, escaping only the apostrophe — so an ampersand in any field
+    // could close the attribute early, and the object had to survive being
+    // parsed as HTML on the way. Delete interpolated the id the same way. The
+    // record is right here in `centres`; there is no reason to send it on a
+    // round trip through an attribute.
+    list.querySelectorAll('[data-edit]').forEach(b =>
+      b.addEventListener('click', () => {
+        const c = centres.find(x => x.id === b.getAttribute('data-edit'))
+        if (c) editCentre(c)
+      }))
+    list.querySelectorAll('[data-del]').forEach(b =>
+      b.addEventListener('click', () => deleteCentre(b.getAttribute('data-del'))))
+  } catch(e){
+    console.error(e)
+    centersKnown=false
+    renderCenterSetup()
+    list.innerHTML = '<div class="card-sub">Could not load centers.</div>'
+  }
+}
+
+// A link a manager typed into their own centre profile still ends up in an
+// href. `javascript:` there runs on click, so only http(s) is let through, and
+// a bare "example.org" is treated as the http(s) URL it was meant to be rather
+// than resolved against this origin.
+function safeUrl(raw){
+  const s = String(raw ?? '').trim()
+  if (!s) return ''
+  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(s) ? s : 'https://' + s
+  try {
+    const u = new URL(withScheme)
+    return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : ''
+  } catch (_) { return '' }
+}
+
+async function loadMembers(){
+  memberComposerControl=null
+  const list = $('members-list')
+  $('member-announcement-composer').replaceChildren()
+  const cnt = $('members-count')
+  list.innerHTML = '<div class="card-sub">Loading…</div>'
+  try {
+    // This panel was permanently empty, and for a reason worth writing down.
+    //
+    // It said "load residents whose communityId matches" and then queried the
+    // `users` collection — where communityId is never written. Not at signup,
+    // not by join.html, not anywhere in the codebase. So the query matched
+    // nothing, every manager saw "No members yet", and the member count sat at
+    // zero however many seniors they had.
+    //
+    // A senior's record lives in `residents`, and a resident created by a
+    // manager carries centreId = that manager's uid. That is also the only
+    // shape the security rules will authorise for this query: asking by
+    // communityId would span centres the caller may not read, and Firestore
+    // refuses a query that could return a document the rules would deny.
+    //
+    // Approving a join-form registration now creates exactly this resident
+    // shape in the same batch as the decision, so approved applicants appear
+    // here without a second manual entry step.
+    const snap = await getDocs(query(collection(db,'residents'),where('centreId','==',user.uid)))
+    members = []
+    snap.forEach(d=>members.push({id:d.id,...d.data()}))
+    const connectionSnap = await getDocs(query(collection(db,'center_connections'),where('managerUid','==',user.uid)))
+    const connected = []; connectionSnap.forEach(d=>connected.push({id:d.id,...d.data()}))
+    for(const member of connectionMembers(connected,user.uid))if(!members.some(m=>m.id===member.id))members.push(member)
+    members.sort((a,b)=>(a.name||'').localeCompare(b.name||''))
+    $('hs-members').textContent = members.length
+    cnt.textContent = members.length + ' member' + (members.length!==1?'s':'')
+
+    if(!members.length){
+      list.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">No members yet</div><div class="empty-desc">Add a senior from your Center Dashboard or approve a join request.</div></div>`
+      return
+    }
+    // A resident record, not a user account: it has name/room/age rather than
+    // displayName/email/role.
+    list.innerHTML = members.map(m=>{
+      const seed = m.avatarSeed || m.name || m.id
+      const style = safeStyle(m.avatarStyle||'lorelei-neutral')
+      const meta = [
+        m.connectionOnly ? 'Connected member — announcements only' : '',
+        m.age ? m.age + ' years old' : '',
+        m.room,
+        m.communityName || centres.find(c=>c.id===m.communityId)?.name || ''
+      ].filter(Boolean).join(' · ')
+      const status = m.status && m.status!=='active'
+        ? (m.status==='archived' ? 'Archived' : 'Inactive') : 'Senior'
+      return `<div class="member-item">
+        <div class="member-av"><img src="${dice(seed,style)}" alt="avatar" /></div>
+        <div class="member-info">
+          <button type="button" class="member-name person-link" data-member-details="${esc(m.id)}" aria-label="View member details for ${esc(m.preferredName||m.name||'Unnamed')}">${esc(m.preferredName||m.name||'Unnamed')}</button>
+          <div class="member-meta">${esc(meta||'No details recorded')}</div>
+        </div>
+        <span class="member-badge">${esc(status)}</span>
+      </div>`
+    }).join('')
+    memberComposerControl=mountMemberComposer($('member-announcement-composer'),{fs:memberNewsFs,db,user,profile:userDoc,members})
+  } catch(e){
+    console.error(e)
+    list.innerHTML = '<div class="card-sub">Could not load members.</div>'
+  }
+}
+
+async function loadCentreRequests(){
+  const list = $('centre-request-list')
+  try {
+    const snap = await getDocs(query(collection(db,'centre_requests'),where('managerUid','==',user.uid)))
+    const requests = []
+    snap.forEach(d => requests.push({ ...d.data(), id:d.id }))
+    const pending = requests.filter(req => req.status === 'pending')
+    list.textContent = ''
+    if (!pending.length) {
+      const none = document.createElement('div')
+      none.className = 'card-sub'
+      none.textContent = 'No pending join requests.'
+      list.appendChild(none)
+    }
+    pending.forEach(req => {
+      const row = document.createElement('div')
+      row.className = 'member-item centre-request-row'
+      const info = document.createElement('div')
+      info.className = 'member-info'
+      const name = document.createElement('button')
+      name.type = 'button';name.className = 'member-name person-link'
+      name.addEventListener('click',()=>openCareApplicantDetails(req.id,name))
+      const centre = centres.find(c => c.id === req.communityId)
+      name.textContent = (req.seniorName || 'Senior') + ' → ' + (centre?.name || req.communityName || 'Centre')
+      name.setAttribute('aria-label','View applicant details for '+(req.seniorName||'Senior'))
+      const date = document.createElement('div')
+      date.className = 'member-meta'
+      date.textContent = 'asked ' + (req.createdAt?.toDate ? fmtDate(req.createdAt.toDate()) : 'just now')
+      info.append(name, date)
+      const actions = document.createElement('div')
+      actions.className = 'btn-group'
+      const approve = Object.assign(document.createElement('button'), { className:'btn btn-primary', type:'button', textContent:'Approve' })
+      const decline = Object.assign(document.createElement('button'), { className:'btn btn-secondary', type:'button', textContent:'Decline' })
+      approve.setAttribute('aria-label', 'Approve ' + (req.seniorName || 'this senior') + ' joining ' + (centre?.name || req.communityName || 'your centre'))
+      decline.setAttribute('aria-label', 'Decline ' + (req.seniorName || 'this senior') + ' joining ' + (centre?.name || req.communityName || 'your centre'))
+      const gone = centres.length > 0 && !centre
+      if (gone) {
+        approve.disabled = true
+        date.textContent += ' · this centre is no longer in your list, so it cannot be approved'
+      }
+      const review = async status => {
+        approve.disabled = true
+        decline.disabled = true
+        await reviewCentreRequest(req, status)
+        approve.disabled = gone
+        decline.disabled = false
+      }
+      approve.addEventListener('click', () => review('approved'))
+      decline.addEventListener('click', () => review('declined'))
+      actions.append(approve, decline)
+      row.append(info, actions)
+      list.appendChild(row)
+    })
+  } catch (err) {
+    console.warn('[profile] join requests load failed:', err?.code || err?.message)
+    list.textContent = 'Join requests could not be loaded.'
+  }
+}
+
+async function loadConnectionApplicants(){
+ const root=$('connection-applicants'),status=$('connection-applicant-status');root.textContent='Loading…'
+ try{
+  const snap=await getDocs(query(collection(db,'center_connections'),where('managerUid','==',user.uid))),rows=[];snap.forEach(d=>rows.push({id:d.id,...d.data()}));root.textContent=''
+  for(const item of rows.filter(r=>r.status==='pending')){
+   const row=document.createElement('div');row.className='member-item';const info=document.createElement('div');info.className='member-info';const name=document.createElement('button');name.type='button';name.className='member-name person-link';name.textContent=item.seniorName;name.addEventListener('click',()=>openConnectionDetails(item.id,name));const center=document.createElement('div');center.className='member-meta';center.textContent=item.communityName;info.append(name,center);row.append(info)
+   const actions=document.createElement('div');actions.className='btn-group'
+   for(const [decision,label]of [['approved','Approve connection'],['declined','Decline connection']]){const button=document.createElement('button');button.type='button';button.className=decision==='approved'?'btn btn-primary':'btn btn-secondary';button.textContent=label;button.setAttribute('aria-label',label+' for '+item.seniorName+' at '+item.communityName);button.disabled=userDoc.verificationStatus!=='approved';button.addEventListener('click',async()=>{actions.querySelectorAll('button').forEach(b=>b.disabled=true);status.textContent='Saving decision…';try{await reviewConnection(connectionFs,db,user.uid,item.id,decision);status.textContent=decision==='approved'?'Connection approved. This senior is now in Members.':'Connection declined.';await loadMembers();await loadConnectionApplicants()}catch{status.textContent='Could not confirm the decision. Refresh Applicants before trying again.'}});actions.append(button)}row.append(actions);root.append(row)
+  }
+  if(!root.childElementCount)root.textContent='No pending center connection applicants.'
+ }catch{root.textContent='Connection applicants could not be loaded. Refresh to try again.'}
+}
+
+async function reviewCentreRequest(req, status){
+  if (req.status !== 'pending' || !['approved', 'declined'].includes(status)) return
+  try {
+    if (status === 'approved') {
+      // Access changes only if the request and resident move together.
+      const batch = writeBatch(db)
+      batch.update(doc(db,'centre_requests',req.id), {
+        status:'approved', reviewedBy:user.uid, reviewedAt:serverTimestamp()
+      })
+      batch.update(doc(db,'residents',req.residentId), {
+        centreId:user.uid, communityId:req.communityId, communityName:req.communityName, updatedAt:serverTimestamp()
+      })
+      await batch.commit()
+    } else {
+      await updateDoc(doc(db,'centre_requests',req.id), {
+        status:'declined', reviewedBy:user.uid, reviewedAt:serverTimestamp()
+      })
+    }
+    showMsg('centre-request-msg', status === 'approved' ? 'Join request approved.' : 'Join request declined.', 'ok')
+    await loadMembers()
+    await loadCentreRequests()
+    return true
+  } catch (err) {
+    console.warn('[profile] join request review failed:', err?.code || err?.message)
+    showMsg('centre-request-msg', 'Could not review this join request just now — please try again later.', 'err')
+    return false
+  }
+}
+
+function detailsView(){if(!personDetailView)personDetailView=createPersonDetails();return personDetailView}
+async function freshDetails(collectionName,id){return loadPersonRecord({fs:connectionFs,db,collection:collectionName,id})}
+function detailOptions(kind,load,opener){return{kind,load,managerUid:user.uid,opener,fallback:()=>document.querySelector('.tab-btn.active'),afterAnnounce:()=>{$('member-announcement-composer').scrollIntoView({block:'center'});$('member-news-title')?.focus()}}}
+async function selectAnnouncement(id){switchTab('tab-members');return memberComposerControl?.selectOnly(id)===true}
+function openConnectionDetails(id,opener){return detailsView().open({...detailOptions('connection',()=>freshDetails('center_connections',id),opener),review:async(_row,decision)=>{await reviewConnection(connectionFs,db,user.uid,id,decision);await loadMembers();await loadConnectionApplicants()},onAnnounce:userDoc.verificationStatus==='approved'?row=>selectAnnouncement(row.residentId):undefined})}
+function openCareApplicantDetails(id,opener){return detailsView().open({...detailOptions('care-request',()=>freshDetails('centre_requests',id),opener),review:async(row,decision)=>{if(!await reviewCentreRequest(row,decision))throw Error('Unconfirmed')}})}
+function openMemberDetails(id,opener){const member=members.find(m=>m.id===id);if(!member)return;return detailsView().open({...detailOptions(member.connectionOnly?'connection':'member',()=>freshDetails(member.connectionOnly?'center_connections':'residents',member.connectionOnly?member.connectionId:id),opener),onAnnounce:userDoc.verificationStatus==='approved'?()=>selectAnnouncement(id):undefined})}
+$('members-list').addEventListener('click',event=>{const button=event.target?.closest?.('button[data-member-details]');if(button)void openMemberDetails(button.dataset.memberDetails,button)})
+
+async function loadFamilyLinkRequests(){
+  const list = $('family-link-list')
+  if(!list) return
+  try {
+    const snap = await getDocs(query(collection(db,'family_links'),where('managerUid','==',user.uid)))
+    familyLinkRequests = []
+    snap.forEach(d=>familyLinkRequests.push({id:d.id,...d.data()}))
+    // Only seniors still in this centre: for one who has left, the rules let
+    // only the senior answer, so Approve/Reject here could only fail.
+    const pending = familyLinkRequests.filter(link=>link.status==='pending' && members.some(m=>m.id===link.residentId))
+    list.textContent = ''
+    if(!pending.length){
+      list.appendChild(Object.assign(document.createElement('div'),{className:'card-sub',textContent:'No pending family connection requests.'}))
+      return
+    }
+    pending.forEach(link=>{
+      const resident = members.find(m=>m.id===link.residentId)
+      const row = document.createElement('div'); row.className='member-item'
+      const info = document.createElement('div'); info.className='member-info'
+      info.appendChild(Object.assign(document.createElement('div'),{className:'member-name',textContent:(link.familyName||'Family member')+' → '+(resident?.preferredName||resident?.name||'Senior')}))
+      info.appendChild(Object.assign(document.createElement('div'),{className:'member-meta',textContent:'Confirm this person before sharing the senior’s profile and check-ins.'}))
+      const actions = document.createElement('div'); actions.className='btn-group'
+      const approve = Object.assign(document.createElement('button'),{className:'btn btn-primary',type:'button',textContent:'Approve'})
+      const reject = Object.assign(document.createElement('button'),{className:'btn btn-secondary',type:'button',textContent:'Reject'})
+      approve.addEventListener('click',()=>reviewFamilyLink(link.id,'active'))
+      reject.addEventListener('click',()=>reviewFamilyLink(link.id,'rejected'))
+      actions.append(approve,reject); row.append(info,actions); list.appendChild(row)
+    })
+  } catch(e){
+    list.textContent='Family connection requests could not be loaded.'
+    showMsg('family-link-msg','Reload before approving a family connection.','err')
+  }
+}
+
+window.reviewFamilyLink = async function(linkId,status){
+  if(!['active','rejected'].includes(status)) return
+  try {
+    await setDoc(doc(db,'family_links',linkId),{
+      status, reviewedBy:user.uid, reviewedAt:serverTimestamp()
+    },{merge:true})
+    showMsg('family-link-msg',status==='active'?'Family connection approved.':'Family connection rejected.','ok')
+    await loadFamilyLinkRequests()
+  } catch(e){ showMsg('family-link-msg','Could not review this request ('+(e.code||e.message)+').','err') }
+}
+
+function assignmentLabel(a){
+  const resident = members.find(m=>m.id===a.residentId)
+  const provider = providerDirectory.find(p=>p.id===a.providerUid)
+  return {
+    resident: resident?.preferredName || resident?.name || 'Unknown senior',
+    provider: provider?.organisation || provider?.displayName || 'Unknown provider'
+  }
+}
+
+async function loadProviderAssignments(){
+  const residentSelect = $('assignment-resident')
+  const providerSelect = $('assignment-provider')
+  const list = $('assignment-list')
+  // firestore.rules lets only an admin-approved manager list providers or
+  // assign one; say so rather than show a failed read.
+  if(userDoc.verificationStatus !== 'approved'){
+    residentSelect.disabled = true; providerSelect.disabled = true; $('assign-provider-btn').disabled = true
+    list.textContent = 'Provider assignments open once the Techable team has approved your account.'
+    return
+  }
+  try {
+    const [providersSnap, assignmentsSnap] = await Promise.all([
+      getDocs(collection(db,'provider_directory')),
+      getDocs(query(collection(db,'provider_assignments'),where('managerUid','==',user.uid)))
+    ])
+    providerDirectory = []
+    providersSnap.forEach(d=>providerDirectory.push({id:d.id,...d.data()}))
+    providerDirectory.sort((a,b)=>(a.organisation||a.displayName||'').localeCompare(b.organisation||b.displayName||''))
+    providerAssignments = []
+    assignmentsSnap.forEach(d=>providerAssignments.push({id:d.id,...d.data()}))
+
+    residentSelect.textContent = ''
+    providerSelect.textContent = ''
+    const option = (value,text) => { const o=document.createElement('option'); o.value=value; o.textContent=text; return o }
+    residentSelect.appendChild(option('','Choose a senior'))
+    members.filter(m=>!m.connectionOnly).forEach(m=>residentSelect.appendChild(option(m.id,m.preferredName||m.name||'Unnamed senior')))
+    providerSelect.appendChild(option('','Choose a provider'))
+    providerDirectory.forEach(p=>providerSelect.appendChild(option(p.id,[p.organisation,p.displayName].filter(Boolean).join(' · ')||'Unnamed provider')))
+
+    list.textContent = ''
+    if(!providerAssignments.length){ list.appendChild(Object.assign(document.createElement('div'),{className:'card-sub',textContent:'No provider assignments yet.'})); return }
+    providerAssignments.forEach(a=>{
+      const names=assignmentLabel(a), row=document.createElement('div')
+      row.className='member-item'
+      const info=document.createElement('div'); info.className='member-info'
+      info.appendChild(Object.assign(document.createElement('div'),{className:'member-name',textContent:names.resident}))
+      info.appendChild(Object.assign(document.createElement('div'),{className:'member-meta',textContent:names.provider}))
+      const remove=document.createElement('button'); remove.className='btn btn-secondary'; remove.type='button'; remove.textContent='Unassign'
+      remove.addEventListener('click',()=>unassignProvider(a.id))
+      row.append(info,remove); list.appendChild(row)
+    })
+  } catch(e){
+    list.textContent='Could not load provider assignments.'
+    showMsg('assignment-msg','Assignments could not be checked. Reload before making changes.','err')
+  }
+}
+
+window.assignProvider = async function(){
+  const residentId=$('assignment-resident').value, providerUid=$('assignment-provider').value
+  if(!residentId || !providerUid){ showMsg('assignment-msg','Choose both a senior and a verified provider.','err'); return }
+  try {
+    await setDoc(doc(db,'provider_assignments',providerUid+'_'+residentId),{
+      providerUid,residentId,managerUid:user.uid,createdAt:serverTimestamp()
+    })
+    showMsg('assignment-msg','Provider assigned.','ok')
+    await loadProviderAssignments()
+  } catch(e){ showMsg('assignment-msg','Could not assign this provider ('+(e.code||e.message)+').','err') }
+}
+
+window.unassignProvider = async function(assignmentId){
+  try {
+    await deleteDoc(doc(db,'provider_assignments',assignmentId))
+    showMsg('assignment-msg','Provider unassigned.','ok')
+    await loadProviderAssignments()
+  } catch(e){ showMsg('assignment-msg','Could not remove this assignment.','err') }
+}
+
+async function loadFamilyMessages(){
+  const list=$('family-message-list')
+  try {
+    const snap=await getDocs(query(collection(db,'family_messages'),where('managerUid','==',user.uid),orderBy('createdAt','desc'),limit(50)))
+    const rows=[]; snap.forEach(d=>rows.push({id:d.id,...d.data()}))
+    rows.sort((a,b)=>{
+      const at=x=>x?.toMillis?x.toMillis():new Date(x||0).getTime()
+      return at(b.createdAt)-at(a.createdAt)
+    })
+    list.textContent=''
+    if(!rows.length){ list.appendChild(Object.assign(document.createElement('div'),{className:'card-sub',textContent:'No family messages yet.'})); return }
+    rows.forEach(m=>{
+      const resident=members.find(x=>x.id===m.residentId)
+      const row=document.createElement('div'); row.className='member-item'
+      const info=document.createElement('div'); info.className='member-info'
+      info.appendChild(Object.assign(document.createElement('div'),{className:'member-name',textContent:(m.fromName||'Family member')+' → '+(resident?.preferredName||resident?.name||'Senior')}))
+      info.appendChild(Object.assign(document.createElement('div'),{className:'member-meta',textContent:String(m.text||'')}))
+      row.appendChild(info); list.appendChild(row)
+    })
+  } catch(e){ list.textContent='Family messages could not be loaded.' }
+}
+
+// ── PREFERENCES ──
+async function saveCompanionPreferences(next){
+  await setDoc(doc(db,'companion_settings',user.uid),{
+    managerUid:user.uid,
+    aiEnabled:next.aiEnabled,
+    voiceEnabled:next.voiceEnabled,
+    updatedAt:serverTimestamp()
+  })
+  companionSettings=next
+  localStorage.setItem('t_ai_mode',next.aiEnabled?'gemini':'local')
+  localStorage.setItem('t_voice_pref',next.voiceEnabled?'on':'off')
+}
+
+function companionPreferences(){
+  const saved=companionSettings
+  return {
+    aiEnabled: typeof saved?.aiEnabled==='boolean' ? saved.aiEnabled : (localStorage.getItem('t_ai_mode')||'gemini')==='gemini',
+    voiceEnabled: typeof saved?.voiceEnabled==='boolean' ? saved.voiceEnabled : localStorage.getItem('t_voice_pref')!=='off'
+  }
+}
+
+async function loadCompanionPreferences(){
+  try {
+    const snap=await getDoc(doc(db,'companion_settings',user.uid))
+    companionSettings=snap.exists()?snap.data():{}
+  } catch(e){ companionSettings={} }
+}
+
+window.toggleAI = async function(){
+  const btn=$('ai-toggle'), previous=companionPreferences()
+  const next={...previous,aiEnabled:!btn.classList.contains('on')}
+  btn.disabled=true
+  try { await saveCompanionPreferences(next); btn.classList.toggle('on',next.aiEnabled); toast('AI mode: '+(next.aiEnabled?'OpenAI':'local')) }
+  catch(e){ toast('Could not save AI preference') }
+  finally { btn.disabled=false }
+}
+window.toggleVoice = async function(){
+  const btn=$('voice-toggle'), previous=companionPreferences()
+  const next={...previous,voiceEnabled:!btn.classList.contains('on')}
+  btn.disabled=true
+  try { await saveCompanionPreferences(next); btn.classList.toggle('on',next.voiceEnabled); toast('Voice '+(next.voiceEnabled?'on':'off')) }
+  catch(e){ toast('Could not save voice preference') }
+  finally { btn.disabled=false }
+}
+
+// ── SIGN OUT / DELETE ──
+window.doSignOut = function(){ window.TechableAuth?.signOut?.() }
+// TechableAuth.deleteAccount (account-deletion.js) never deletes the sign-in
+// while any record is left, and resolves to { ok, reason, message } instead
+// of throwing. The button stays locked for the whole cascade so a second
+// click cannot start a second one.
+window.confirmDelete = async function(){
+  if(!confirm('Delete your account permanently?\n\nThis deletes your sign-in and profile, your centres and the registrations sent to them, the residents you created with their saved conversations and check-ins, and attendance records. Seniors who joined with their own login keep their records. It cannot be undone.')) return
+  const btn = $('delete-account-btn'), reauth = $('danger-reauth-btn')
+  if(btn){ btn.disabled = true; btn.textContent = 'Deleting…' }
+  if(reauth) reauth.hidden = true
+  showMsg('danger-msg','','')
+  let result
+  try { result = await window.TechableAuth.deleteAccount() }
+  catch(e){ result = { ok:false, message:'Something went wrong while deleting your account. Please try again.' } }
+  if(result?.ok) return   // on its way to the sign-in page
+  if(btn){ btn.disabled = false; btn.textContent = 'Delete Account Permanently' }
+  showMsg('danger-msg', result?.message || 'Your account could not be deleted. Please try again.', 'err')
+  // Firebase only deletes a recent sign-in. Signing out and back in is the
+  // way through; the users doc is kept, so they come back to this page.
+  if(result?.reason === 'recent-login' && reauth) reauth.hidden = false
+}
+
+// ── NEWS & EVENTS ──
+// Posting is open once the admin console has approved this account; until then
+// the composer explains why it is locked (firestore.rules enforces it).
+async function loadNews(){
+  const fsApi = { collection, doc, getDoc, getDocs, query, where, orderBy, limit, addDoc, setDoc, deleteDoc, serverTimestamp }
+  // Called from inside loadCentres(): a failure here must not read as
+  // "Could not load centers".
+  try {
+    mountComposer($('news-composer'), {
+      fs: fsApi, db, user, profile: userDoc, source: 'community',
+      // The stored name, not a display fallback: the rules require a post's
+      // communityName to equal it exactly.
+      centres: centres.map(c => ({ id: c.id, name: c.name || '', verified: c.verified === true })),
+      authorName: displayName()
+    })
+  } catch(e){ console.warn('[profile] news card failed:', e.message); return }
+  try {
+    const counts = await Promise.all(centres.map(c => followerCount(fsApi, db, c.id)))
+    const total = counts.reduce((a, b) => a + b, 0)
+    if (centres.length) {
+      $('news-followers').textContent = total === 1
+        ? '1 senior follows your centre and sees your posts on the Community Centres page.'
+        : total + ' seniors follow your centre and see your posts on the Community Centres page.'
+    }
+  } catch(e){ /* the static sentence already says who sees posts */ }
+}
+
+// ── INIT ──
+async function init(authedUser, role){
+  if(!authedUser||initialized) return
+  initialized = true
+  user = authedUser
+  db = window.TechableAuth?.db
+  if(!db){ console.error('Firestore not ready'); return }
+
+  // Redirect non-managers (role already normalized by guard)
+  if(role==='family'){ window.location.href='family-dashboard.html'; return }
+  if(role==='service_provider'){ window.location.href='provider-dashboard.html'; return }
+  if(role==='resident'){ window.location.href='app.html'; return }
+
+  // Get user doc for display name / avatar prefs
+  try {
+    const snap = await connectionFs.getDocFromServer(doc(db,'users',user.uid))
+    userDoc = snap.exists()&&!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites ? snap.data() : {}
+  } catch(e){ userDoc = {} }
+  await loadCompanionPreferences()
+
+  // Populate settings fields
+  $('name').value = userDoc.displayName || user.displayName || ''
+  $('avatar-style').value = safeStyle(userDoc.avatarStyle||'lorelei-neutral')
+  $('avatar-seed').value = userDoc.avatarSeed || user.uid
+  $('disp-email').value = user.email || ''
+  $('u-uid').textContent = user.uid
+  $('u-created').textContent = fmtDate(user.metadata?.creationTime)
+  $('u-signin').textContent = fmtDate(user.metadata?.lastSignInTime)
+  const providers = user.providerData?.map(p=>p.providerId)||[]
+  $('u-method').textContent = providers.includes('google.com') ? 'Google' : 'Email / Password'
+
+  const prefs = companionPreferences()
+  $('ai-toggle').classList.toggle('on',prefs.aiEnabled)
+  $('voice-toggle').classList.toggle('on',prefs.voiceEnabled)
+
+  setHero()
+  setInviteLinks()
+  await loadCentres()
+  if(centersKnown&&(!centres.length||window.location.hash==='#center-details'))openCenterSetupDetails()
+  await loadMembers()
+  await loadFamilyLinkRequests()
+  await loadCentreRequests()
+  await loadConnectionApplicants()
+  await loadProviderAssignments()
+  await loadFamilyMessages()
+  // auth-loading/page-content already handled by guard()
+}
+
+;(function waitForAuth(){
+  if(window.TechableAuth?.guard) window.TechableAuth.guard((u,r)=>init(u,r))
+  else setTimeout(waitForAuth, 50)
+})()
+</script>
+</body>
+</html>

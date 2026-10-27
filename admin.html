@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Techable — Admin</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!--
+  Admin console (F41). The page itself is public like every file in this repo;
+  what it guards is the session token from /api/admin-auth, which only the
+  ADMIN_PASSKEY env var can obtain. Anything an admin can see or change must
+  come from an api/ endpoint that calls requireAdmin() in api/_admin.js —
+  never from this page's own markup.
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-lt:#E07A55;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--cream:#FAF6F0;--white:#fff;
+  --ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;
+  --border:rgba(180,156,136,.22);--border2:rgba(180,156,136,.38);
+  --green:#2D6A4F;--green-bg:#EBF5EF;
+  --r:12px;
+  --accent:#C4552B;
+  --accent-rgb:196,85,43;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input{font-family:inherit}
+button{cursor:pointer;border:none}
+[hidden]{display:none!important}
+
+.wrap{min-height:100vh;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--white)}
+.top a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--navy)}
+.top-tag{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding:4px 10px;border:1px solid var(--border2);border-radius:20px}
+
+.gate{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 16px}
+.box{width:100%;max-width:400px;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:32px 28px;box-shadow:0 4px 24px rgba(26,18,8,.06)}
+h1{font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--navy);letter-spacing:-.01em;margin-bottom:6px}
+.sub{font-size:14px;color:var(--ink2);line-height:1.55;margin-bottom:24px}
+.field label{display:block;font-size:14px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border:1.5px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:16px;color:var(--ink);outline:none}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3.5px rgba(var(--accent-rgb),.12)}
+.btn{width:100%;height:48px;margin-top:16px;border-radius:var(--r);background:var(--rust);color:#fff;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn:hover:not(:disabled){background:var(--rust-lt)}
+.btn:disabled{opacity:.65;cursor:not-allowed}
+.btn:focus-visible,.btn-ghost:focus-visible,.back:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn-ghost{height:40px;padding:0 16px;border-radius:var(--r);background:transparent;border:1.5px solid var(--border2);color:var(--ink2);font-size:14px;font-weight:600}
+.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.msg{margin-top:14px;padding:12px 14px;border-radius:var(--r);font-size:14px;line-height:1.55;background:#FEF2EF;color:#9B2C2C;border:1px solid rgba(196,85,43,.2)}
+.back{display:inline-block;margin-top:20px;font-size:14px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.console{flex:1;width:100%;max-width:1100px;margin:0 auto;padding:32px 16px 48px}
+.console-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+.session{font-size:14px;color:var(--ink2);margin-top:4px}
+.empty{background:var(--white);border:1.5px dashed var(--border2);border-radius:16px;padding:40px 24px;text-align:center;color:var(--ink2);font-size:15px;line-height:1.6}
+.empty strong{display:block;font-family:'Fraunces',serif;font-weight:400;font-size:20px;color:var(--navy);margin-bottom:6px}
+
+/* Account verification */
+.tool-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+h2{font-family:'Fraunces',serif;font-size:22px;font-weight:400;color:var(--navy)}
+.tool-sub{font-size:14px;color:var(--ink2);line-height:1.55;margin:4px 0 0;max-width:640px}
+.filters{display:flex;gap:6px}
+.chip{height:36px;padding:0 14px;border-radius:18px;border:1.5px solid var(--border2);background:var(--white);color:var(--ink2);font-size:14px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip:focus-visible,.row-btn:focus-visible,.decide:focus-visible,.note:focus-visible,.doc a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.notice{background:var(--white);border:1px solid var(--border2);border-left:4px solid #C49A2A;border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.6;color:var(--ink2);margin-bottom:14px}
+.notice code{font-size:13px;background:var(--cream);padding:1px 5px;border-radius:4px}
+.accounts{list-style:none;display:flex;flex-direction:column;gap:10px}
+.acct{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.acct-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px}
+.acct-name{font-size:16px;font-weight:600;color:var(--ink)}
+.acct-meta{font-size:14px;color:var(--ink2);margin-top:3px;line-height:1.5;overflow-wrap:anywhere}
+.badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:12px;white-space:nowrap}
+.badge.pending{background:#FBF4E3;color:#7A5208}
+.badge.not_submitted{background:var(--cream);color:var(--ink2);border:1px solid var(--border2)}
+.badge.approved{background:var(--green-bg);color:var(--green)}
+.badge.rejected{background:#FEF2EF;color:#9B2C2C}
+.acct-actions{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.row-btn{height:40px;padding:0 16px;border-radius:10px;border:1.5px solid var(--border2);background:var(--white);color:var(--navy);font-size:14px;font-weight:600}
+.review{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.docs{list-style:none;display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.doc{font-size:14px;color:var(--ink2)}
+.doc a{display:inline-block;padding:8px 0;color:var(--rust);font-weight:600;overflow-wrap:anywhere}
+.review label{display:block;font-size:14px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.note{width:100%;min-height:72px;padding:10px 12px;border:1.5px solid var(--border2);border-radius:10px;font:inherit;font-size:16px;color:var(--ink);resize:vertical}
+.decide{height:44px;padding:0 18px;border-radius:10px;font-size:15px;font-weight:600;color:#fff}
+.decide.ok{background:var(--green)}
+.decide.no{background:#9B2C2C}
+.decide:disabled{opacity:.6;cursor:not-allowed}
+.row-msg{font-size:14px;margin-top:8px;color:#9B2C2C}
+.prev-note{font-size:14px;color:var(--ink2);margin-top:8px;font-style:italic;overflow-wrap:anywhere}
+@media(max-width:480px){.box{padding:26px 20px}.top{padding:14px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a href="index.html"><img class="brand-mark" src="assets/techable-icon.png" alt="" style="--brand-h:30px"><span style="font-family:'Fraunces',serif;font-size:20px">Techable</span></a>
+    <span class="top-tag">Admin</span>
+  </header>
+
+  <!-- Passkey gate -->
+  <main class="gate" id="gate">
+    <form class="box" id="gate-form" novalidate>
+      <h1>Admin sign in</h1>
+      <p class="sub">Enter the admin passkey to continue.</p>
+      <div class="field">
+        <label for="passkey">Passkey</label>
+        <input id="passkey" name="passkey" type="password" autocomplete="current-password" required autofocus>
+      </div>
+      <button class="btn" id="gate-btn" type="submit"><span>Continue</span></button>
+      <p class="msg" id="gate-msg" role="alert" hidden></p>
+      <a class="back" href="index.html#signin">Back to Techable</a>
+    </form>
+  </main>
+
+  <!-- Signed in -->
+  <main class="console" id="console" hidden>
+    <div class="console-head">
+      <div>
+        <h1>Admin console</h1>
+        <p class="session" id="session-line"></p>
+      </div>
+      <button class="btn-ghost" id="signout" type="button">Sign out</button>
+    </div>
+    <section aria-labelledby="verify-title">
+      <div class="tool-head">
+        <div>
+          <h2 id="verify-title">Account verification</h2>
+          <p class="tool-sub">Community centres and service providers upload a licence or ID when they sign up. Check it, then approve the account — only approved accounts can post news and programmes to seniors. Approving a centre manager also verifies the centres they run now; a centre added later comes back here.</p>
+        </div>
+        <div class="filters" role="group" aria-label="Show">
+          <button class="chip" type="button" data-filter="pending" aria-pressed="true">Needs review</button>
+          <button class="chip" type="button" data-filter="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <p class="notice" id="verify-notice" hidden></p>
+      <ul class="accounts" id="accounts" aria-live="polite"></ul>
+      <p class="empty" id="accounts-empty" hidden></p>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  // sessionStorage, not localStorage: the admin session ends with the tab, and
+  // a shared computer at a centre does not stay signed in for the next person.
+  var KEY = 'techable_admin_session'
+  var gate = document.getElementById('gate')
+  var consoleEl = document.getElementById('console')
+  var form = document.getElementById('gate-form')
+  var input = document.getElementById('passkey')
+  var btn = document.getElementById('gate-btn')
+  var msg = document.getElementById('gate-msg')
+  var expiryTimer = null
+
+  function load() {
+    try { return JSON.parse(sessionStorage.getItem(KEY) || 'null') } catch (e) { return null }
+  }
+  function save(s) { try { sessionStorage.setItem(KEY, JSON.stringify(s)) } catch (e) {} }
+  function clear() { try { sessionStorage.removeItem(KEY) } catch (e) {} }
+
+  function showError(text) { msg.textContent = text; msg.hidden = false }
+
+  function showGate(text) {
+    clearTimeout(expiryTimer)
+    consoleEl.hidden = true
+    gate.hidden = false
+    if (text) showError(text)
+    input.focus()
+  }
+
+  function showConsole(s) {
+    gate.hidden = true
+    consoleEl.hidden = false
+    msg.hidden = true
+    input.value = ''
+    var until = new Date(s.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    document.getElementById('session-line').textContent = 'Signed in until ' + until + '.'
+    document.dispatchEvent(new CustomEvent('admin-session', { detail: s }))
+    clearTimeout(expiryTimer)
+    expiryTimer = setTimeout(function () {
+      clear()
+      showGate('Your admin session ended. Enter the passkey again to continue.')
+    }, Math.max(0, s.expiresAt - Date.now()))
+  }
+
+  function busy(on) {
+    btn.disabled = on
+    btn.innerHTML = on ? '<span class="spinner" aria-hidden="true"></span><span>Checking…</span>' : '<span>Continue</span>'
+  }
+
+  // Parses JSON when there is any. A static server answers /api/* with an
+  // HTML 404, and that must read as "no admin service", not as a crash.
+  function call(options) {
+    return fetch('/api/admin-auth', options).then(function (r) {
+      return r.json().catch(function () { return null }).then(function (body) {
+        return { status: r.status, body: body }
+      })
+    })
+  }
+
+  var UNREACHABLE = 'The admin service could not be reached. It runs on the deployed site (or under "vercel dev"), not on a plain static server.'
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault()
+    var passkey = input.value
+    if (!passkey) { showError('Enter the passkey.'); input.focus(); return }
+    msg.hidden = true
+    busy(true)
+    call({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passkey: passkey })
+    }).then(function (r) {
+      busy(false)
+      if (r.status === 200 && r.body && r.body.token) {
+        var s = { token: r.body.token, expiresAt: r.body.expiresAt }
+        save(s)
+        showConsole(s)
+      } else if (r.status === 401) {
+        input.select()
+        showError('That passkey is not right.')
+      } else if (r.status === 429) {
+        var mins = Math.max(1, Math.ceil(((r.body && r.body.retryAfter) || 900) / 60))
+        showError('Too many wrong tries. Wait ' + mins + ' minute' + (mins === 1 ? '' : 's') + ' and try again.')
+      } else if (r.status === 503 && r.body && r.body.configured === false) {
+        showError('Admin sign-in is not set up on this deployment. Set ADMIN_PASSKEY (12 characters or more) in the Vercel project and redeploy.')
+      } else if (r.body && r.body.error) {
+        showError(r.body.error)
+      } else {
+        showError(UNREACHABLE)
+      }
+    }).catch(function () {
+      busy(false)
+      showError(UNREACHABLE)
+    })
+  })
+
+  // Admin tools call this when the server says the session is no longer valid.
+  window.adminSessionEnded = function () {
+    clear()
+    showGate('Your admin session ended. Enter the passkey again to continue.')
+  }
+
+  document.getElementById('signout').addEventListener('click', function () {
+    clear()
+    showGate()
+  })
+
+  // A token kept from earlier in this tab is re-checked with the server, not
+  // trusted: the passkey may have changed since, which ends every session.
+  var saved = load()
+  if (saved && saved.token && saved.expiresAt > Date.now()) {
+    gate.hidden = true
+    call({ headers: { Authorization: 'Bearer ' + saved.token } }).then(function (r) {
+      if (r.status === 200 && r.body && r.body.admin) showConsole({ token: saved.token, expiresAt: r.body.expiresAt })
+      else { clear(); showGate(r.status === 401 ? 'Your admin session ended. Enter the passkey again to continue.' : '') }
+    }).catch(function () { showGate(UNREACHABLE) })
+  } else {
+    clear()
+  }
+})()
+</script>
+
+<script>
+// Account verification queue — /api/admin-verifications.
+(function () {
+  var list = document.getElementById('accounts')
+  var empty = document.getElementById('accounts-empty')
+  var notice = document.getElementById('verify-notice')
+  var session = null
+  var accounts = []
+  var filter = 'pending'
+  var storageConfigured = true
+
+  var ROLE = { community_manager: 'Community centre', service_provider: 'Service provider' }
+  var STATUS = { pending: 'Needs review', not_submitted: 'No documents', approved: 'Approved', rejected: 'Not approved' }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag)
+    if (cls) e.className = cls
+    if (text != null) e.textContent = text
+    return e
+  }
+  function day(ms) {
+    return ms ? new Date(ms).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+  }
+  function size(b) {
+    return b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'
+  }
+
+  function api(path, options) {
+    options = options || {}
+    options.headers = Object.assign({ Authorization: 'Bearer ' + session.token }, options.headers || {})
+    return fetch('/api/admin-verifications' + (path || ''), options).then(function (r) {
+      return r.json().catch(function () { return null }).then(function (body) {
+        if (r.status === 401) { window.adminSessionEnded(); throw new Error('session') }
+        return { status: r.status, body: body || {} }
+      })
+    })
+  }
+
+  function showNotice(text) { notice.textContent = text; notice.hidden = !text }
+
+  function load() {
+    showNotice('')
+    empty.hidden = true
+    list.textContent = ''
+    list.appendChild(el('li', 'acct-meta', 'Loading accounts…'))
+    api('').then(function (r) {
+      list.textContent = ''
+      if (r.status === 503 && r.body.configured === false) {
+        showNotice('Account review is not set up on this deployment yet. Add FIREBASE_ADMIN_SA_KEY (a Firebase service-account key with the Cloud Datastore User role) to the Vercel project and redeploy.')
+        return
+      }
+      if (r.status !== 200) { showNotice(r.body.error || 'Could not load accounts. Try again.'); return }
+      accounts = r.body.accounts || []
+      storageConfigured = r.body.storageConfigured !== false
+      if (!storageConfigured) showNotice('Document storage (Supabase) is not configured, so uploaded documents cannot be opened here. You can still approve an account you have checked another way.')
+      render()
+    }).catch(function (e) {
+      if (e.message === 'session') return
+      list.textContent = ''
+      showNotice('The admin service could not be reached. Try again.')
+    })
+  }
+
+  function render() {
+    list.textContent = ''
+    function needsReview(a) {
+      return a.status === 'pending' || a.status === 'not_submitted'
+        || (a.status === 'approved' && a.unverifiedCentres && a.unverifiedCentres.length > 0)
+    }
+    var shown = accounts.filter(function (a) { return filter === 'all' || needsReview(a) })
+    var pending = accounts.filter(needsReview).length
+    document.querySelector('[data-filter="pending"]').textContent = 'Needs review (' + pending + ')'
+    document.querySelector('[data-filter="all"]').textContent = 'All (' + accounts.length + ')'
+    empty.hidden = shown.length > 0
+    empty.textContent = filter === 'pending' ? 'Nothing waiting. Every account has been reviewed.' : 'No community centre or service provider accounts yet.'
+    shown.forEach(function (a) { list.appendChild(row(a)) })
+  }
+
+  function row(a) {
+    var li = el('li', 'acct')
+    var top = el('div', 'acct-top')
+    var who = el('div')
+    who.appendChild(el('div', 'acct-name', a.name || a.email || 'Unnamed account'))
+    var org = a.centreName || a.organisation
+    var meta = [ROLE[a.role] || a.role, org, a.email].filter(Boolean).join(' · ')
+    who.appendChild(el('div', 'acct-meta', meta))
+    var when = a.status === 'approved' || a.status === 'rejected'
+      ? 'Reviewed ' + day(a.reviewedAt)
+      : a.documentCount ? a.documentCount + ' document' + (a.documentCount === 1 ? '' : 's') + ' sent ' + day(a.submittedAt)
+      : 'Signed up ' + day(a.createdAt) + ' without documents'
+    who.appendChild(el('div', 'acct-meta', when))
+    top.appendChild(who)
+    top.appendChild(el('span', 'badge ' + a.status, STATUS[a.status] || a.status))
+    li.appendChild(top)
+    if (a.note) li.appendChild(el('p', 'prev-note', 'Note: ' + a.note))
+    if (a.status === 'approved' && a.unverifiedCentres && a.unverifiedCentres.length) {
+      li.appendChild(el('p', 'row-msg', 'New centre to review: ' + a.unverifiedCentres.join(', ') + '. It cannot post news until you approve again.'))
+    }
+
+    var actions = el('div', 'acct-actions')
+    var open = el('button', 'row-btn', a.status === 'approved' || a.status === 'rejected' ? 'Change decision' : 'Review')
+    open.type = 'button'
+    open.setAttribute('aria-expanded', 'false')
+    actions.appendChild(open)
+    li.appendChild(actions)
+
+    var panel = null
+    open.addEventListener('click', function () {
+      if (panel) { panel.remove(); panel = null; open.setAttribute('aria-expanded', 'false'); return }
+      panel = reviewPanel(a)
+      li.appendChild(panel)
+      open.setAttribute('aria-expanded', 'true')
+    })
+    return li
+  }
+
+  function reviewPanel(a) {
+    var p = el('div', 'review')
+    var docs = el('ul', 'docs')
+    p.appendChild(docs)
+    if (!a.documentCount) {
+      docs.appendChild(el('li', 'doc', 'No documents were uploaded. Check this organisation another way (phone, website, licence number) before approving.'))
+    } else if (!storageConfigured) {
+      docs.appendChild(el('li', 'doc', a.documentCount + ' document(s) uploaded, but storage is not configured here.'))
+    } else {
+      docs.appendChild(el('li', 'doc', 'Loading documents…'))
+      api('?uid=' + encodeURIComponent(a.uid)).then(function (r) {
+        docs.textContent = ''
+        var files = (r.body && r.body.documents) || []
+        if (r.status !== 200) { docs.appendChild(el('li', 'doc', r.body.error || 'Could not load documents.')); return }
+        if (!files.length) { docs.appendChild(el('li', 'doc', 'No files found in storage for this account.')); return }
+        files.forEach(function (f) {
+          var li = el('li', 'doc')
+          if (f.signedUrl) {
+            var link = el('a', null, f.name)
+            link.href = f.signedUrl
+            link.target = '_blank'
+            link.rel = 'noopener noreferrer'
+            li.appendChild(link)
+          } else li.appendChild(el('span', null, f.name))
+          li.appendChild(document.createTextNode(' · ' + size(f.size) + (f.uploadedAt ? ' · ' + day(f.uploadedAt) : '')))
+          docs.appendChild(li)
+        })
+        docs.appendChild(el('li', 'doc', 'Links work for 10 minutes. Reopen the review to get fresh ones.'))
+      }).catch(function () {})
+    }
+
+    var id = 'note-' + a.uid
+    var label = el('label', null, 'Note to the account holder (needed to reject)')
+    label.htmlFor = id
+    var note = el('textarea', 'note')
+    note.id = id
+    note.maxLength = 500
+    note.value = a.note || ''
+    p.appendChild(label)
+    p.appendChild(note)
+
+    var buttons = el('div', 'acct-actions')
+    var ok = el('button', 'decide ok', 'Approve')
+    var no = el('button', 'decide no', 'Reject')
+    ok.type = no.type = 'button'
+    buttons.appendChild(ok)
+    buttons.appendChild(no)
+    p.appendChild(buttons)
+    var out = el('p', 'row-msg')
+    out.setAttribute('role', 'alert')
+    out.hidden = true
+    p.appendChild(out)
+
+    function decide(decision) {
+      if (decision === 'rejected' && !note.value.trim()) {
+        out.textContent = 'Write what they need to fix, so the rejection is useful to them.'
+        out.hidden = false
+        note.focus()
+        return
+      }
+      ok.disabled = no.disabled = true
+      out.hidden = true
+      api('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // The names shown here: the server refuses the approval if any of
+        // them changed after this page loaded.
+        body: JSON.stringify({
+          uid: a.uid, decision: decision, note: note.value.trim(),
+          seen: { organisation: a.organisation || '', centres: (a.centres || []).map(function (c) { return { id: c.id, name: c.name } }) }
+        })
+      }).then(function (r) {
+        ok.disabled = no.disabled = false
+        if (r.status === 409) {
+          out.textContent = r.body.error || 'Their details changed. Look again before approving.'
+          out.hidden = false
+          setTimeout(load, 2500)
+          return
+        }
+        if (r.status !== 200) { out.textContent = r.body.error || 'That did not save. Try again.'; out.hidden = false; return }
+        // Reload rather than patch the row: a decision also changes which of
+        // their centres are verified, which only the server knows.
+        load()
+      }).catch(function () { ok.disabled = no.disabled = false })
+    }
+    ok.addEventListener('click', function () { decide('approved') })
+    no.addEventListener('click', function () { decide('rejected') })
+    return p
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-filter]'), function (b) {
+    b.addEventListener('click', function () {
+      filter = b.getAttribute('data-filter')
+      Array.prototype.forEach.call(document.querySelectorAll('[data-filter]'), function (x) {
+        x.setAttribute('aria-pressed', String(x === b))
+      })
+      render()
+    })
+  })
+
+  document.addEventListener('admin-session', function (e) {
+    session = e.detail
+    load()
+  })
+})()
+</script>
+</body>
+</html>

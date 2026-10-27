@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Techable — Friends</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/brand.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rust:#C4552B;--rust-lt:#E07A55;--rust-pale:#FDF0EB;
+  --navy:#0D1B2A;--cream:#FAF6F0;--white:#fff;
+  --border:rgba(180,156,136,.2);--ink:#1A1208;--ink2:#4A3828;--ink3:#8C7A6A;
+  --green:#2D6A4F;--green-bg:#EBF5EF;--shadow:0 4px 20px rgba(26,18,8,.08);
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink)}
+button,input{font-family:inherit}
+#auth-loading{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:999}
+.spin{width:36px;height:36px;border:3px solid rgba(180,156,136,.35);border-top-color:var(--rust);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hdr{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:20}
+.hdr a{text-decoration:none;color:var(--ink2);font-size:13px;border:1px solid var(--border);padding:7px 12px;border-radius:20px}
+.logo{font-family:'Fraunces',serif;font-size:17px;color:var(--navy);border:none!important}
+.space{flex:1}
+.hero{background:var(--navy);padding:48px 20px;text-align:center;color:#fff}
+.hero h1{font-family:'Fraunces',serif;font-size:42px;font-weight:300;margin-bottom:10px}
+.hero em{font-style:italic;color:var(--rust-lt)}
+.hero p{color:rgba(255,255,255,.58);font-size:14px;line-height:1.7;max-width:520px;margin:0 auto 24px}
+.search{max-width:520px;margin:0 auto;display:flex;gap:8px}
+.search input{flex:1;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;border-radius:24px;padding:13px 16px;font-size:14px}
+.search input::placeholder{color:rgba(255,255,255,.45)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:#fff;border-bottom:1px solid var(--border);padding:14px 20px}
+.filter{border:1px solid var(--border);background:#fff;color:var(--ink3);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.filter.active{background:var(--rust-pale);color:var(--rust);border-color:rgba(196,85,43,.3)}
+.page{max-width:1120px;margin:0 auto;padding:24px 20px 70px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.avatar{width:58px;height:58px;border-radius:50%;overflow:hidden;background:var(--rust-pale);margin-bottom:12px}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.name{font-weight:700;color:var(--ink);font-size:15px;margin-bottom:4px}
+.meta{font-size:12px;color:var(--ink3);line-height:1.5;margin-bottom:10px}
+.tag{display:inline-flex;font-size:10px;color:var(--green);background:var(--green-bg);padding:3px 8px;border-radius:10px;font-weight:700;margin-bottom:10px}
+.bio{font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions a,.actions button{font-size:12px;text-decoration:none;border-radius:10px;padding:8px 11px;border:1px solid var(--border);background:var(--cream);color:var(--ink2);cursor:pointer}
+.empty{text-align:center;color:var(--ink3);padding:48px 20px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:10px 18px;font-size:13px;z-index:999}
+@media(max-width:680px){.hero h1{font-size:32px}.hdr{padding:0 14px}.hdr a{padding:6px 10px}.search{flex-direction:column}}
+</style>
+</head>
+
+<body>
+<div id="auth-loading"><div class="spin"></div></div>
+
+<header class="hdr">
+  <a href="app.html">← App</a>
+  <div class="logo" style="display:flex;align-items:center;gap:9px"><img class="brand-mark" src="assets/techable-icon.png" alt="" width="24" height="28"><span>Techable Friends</span></div>
+  <div class="space"></div>
+  <a href="faq.html">FAQ</a>
+  <a href="profile.html">Profile</a>
+</header>
+
+<section class="hero">
+  <h1>Find <em>friends</em></h1>
+  <p>A friendly directory of public Techable users. Communities will become a separate library later.</p>
+  <div class="search">
+    <input id="search" placeholder="Search friends by name, community, or interests…" oninput="render()" />
+  </div>
+</section>
+
+<div class="filters">
+  <button class="filter active" onclick="setFilter('all', this)">All</button>
+  <button class="filter" onclick="setFilter('resident', this)">Residents</button>
+  <button class="filter" onclick="setFilter('community_manager', this)">Community Managers</button>
+</div>
+
+<main class="page">
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+window._cfg = (async function loadConfig(){
+  try {
+    const res = await fetch('/api/config', { cache:'no-store' })
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.firebase?.apiKey) {
+        window.TECHABLE_CONFIG = data
+        return data
+      }
+    }
+  } catch (_) {}
+
+  await new Promise(resolve => {
+    const s = document.createElement('script')
+    s.src = 'config.js'
+    s.onload = resolve
+    s.onerror = resolve
+    document.head.appendChild(s)
+  })
+
+  return window.TECHABLE_CONFIG || null
+})()
+</script>
+
+<script type="module" src="auth.js"></script>
+
+<script type="module">
+import {
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js"
+
+let users = []
+let activeFilter = 'all'
+let db = null
+
+function $(id){ return document.getElementById(id) }
+
+function esc(v){
+  return String(v ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;')
+}
+
+// A mailto: link is built only from something shaped like a plain address.
+// The field is free text, and esc() does not help here: it turns & into &amp;,
+// which the HTML parser decodes straight back, so an "address" of
+// victim@x.org?cc=…&body=… pre-composed a mail the reader never wrote. The
+// shape check admits no ? & % or quotes, so nothing needs encoding; anything
+// else gets no link (the address is still shown as text).
+function safeMailto(raw) {
+  const s = String(raw ?? '').trim()
+  if (s.length > 254 || !/^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(s)) return ''
+  return 'mailto:' + s
+}
+
+const AVATAR_STYLES = [
+  'lorelei-neutral',
+  'adventurer',
+  'micah',
+  'personas',
+  'bottts',
+  'thumbs',
+  'pixel-art',
+  'fun-emoji',
+  'shapes',
+  'initials'
+]
+
+function safeAvatarStyle(style){
+  return AVATAR_STYLES.includes(style) ? style : 'lorelei-neutral'
+}
+
+function dice(seed, style = 'lorelei-neutral'){
+  const safeStyle = safeAvatarStyle(style)
+  const params = new URLSearchParams({
+    seed: seed || 'friend',
+    radius: '50',
+    backgroundColor: 'fdf0eb,faf6f0,ebf5ef,fbf4e3,e0f2fe',
+    backgroundType: 'solid,gradientLinear',
+    randomizeIds: 'true'
+  })
+
+  return `https://api.dicebear.com/9.x/${safeStyle}/svg?${params.toString()}`
+}
+
+function roleLabel(role){
+  return role === 'community_manager' ? 'Community Manager' : 'Resident'
+}
+
+window.setFilter = function(filter, btn){
+  activeFilter = filter
+  document.querySelectorAll('.filter').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  render()
+}
+
+window.render = function(){
+  const q = $('search').value.toLowerCase().trim()
+  const grid = $('grid')
+
+  const filtered = users.filter(u => {
+    const roleOk = activeFilter === 'all' || u.role === activeFilter
+    const hay = [u.displayName, u.email, u.communityName, u.bio, u.role].join(' ').toLowerCase()
+    return roleOk && (!q || hay.includes(q))
+  })
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty">No friends found.</div>'
+    return
+  }
+
+  grid.innerHTML = filtered.map(u => `
+    <div class="card">
+      <div class="avatar"><img src="${dice(u.avatarSeed || u.uid || u.displayName, u.avatarStyle || 'lorelei-neutral')}" alt="avatar"></div>
+      <div class="tag">${esc(roleLabel(u.role))}</div>
+      <div class="name">${esc(u.displayName || 'Unnamed User')}</div>
+      <div class="meta">${esc([u.communityName, u.email].filter(Boolean).join(' · '))}</div>
+      <div class="bio">${esc(u.bio || 'No public bio yet.')}</div>
+      <div class="actions">
+        ${safeMailto(u.email) ? `<a href="${esc(safeMailto(u.email))}">Email</a>` : ''}
+      </div>
+    </div>
+  `).join('')
+}
+
+async function loadFriends(){
+  db = window.TechableAuth.db
+
+  users = []
+
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('isPublic', '==', true)))
+    snap.forEach(d => {
+      const data = d.data()
+      users.push({
+        uid: d.id,
+        role: window.TechableAuth.normalizeRole(data.role || 'resident'),
+        displayName: data.displayName || '',
+        email: data.email || '',
+        communityName: data.communityName || '',
+        avatarSeed: data.avatarSeed || d.id,
+        avatarStyle: safeAvatarStyle(data.avatarStyle || 'lorelei-neutral'),
+        bio: data.bio || ''
+      })
+    })
+  } catch (err) {
+    console.warn('Friend load failed:', err)
+  }
+
+  users.sort((a,b)=>(a.displayName||'').localeCompare(b.displayName||''))
+  render()
+}
+
+document.addEventListener('auth:stateChanged', async e => {
+  if (!e.detail) return
+  $('auth-loading').style.display = 'none'
+  await loadFriends()
+})
+
+window.TechableAuth?.guard?.(() => {})
+</script>
+</body>
+</html>
